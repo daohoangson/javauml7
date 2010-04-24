@@ -64,6 +64,6 @@ public class PropertyStructure extends Structure {
 	 * @return true if the 2 are alike
 	 */
 	public boolean isAlike(PropertyStructure p) {
-		return (this.name == p.name);
+		return (getName() == p.getName());
 	}
 }

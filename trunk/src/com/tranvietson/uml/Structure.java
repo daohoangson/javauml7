@@ -1,5 +1,7 @@
 package com.tranvietson.uml;
 
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -16,42 +18,44 @@ public abstract class Structure implements StructureListener {
 	/**
 	 * Name of the structure
 	 */
-	String name;
+	private String name;
 	/**
 	 * Specifies of the structure needs unique name globally
 	 * @see #setName(String)
 	 */
-	boolean unique_globally = false;
+	protected boolean unique_globally = false;
 	/**
 	 * Type of the structure. Some structures do not have a type
 	 * @see #config()
 	 */
-	String type;
+	private String type;
 	/**
 	 * Modifiers used with the structure. Stored as a flag array.
 	 * Use with {@link #allowed_modifiers} to determine which modifier is used
 	 */
-	boolean used_modifiers[];
+	private boolean used_modifiers[];
 	private Vector<StructureListener> listeners;
 	
 	/**
 	 * Name of the structure itself. It's different from {@link #name}.
 	 * Should be changed in the {@link #config()} method
 	 */
-	String structure_name = "Structure";
+	protected String structure_name = "Structure";
 	/**
 	 * The structure uses a type or not.
 	 * Should be changed in the {@link #config()} method
 	 */
-	boolean use_type = false;
+	protected boolean use_type = false;
 	/**
 	 * Modifiers are allowed to use with the structure.
 	 * Should be changed in the {@link #config()} method
 	 */
-	String allowed_modifiers[] = new String[0];
+	protected String allowed_modifiers[] = new String[0];
 	
 	private List<Structure> parents = new LinkedList<Structure>();
+	protected boolean has_parents = false;
 	private List<Structure> children = new LinkedList<Structure>();
+	protected boolean has_children = false;
 	static private List<String> names = new LinkedList<String>();
 	
 	/**
@@ -164,6 +168,14 @@ public abstract class Structure implements StructureListener {
 		return allowed_modifiers;
 	}
 	
+	public boolean hasChildren() {
+		return has_children;
+	}
+	
+	public boolean hasParents() {
+		return has_parents;
+	}
+	
 	/**
 	 * 
 	 * @return name of the structure object
@@ -250,9 +262,11 @@ public abstract class Structure implements StructureListener {
 	 * @param structure
 	 */
 	public void add(Structure structure) {
-		children.add(structure);
-		structure.addStructureListener(this);
-		fireChanged();
+		if (has_children) {
+			children.add(structure);
+			structure.addStructureListener(this);
+			fireChanged();
+		}
 	}
 	
 	/**
@@ -260,16 +274,60 @@ public abstract class Structure implements StructureListener {
 	 * @param structure
 	 */
 	public void assign(Structure structure) {
-		parents.add(structure);
-		structure.addStructureListener(this);
-		fireChanged();
+		if (has_parents) {
+			parents.add(structure);
+			structure.addStructureListener(this);
+			fireChanged();
+		}
+	}
+	
+	public Structure[] getChildren() {
+		Structure[] children_array = children.toArray(new Structure[0]);
+		Comparator<Structure> byStructureName = new StructureNameComparator();
+		Arrays.sort(children_array,byStructureName);
+		return children_array;
 	}
 	
 	/**
 	 * Return list of parents
 	 * @return
 	 */
-	public List<Structure> getParents() {
-		return parents;
+	public Structure[] getParents() {
+		return parents.toArray(new Structure[0]);
 	}
+}
+
+class StructureNameComparator implements Comparator<Structure> {
+
+	@Override
+	public int compare(Structure s1, Structure s2) {
+		int i1 = getPriority(s1);
+		int i2 = getPriority(s2);
+		
+		if (i1 == i2) {
+			return 0;
+		} else if (i1 > i2) {
+			return -1;
+		} else {
+			return 1;
+		}
+	}
+	
+	int getPriority(Structure s) {
+		String name = s.getStructureName();
+		if (name.equals("Interface")) {
+			return 10;
+		} else if (name.equals("Class")) {
+			return 9;
+		} else if (name.equals("Property")) {
+			return 7;
+		} else if (name.equals("Method")) {
+			return 5;
+		} else if (name.equals("Argument")) {
+			return 3;
+		}
+		
+		return 1;
+	}
+	
 }
