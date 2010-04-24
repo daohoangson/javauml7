@@ -108,7 +108,7 @@ public class MethodStructure extends Structure {
 	 * @return true if the 2 are alike
 	 */
 	public boolean isAlike(MethodStructure m) {
-		if (this.name == m.name && this.arguments.size() == m.arguments.size()) {
+		if (getName() == m.getName() && this.arguments.size() == m.arguments.size()) {
 			for (int i = 0; i < this.arguments.size(); i++) {
 				if (this.arguments.get(i).isAlike(m.arguments.get(i)) == false) {
 					return false;

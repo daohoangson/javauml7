@@ -25,6 +25,8 @@ public class ClassStructure extends InterfaceStructure {
 				,"public", "protected", "private"
 		};
 		unique_globally = true;
+		has_parents = true;
+		has_children = true;
 	}
 	
 	public ClassStructure() { }

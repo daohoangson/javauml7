@@ -34,6 +34,6 @@ public class ArgumentStructure extends Structure {
 	 * @return true if the 2 are alike
 	 */
 	public boolean isAlike(ArgumentStructure a) {
-		return (this.name == a.name);
+		return (getName() == a.getName());
 	}
 }
