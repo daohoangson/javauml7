@@ -19,18 +19,19 @@ import java.awt.dnd.DropTargetListener;
 import javax.swing.JLabel;
 
 import com.daohoangson.uml.structures.Structure;
-import com.daohoangson.uml.structures.StructureException;
 import com.daohoangson.uml.structures.TransferableStructure;
+import com.tranvietson.uml.structures.StructureException;
 
-
+/**
+ * Drag and Drop Label for {@link Structure}s
+ * @author Dao Hoang Son
+ * @version 1.0
+ *
+ */
 public class DnDLabel extends JLabel implements DropTargetListener,
-		DragGestureListener, DragSourceListener {
+		DragGestureListener {
 	private static final long serialVersionUID = -6281032125570028093L;
 	private Structure structure;
-	@SuppressWarnings("unused")
-	private Diagram diagram;
-	@SuppressWarnings("unused")
-	private DropTarget dt;
 	private DragSource dragSource;
 	
 	private Color originalForeground;
@@ -41,10 +42,9 @@ public class DnDLabel extends JLabel implements DropTargetListener,
 		super(structure.toString());
 		
 		this.structure = structure;
-		this.diagram = diagram;
 		
 		if (structure.checkHasChildren()) {
-			dt = new DropTarget(this,this);
+			new DropTarget(this,this);
 			originalForeground = getForeground();
 		}
 		
@@ -67,7 +67,7 @@ public class DnDLabel extends JLabel implements DropTargetListener,
 
 	@Override
 	public void dragOver(DropTargetDragEvent dtde) {
-		// TODO Auto-generated method stub
+		// TODO Check it out if we need to do something here...
 	}
 
 	@Override
@@ -102,7 +102,7 @@ public class DnDLabel extends JLabel implements DropTargetListener,
 
 	@Override
 	public void dropActionChanged(DropTargetDragEvent dtde) {
-		// TODO Auto-generated method stub
+		// TODO Check it out if we need to do something here...
 
 	}
 
@@ -112,36 +112,6 @@ public class DnDLabel extends JLabel implements DropTargetListener,
 		dragSource.startDrag(dge
 				, DragSource.DefaultMoveDrop
 				, new TransferableStructure(structure)
-				, this);
+				, null);
 	}
-
-	@Override
-	public void dragDropEnd(DragSourceDropEvent dsde) {
-		setForeground(originalForeground);
-	}
-
-	@Override
-	public void dragEnter(DragSourceDragEvent dsde) {
-		// TODO Auto-generated method stub
-
-	}
-
-	@Override
-	public void dragExit(DragSourceEvent dse) {
-		// TODO Auto-generated method stub
-
-	}
-
-	@Override
-	public void dragOver(DragSourceDragEvent dsde) {
-		// TODO Auto-generated method stub
-
-	}
-
-	@Override
-	public void dropActionChanged(DragSourceDragEvent dsde) {
-		// TODO Auto-generated method stub
-
-	}
-
 }

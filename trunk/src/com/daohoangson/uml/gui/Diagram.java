@@ -19,24 +19,61 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 
 import com.daohoangson.uml.structures.Structure;
-import com.daohoangson.uml.structures.StructureEvent;
-import com.daohoangson.uml.structures.StructureListener;
+import com.tranvietson.uml.structures.StructureEvent;
+import com.tranvietson.uml.structures.StructureListener;
 
-
+/**
+ * Diagram Manager and Swing-based Component.
+ * @author Dao Hoang Son
+ * @version 1.0
+ *
+ */
 public class Diagram extends JPanel implements StructureListener {
 	private static final long serialVersionUID = -3147843723002469900L;
-	private LinkedList<Structure> structures = new LinkedList<Structure>();
+	/**
+	 * A list of all global structures.
+	 * @see Structure#checkIsUniqueGlobally()
+	 */
+	private List<Structure> structures = new LinkedList<Structure>();
+	/**
+	 * A list of all relationships among structures.
+	 */
 	private List<Relationship> relationships = new LinkedList<Relationship>();
-	
-	private Component built[];
-	private boolean dependencies[][];
-	
+	/**
+	 * An array of all built component.
+	 * It will be null at the beginning but will get updated 
+	 * in {@link #build(int)}
+	 */
+	private Component built[] = null;
+	/**
+	 * An array of all dependencies among structures.
+	 * Get updated in {@link #structureChanged(StructureEvent)}
+	 */
+	private boolean dependencies[][] = null;
+	/**
+	 * Determines if we are in debug mode.
+	 */
 	private boolean debuging = false;
-	private int border_width = 5;
-	private Color border_color = Color.black;
-	private int gap_vertical = 25;
-	private int gap_horizontal = 10;
+	/**
+	 * The width of border for structure's component
+	 */
+	public int cfg_border_width = 5;
+	/**
+	 * The color of the border specified from {@link #cfg_border_width}
+	 */
+	public Color cfg_border_color = Color.black;
+	/**
+	 * The gap between 2 components vertically
+	 */
+	public int cfg_gap_vertical = 25;
+	/**
+	 * The gap between 2 components horizontally
+	 */
+	public int cfg_gap_horizontal = 10;
 	
+	/**
+	 * Constructor. Setup some useful configurations.
+	 */
 	public Diagram() {
 		super();
 		
@@ -45,22 +82,42 @@ public class Diagram extends JPanel implements StructureListener {
 		setAlignmentY(Component.TOP_ALIGNMENT);
 	}
 	
+	/**
+	 * Add a new structure to the diagram.
+	 * @param structure
+	 */
 	public void add(Structure structure) {
-		structures.add(structure);
-		structure.addStructureListener(this);
-		structureChanged(new StructureEvent(structure));
-	}
-	
-	synchronized public void paint(Graphics g) {
-		super.paint(g);
-		
-		Iterator<Relationship> itr = relationships.iterator();
-		while (itr.hasNext()) {
-			Relationship r = itr.next();
-			r.draw(g);
+		if (structure.checkIsUniqueGlobally()) {
+			structures.add(structure);
+			structure.addStructureListener(this);
+			structureChanged(new StructureEvent(structure));
 		}
 	}
 	
+	/**
+	 * Does custom painting procedures.
+	 * Draws relationships.
+	 */
+	public void paint(Graphics g) {
+		super.paint(g);
+		
+		// TODO: Figure out why this piece of code always cause con-current exception
+//		Iterator<Relationship> itr = relationships.iterator();
+//		while (itr.hasNext()) {
+//			itr.next().draw(g);
+//		}
+//		
+		
+		for (int i = 0; i < relationships.size(); i++) {
+			relationships.get(i).draw(g);
+		}
+	}
+	
+	/**
+	 * Looks for the built component for structure
+	 * @param structure the one needs component
+	 * @return component or null
+	 */
 	Component getComponentOf(Structure structure) {
 		if (built != null) {
 			for (int i = 0; i < built.length; i++) {
@@ -72,6 +129,13 @@ public class Diagram extends JPanel implements StructureListener {
 		return null;
 	}
 	
+	/**
+	 * Calculate the bound of the component.
+	 * The result is relative to the Diagram itself 
+	 * (bypass all parents if any)
+	 * @param c the component. Should be in the components tree
+	 * @return
+	 */
 	Rectangle getBound(Component c) {
 		if (c == null) return new Rectangle();
 		
@@ -87,6 +151,11 @@ public class Diagram extends JPanel implements StructureListener {
 		return bounce;
 	}
 	
+	/**
+	 * Primary drawing method.
+	 * Remove all existing components. 
+	 * Re-build them in order of dependencies.
+	 */
 	private void draw() {
 		removeAll();
 		
@@ -110,6 +179,11 @@ public class Diagram extends JPanel implements StructureListener {
 		repaint();
 	}
 	
+	/**
+	 * Checks and builds a structure from its' id
+	 * @param i the id of the structure in {@link #structures}
+	 * @return the built component 
+	 */
 	private Component build(int i) {
 		Component container = null;
 		
@@ -146,24 +220,11 @@ public class Diagram extends JPanel implements StructureListener {
 		return container;
 	}
 	
-	JComponent wrap(Component c, Component dc[]) {
-		JPanel dependent_container = new JPanel();
-		dependent_container.setLayout(new BoxLayout(dependent_container,BoxLayout.X_AXIS));
-		for (int i = 0; i < dc.length; i++) {
-			if (i > 0) 
-				dependent_container.add(Box.createRigidArea(new Dimension(gap_horizontal,0)));
-			dependent_container.add(dc[i]);
-		}
-		
-		JPanel container = new JPanel();
-		container.setLayout(new BoxLayout(container,BoxLayout.Y_AXIS));
-		container.add(c);
-		container.add(Box.createRigidArea(new Dimension(0,gap_vertical)));
-		container.add(dependent_container);
-		
-		return container;
-	}
-	
+	/**
+	 * Builds component for a structure
+	 * @param s the structure
+	 * @return the built component
+	 */
 	JComponent build(Structure s) {
 		JComponent c;
 		
@@ -173,6 +234,7 @@ public class Diagram extends JPanel implements StructureListener {
 			c = new JPanel();
 			c.setLayout(new BoxLayout(c,BoxLayout.Y_AXIS));
 			c.setAlignmentX(JComponent.CENTER_ALIGNMENT);
+			
 			c.add(label);
 			
 			Structure children[] = s.getChildren();
@@ -182,8 +244,8 @@ public class Diagram extends JPanel implements StructureListener {
 			
 			c.setBorder(
 					BorderFactory.createCompoundBorder(
-							BorderFactory.createLineBorder(border_color)
-							, BorderFactory.createEmptyBorder(border_width, border_width, border_width, border_width)
+							BorderFactory.createLineBorder(cfg_border_color)
+							, BorderFactory.createEmptyBorder(cfg_border_width, cfg_border_width, cfg_border_width, cfg_border_width)
 					)
 			);
 		} else {
@@ -192,6 +254,30 @@ public class Diagram extends JPanel implements StructureListener {
 		}
 		
 		return c;
+	}
+	
+	/**
+	 * Wraps structure component with its' children's components
+	 * @param c the structure component
+	 * @param dc the array of children's components
+	 * @return the wrapper component
+	 */
+	JComponent wrap(Component c, Component dc[]) {
+		JPanel dependent_container = new JPanel();
+		dependent_container.setLayout(new BoxLayout(dependent_container,BoxLayout.X_AXIS));
+		for (int i = 0; i < dc.length; i++) {
+			if (i > 0) 
+				dependent_container.add(Box.createRigidArea(new Dimension(cfg_gap_horizontal,0)));
+			dependent_container.add(dc[i]);
+		}
+		
+		JPanel container = new JPanel();
+		container.setLayout(new BoxLayout(container,BoxLayout.Y_AXIS));
+		container.add(c);
+		container.add(Box.createRigidArea(new Dimension(0,cfg_gap_vertical)));
+		container.add(dependent_container);
+		
+		return container;
 	}
 
 	@Override

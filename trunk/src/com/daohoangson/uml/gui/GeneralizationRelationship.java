@@ -1,5 +1,6 @@
 package com.daohoangson.uml.gui;
 
+import java.awt.Color;
 import java.awt.Graphics;
 
 import com.daohoangson.uml.structures.Structure;
@@ -12,37 +13,34 @@ public class GeneralizationRelationship extends GeneralRelationship {
 
 	public GeneralizationRelationship(Diagram diagram, Structure from, Structure to) {
 		super(diagram, from, to);
+		color = Color.BLUE;
 	}
 
 	@Override
 	public void draw(Graphics g) {
-		//calculate and choose main connection line
-		PointSet ps = calculatePointSet();
-		int x1 = ps.x1;
-		int y1 = ps.y1;
-		int x2 = ps.x2;
-		int y2 = ps.y2;
+		drawConnectionLine(g,0,arrow_length);
+	}
+
+	@Override
+	protected void __drawConnectionLine(Graphics g, PointSet ps) {
+		int x0 = ps.x;
+		int y0 = ps.y;
 		double delta = ps.delta; //the delta angle between the line and vertical line 
 		
-		//calculate point 4 (arrow edges)
-		double delta4 = delta - arrow_side_angle;
-		int y4 = (int) Math.ceil(y2 + arrow_side_length*Math.cos(delta4));
-		int x4 = (int) Math.ceil(x2 + arrow_side_length*Math.sin(delta4));
+		//calculate point 1 (arrow edges)
+		double delta1 = delta - arrow_side_angle;
+		int y1 = (int) Math.ceil(y0 + arrow_side_length*Math.cos(delta1));
+		int x1 = (int) Math.ceil(x0 + arrow_side_length*Math.sin(delta1));
 		
-		//calculate point 5 (arrow edges)
-		double delta5 = delta + arrow_side_angle;
-		int y5 = (int) Math.ceil(y2 + arrow_side_length*Math.cos(delta5));
-		int x5 = (int) Math.ceil(x2 + arrow_side_length*Math.sin(delta5));
+		//calculate point 2 (arrow edges)
+		double delta2 = delta + arrow_side_angle;
+		int y2 = (int) Math.ceil(y0 + arrow_side_length*Math.cos(delta2));
+		int x2 = (int) Math.ceil(x0 + arrow_side_length*Math.sin(delta2));
 		
-		//calculate the joint point of arrow and connection line
-		int y3 = (int) (y2 + arrow_length*Math.cos(delta));
-		int x3 = (int) (x2 + arrow_length*Math.sin(delta));
-		
-		//draw arrow and connection line
-		g.drawLine(x1, y1, x3, y3);
-		g.drawLine(x4, y4, x5, y5);
-		g.drawLine(x4, y4, x2, y2);
-		g.drawLine(x5, y5, x2, y2);
+		//draw arrow
+		g.drawLine(x1, y1, x2, y2);
+		g.drawLine(x1, y1, x0, y0);
+		g.drawLine(x2, y2, x0, y0);
 	}
 
 }

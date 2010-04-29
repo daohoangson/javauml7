@@ -6,10 +6,10 @@ import javax.swing.JButton;
 import javax.swing.JFrame;
 
 import com.daohoangson.uml.gui.Diagram;
-import com.daohoangson.uml.structures.Class;
-import com.daohoangson.uml.structures.Interface;
-import com.daohoangson.uml.structures.StructureException;
+import com.tranvietson.uml.structures.Class;
+import com.tranvietson.uml.structures.Interface;
 import com.tranvietson.uml.structures.Method;
+import com.tranvietson.uml.structures.StructureException;
 
 
 public class Test {

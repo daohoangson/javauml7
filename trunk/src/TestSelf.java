@@ -1,13 +1,14 @@
 import javax.swing.JFrame;
 
 import com.daohoangson.uml.gui.Diagram;
-import com.daohoangson.uml.structures.Class;
-import com.daohoangson.uml.structures.Interface;
 import com.daohoangson.uml.structures.Structure;
-import com.daohoangson.uml.structures.StructureEvent;
-import com.daohoangson.uml.structures.StructureException;
-import com.daohoangson.uml.structures.StructureListener;
+import com.tranvietson.uml.structures.Class;
+import com.tranvietson.uml.structures.Interface;
+import com.tranvietson.uml.structures.Method;
 import com.tranvietson.uml.structures.Property;
+import com.tranvietson.uml.structures.StructureEvent;
+import com.tranvietson.uml.structures.StructureException;
+import com.tranvietson.uml.structures.StructureListener;
 
 
 public class TestSelf implements StructureListener {
@@ -24,6 +25,8 @@ public class TestSelf implements StructureListener {
 		Structure.global_listener = this;
 		
 		Structure sStructure = new Class("Structure","public");
+		sStructure.add(new Property("children","List<Structure>"));
+		sStructure.add(new Method("add","boolean"));
 		Structure sClass = new Class("Class","public"); sStructure.add(sClass);
 		Structure sInterface = new Class("Interface","public"); sStructure.add(sInterface);
 		Structure sMethod = new Class("Method","public"); sStructure.add(sMethod);
@@ -40,9 +43,7 @@ public class TestSelf implements StructureListener {
 
 	@Override
 	public void structureChanged(StructureEvent e) {
-		Structure s = (Structure) e.getSource();
-		String name = s.getStructureName();
-		if (name.equals("Class") || name.equals("Interface")) d.add(s);
+		d.add((Structure) e.getSource());
 	}
 	
 	public static void main(String[] args) throws StructureException {

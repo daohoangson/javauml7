@@ -1,6 +1,8 @@
-package com.daohoangson.uml.structures;
+package com.tranvietson.uml.structures;
 
 import java.util.EventObject;
+
+import com.daohoangson.uml.structures.Structure;
 
 
 /**
