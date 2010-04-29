@@ -3,7 +3,6 @@ import javax.swing.JFrame;
 import com.daohoangson.uml.gui.Diagram;
 import com.daohoangson.uml.structures.Structure;
 import com.tranvietson.uml.structures.Class;
-import com.tranvietson.uml.structures.Interface;
 import com.tranvietson.uml.structures.Method;
 import com.tranvietson.uml.structures.Property;
 import com.tranvietson.uml.structures.StructureEvent;
@@ -32,10 +31,9 @@ public class TestSelf implements StructureListener {
 		Structure sMethod = new Class("Method","public"); sStructure.add(sMethod);
 		Structure sProperty = new Class("Property","public"); sStructure.add(sProperty);
 		
-		Structure sRelationship = new Interface("Relationship","public");
-		Structure sGeneralRelationship = new Class("GeneralRelationship","public"); sRelationship.add(sGeneralRelationship);
-		Structure sGeneralizationRelationship = new Class("GeneralizationRelationship","public"); sGeneralRelationship.add(sGeneralizationRelationship);
-		Structure sMultiplicityRelationship = new Class("MultiplicityRelationship","public"); sGeneralRelationship.add(sMultiplicityRelationship);
+		Structure sRelationship = new Class("Relationship","public");
+		Structure sGeneralizationRelationship = new Class("GeneralizationRelationship","public"); sRelationship.add(sGeneralizationRelationship);
+		Structure sMultiplicityRelationship = new Class("MultiplicityRelationship","public"); sRelationship.add(sMultiplicityRelationship);
 		
 		Structure sDiagram = new Class("Diagram","public");
 		sDiagram.add(new Property("structures","List<Structure>"));

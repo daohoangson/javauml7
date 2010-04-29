@@ -18,7 +18,7 @@ import com.tranvietson.uml.structures.StructureListener;
 /**
  * A very basic structure.
  * @author Dao Hoang Son
- * @version 1.1
+ * @version 1.2
  *
  */
 public abstract class Structure implements StructureListener {
@@ -297,6 +297,12 @@ public abstract class Structure implements StructureListener {
 		return cfg_container_structures.length > 0 || cfg_parent_structures.length > 0;
 	}
 	
+	/**
+	 * Checks if the other structure is similar to the current one.
+	 * Subclass should do check for structure type (using {@link #getStructureName()}).
+	 * @param that the other structure
+	 * @return true if it is
+	 */
 	public abstract boolean checkIsAlike(Structure that);
 	
 	/**

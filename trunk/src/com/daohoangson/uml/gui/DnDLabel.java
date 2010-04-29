@@ -6,10 +6,6 @@ import java.awt.dnd.DnDConstants;
 import java.awt.dnd.DragGestureEvent;
 import java.awt.dnd.DragGestureListener;
 import java.awt.dnd.DragSource;
-import java.awt.dnd.DragSourceDragEvent;
-import java.awt.dnd.DragSourceDropEvent;
-import java.awt.dnd.DragSourceEvent;
-import java.awt.dnd.DragSourceListener;
 import java.awt.dnd.DropTarget;
 import java.awt.dnd.DropTargetDragEvent;
 import java.awt.dnd.DropTargetDropEvent;
@@ -19,7 +15,6 @@ import java.awt.dnd.DropTargetListener;
 import javax.swing.JLabel;
 
 import com.daohoangson.uml.structures.Structure;
-import com.daohoangson.uml.structures.TransferableStructure;
 import com.tranvietson.uml.structures.StructureException;
 
 /**

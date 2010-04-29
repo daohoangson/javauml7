@@ -1,11 +1,19 @@
-package com.daohoangson.uml.structures;
+package com.daohoangson.uml.gui;
 
 import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.Transferable;
 import java.awt.datatransfer.UnsupportedFlavorException;
 import java.io.IOException;
 
+import com.daohoangson.uml.structures.Structure;
 
+/**
+ * The transferable class to use with Drag and Drop functionality.
+ * There is a public static DataFlavor which can be used with ease.
+ * @author Dao Hoang Son
+ * @version 1.0
+ *
+ */
 public class TransferableStructure implements Transferable {
 	private Structure structure;
 	public static DataFlavor df = new DataFlavor(Structure.class,"UML Structure");;
