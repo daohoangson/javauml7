@@ -1,12 +1,14 @@
-package com.daohoangson.uml.structures;
+package com.tranvietson.uml.structures;
 
 import java.util.LinkedList;
 import java.util.List;
 
+import com.daohoangson.uml.structures.Structure;
+
 
 /**
  * A class
- * @author Dao Hoang Son
+ * @author Tran Viet Son
  * @version 1.1
  *
  */

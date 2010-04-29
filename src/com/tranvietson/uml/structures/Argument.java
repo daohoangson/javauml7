@@ -1,7 +1,6 @@
 package com.tranvietson.uml.structures;
 
 import com.daohoangson.uml.structures.Structure;
-import com.daohoangson.uml.structures.StructureException;
 
 /**
  * An argument (for {@link Method methods})

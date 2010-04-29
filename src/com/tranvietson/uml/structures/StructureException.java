@@ -1,4 +1,4 @@
-package com.daohoangson.uml.structures;
+package com.tranvietson.uml.structures;
 
 /**
  * A Structure-based exception

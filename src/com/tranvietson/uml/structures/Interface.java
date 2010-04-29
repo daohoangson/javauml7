@@ -1,9 +1,11 @@
-package com.daohoangson.uml.structures;
+package com.tranvietson.uml.structures;
+
+import com.daohoangson.uml.structures.Structure;
 
 
 /**
  * An interface
- * @author Dao Hoang Son
+ * @author Tran Viet Son
  * @version 1.1
  *
  */

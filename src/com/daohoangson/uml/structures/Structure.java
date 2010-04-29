@@ -10,6 +10,10 @@ import java.util.Vector;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.tranvietson.uml.structures.StructureEvent;
+import com.tranvietson.uml.structures.StructureException;
+import com.tranvietson.uml.structures.StructureListener;
+
 
 /**
  * A very basic structure.
@@ -238,6 +242,14 @@ public abstract class Structure implements StructureListener {
 		str += getName();
 		
 		return str;
+	}
+	
+	/**
+	 * Checks if the structure name must be unique globally
+	 * @return true if it is
+	 */
+	public boolean checkIsUniqueGlobally() {
+		return cfg_unique_globally;
 	}
 	
 	/**

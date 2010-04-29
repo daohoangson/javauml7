@@ -1,4 +1,6 @@
-package com.daohoangson.uml.structures;
+package com.tranvietson.uml.structures;
+
+import com.daohoangson.uml.structures.Structure;
 
 
 /**

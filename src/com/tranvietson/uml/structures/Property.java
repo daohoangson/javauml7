@@ -1,9 +1,6 @@
 package com.tranvietson.uml.structures;
 
-import com.daohoangson.uml.structures.Class;
-import com.daohoangson.uml.structures.Interface;
 import com.daohoangson.uml.structures.Structure;
-import com.daohoangson.uml.structures.StructureException;
 
 /**
  * A property (for {@link Class classes} and {@link Interface interfaces})
