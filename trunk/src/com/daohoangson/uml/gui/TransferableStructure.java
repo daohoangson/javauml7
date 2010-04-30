@@ -14,11 +14,11 @@ import com.daohoangson.uml.structures.Structure;
  * @version 1.0
  *
  */
-public class TransferableStructure implements Transferable {
+class TransferableStructure implements Transferable {
 	private Structure structure;
-	public static DataFlavor df = new DataFlavor(Structure.class,"UML Structure");;
+	static DataFlavor df = new DataFlavor(Structure.class,"UML Structure");;
 	
-	public TransferableStructure(Structure structure) {
+	TransferableStructure(Structure structure) {
 		this.structure = structure;
 	}
 

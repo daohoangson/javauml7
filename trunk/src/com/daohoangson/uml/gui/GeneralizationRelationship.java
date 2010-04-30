@@ -12,18 +12,18 @@ import com.daohoangson.uml.structures.Structure;
  *
  * @see <a href="http://en.wikipedia.org/wiki/Class_diagram#Relationships">Wikipedia page</a>
  */
-public class GeneralizationRelationship extends Relationship {
+class GeneralizationRelationship extends Relationship {
 	private double cfg_arrow_length = 10;
 	private double cfg_arrow_side_angle = 0.4;
 	private double cfg_arrow_side_length = cfg_arrow_length*Math.cos(cfg_arrow_side_angle);
 
-	public GeneralizationRelationship(Diagram diagram, Structure from, Structure to) {
+	GeneralizationRelationship(Diagram diagram, Structure from, Structure to) {
 		super(diagram, from, to);
 		cfg_color = Color.BLUE;
 	}
 
 	@Override
-	public void draw(Graphics g) {
+	void draw(Graphics g) {
 		drawConnectionLine(g,0,cfg_arrow_length);
 	}
 

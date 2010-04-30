@@ -12,18 +12,18 @@ import com.daohoangson.uml.structures.Structure;
  * 
  * @see <a href="http://en.wikipedia.org/wiki/Class_diagram#Relationships">Wikipedia page</a>
  */
-public class MultiplicityRelationship extends Relationship {
+class MultiplicityRelationship extends Relationship {
 	private double cfg_diamon_length = 15;
 	private double cfg_diamon_side_angle = 0.4;
 	private double cfg_diamon_side_length = cfg_diamon_length/2*Math.cos(cfg_diamon_side_angle);
 
-	public MultiplicityRelationship(Diagram diagram, Structure from, Structure to) {
+	MultiplicityRelationship(Diagram diagram, Structure from, Structure to) {
 		super(diagram, from, to);
 		cfg_color = Color.RED;
 	}
 
 	@Override
-	public void draw(Graphics g) {
+	void draw(Graphics g) {
 		drawConnectionLine(g,0,cfg_diamon_length);		
 	}
 

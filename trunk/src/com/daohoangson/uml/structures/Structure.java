@@ -81,7 +81,7 @@ public abstract class Structure implements StructureListener {
 	 * A non-null structure name means accept a container 
 	 * with the specified structure name.
 	 */
-	protected String cfg_container_structures[] = {};
+	protected String[] cfg_container_structures = {};
 	/**
 	 * Specifies if the structure accepts parents.
 	 * Each structure can accept many container!
@@ -89,11 +89,11 @@ public abstract class Structure implements StructureListener {
 	 * A non-null structure name means accept parents 
 	 * with the specified structure name.
 	 */
-	protected String cfg_parent_structures[] = {};
+	protected String[] cfg_parent_structures = {};
 	/**
 	 * Specifies if the structure accepts children.
 	 */
-	protected String cfg_child_structures[] = {};
+	protected String[] cfg_child_structures = {};
 	/**
 	 * Specifies if the structure wants to hide visibility
 	 */
@@ -102,6 +102,25 @@ public abstract class Structure implements StructureListener {
 	 * Specifies if the structure wants to manage children by itself.
 	 */
 	protected boolean cfg_hide_children = false;
+	/**
+	 * The Regular Expression used match against name string.
+	 * Subclass can set to null value to skip checking for match.
+	 * Name must not begin with number. Name can only contain 
+	 * alphabetic characters and numbers.
+	 * 
+	 * @see #setName(String)
+	 */
+	protected String cfg_regex_name = "[a-zA-Z_][a-zA-Z0-9_]*";
+	/**
+	 * The Regular Expression used to match against type string.
+	 * Subclass can set to null value to skip checking for match.
+	 * Supports generalize types. Supports arrays.
+	 * Primary type: group 1. <br />
+	 * Generalized: group 3.
+	 * 
+	 * @see #setType(String)
+	 */
+	protected String cfg_regex_type = "(" + cfg_regex_name + ")(<(.*(,.*)*)>)?(\\[\\])*";
 	
 	/**
 	 * List of global names. Maintaince by superclass in {@link #setName(String)}
@@ -109,9 +128,17 @@ public abstract class Structure implements StructureListener {
 	 */
 	static private Hashtable<String,Structure> names = new Hashtable<String,Structure>();
 	/**
+	 * Hold list of all adding structures' names on queue
+	 */
+	static private List<StructureAdding> adding_queue = new LinkedList<StructureAdding>();
+	/**
 	 * Global listener. Will be call when new structure is created
 	 */
 	static public StructureListener global_listener = null;
+	/**
+	 * Determines if we are in debug mode.
+	 */
+	static public boolean debuging = false;
 	
 	/**
 	 * Specifics structure configuration. Accepts type or not. 
@@ -145,19 +172,22 @@ public abstract class Structure implements StructureListener {
 	 * @throws StructureException
 	 */
 	public boolean setName(String name) throws StructureException {
-		String name_check = name.toLowerCase();
-		
-		//checks for name which needs to be unique in global scope
-		if (cfg_unique_globally) {
-			if (names.containsKey(name))
-				throw new StructureException("The name '" + name + "' has already been declared!");
-			names.put(name, this);
-		}
-		
-		if (name_check.matches("^[a-z][a-z0-9_]*$")) {
-			//use Regular Expression to check for valid characters
-			this.name = name;
-			return true;
+		if (name != null) {
+			//checks for name which needs to be unique in global scope
+			if (cfg_unique_globally) {
+				if (names.containsKey(name))
+					throw new StructureException("The name '" + name + "' has already been declared!");
+				if (names.contains(this)) names.remove(this.name); //remove old-name<->this pair
+				names.put(name, this);
+			}
+			
+			if (cfg_regex_name == null || name.matches("^" + cfg_regex_name + "$")) {
+				//use Regular Expression to check for valid characters
+				this.name = name;
+				addParentNameProceed();
+				if (debuging) System.err.println(getStructureName() + ".setName: " + name);
+				return true;
+			}
 		}
 		
 		throw new StructureException("Invalid Name: " + name);
@@ -172,17 +202,54 @@ public abstract class Structure implements StructureListener {
 	public boolean setType(String type) throws StructureException {
 		if (cfg_use_type == false)
 			throw new StructureException("No Type Supported!");
-		
-		String type_check = type.toLowerCase();
-		
-		if (type_check.matches("^[a-z][a-z0-9_]*(<[a-z][a-z0-9_]*>)?$")) {
-			//use Regular Expression to check for valid characters
-			//supports general type
-			this.type = type;
-			return true;
+
+		if (type != null) {
+			if (validateType(type,false)) {
+				//use Regular Expression to check for valid characters
+				this.type = type;
+				if (debuging) System.err.println(getStructureName() + ".setType: " + type);
+				return true;
+			}
 		}
 		
 		throw new StructureException("Invalid Type: " + type);
+	}
+	
+	/**
+	 * Validates type string.
+	 * @param type the string needed validating
+	 * @param split tells the method to allow spliting type or not (use full in generalized)
+	 * @return true if the string is valid
+	 */
+	private boolean validateType(String type, boolean split) {
+		if (cfg_regex_type == null) return true;
+		
+		String[] types;
+		if (split) {
+			types = type.split(",");
+		} else {
+			types = new String[]{type};
+		}
+		
+		Pattern p = Pattern.compile("^" + cfg_regex_type + "$");
+		for (int i = 0; i < types.length; i++) {
+			Matcher m = p.matcher(types[i]);
+			if (m.matches()) {
+				//type is matched
+				//check for generalized
+				String generalized = m.group(3);
+				if (generalized != null) {
+					if (!validateType(generalized,true)) {
+						return false;
+					}
+				}
+			} else {
+				//not matched!
+				return false;
+			}
+		}
+		
+		return true;
 	}
 	
 	/**
@@ -220,7 +287,11 @@ public abstract class Structure implements StructureListener {
 			}
 		}
 		
-		throw new StructureException("Unsupported modifier: " + modifier);
+		if (debuging) {
+			System.err.println("Unsupported modifier: " + modifier);
+		}
+		
+		return false;
 	}
 	
 	public String toString() {
@@ -366,6 +437,15 @@ public abstract class Structure implements StructureListener {
 	}
 	
 	/**
+	 * Finds the structure with a given name.
+	 * @param name the required structure name
+	 * @return the found structure or null if not found
+	 */
+	public static Structure lookUp(String name) {
+		return names.get(name);
+	}
+	
+	/**
 	 * 
 	 * @return type of the structure
 	 */
@@ -374,22 +454,38 @@ public abstract class Structure implements StructureListener {
 	}
 	
 	/**
-	 * Checks to see if the type of the structure contains other structure
+	 * Shortcuts to {@link #getTypeAsStructure(String)} with the structure type
 	 * @return array of target structures if any
 	 */
 	public Structure[] getTypeAsStructure() {
+		return getTypeAsStructure(type);
+	}
+	
+	/**
+	 * Checks to see if the type of the structure contains other structure
+	 * @return array of target structures if any
+	 */
+	public Structure[] getTypeAsStructure(String type) {
 		List<Structure> types = new LinkedList<Structure>();
 		
 		if (type != null) {
+			String[] types_array = new String[]{type};
+			
 			//use Regular Expression to parse type string
-			Pattern p = Pattern.compile("^([^<]*)(<(.+)>)?$");
-			Matcher m = p.matcher(type);
-			if (m.matches()) {
-				for (int i = 1; i <= m.groupCount(); i++) {
-					String typename = m.group(i);
-					if (typename != null) {
-						if (names.containsKey(typename)) {
-							types.add(names.get(typename));
+			Pattern p = Pattern.compile("^" + cfg_regex_type + "$");
+			for (int i = 0; i < types_array.length; i++) {
+				Matcher m = p.matcher(types_array[i]);
+				if (m.matches()) {
+					String typename = m.group(1);
+					if (names.containsKey(typename)) {
+						types.add(names.get(typename));
+					}
+					
+					String generalized = m.group(3);
+					if (generalized != null) {
+						Structure[] generalized_types = getTypeAsStructure(generalized);
+						for (int j = 0; j < generalized_types.length; j++) {
+							types.add(generalized_types[i]);
 						}
 					}
 				}
@@ -515,6 +611,35 @@ public abstract class Structure implements StructureListener {
 			return true;
 		} else 
 			throw new StructureException(this + " can NOT accept " + that + " as a child");
+	}
+	
+	/**
+	 * Puts a structure name into queue to add later.
+	 * Useful if the parent or child isn't existed at the time of adding.
+	 * Remember to put unique globally names only!
+	 * @param structure_name
+	 * @throws StructureException 
+	 */
+	public void addParentName(String structure_name) throws StructureException {
+		Structure that = Structure.lookUp(structure_name);
+		if (that != null) {
+			that.add(this);
+		} else {
+			adding_queue.add(new StructureAdding(this,structure_name));
+		}
+	}
+	
+	private void addParentNameProceed() throws StructureException {
+		if (adding_queue.size() > 0) {
+			Iterator<StructureAdding> itr = adding_queue.iterator();
+			while (itr.hasNext()) {
+				StructureAdding adding = itr.next();
+				if (adding.parent_structure_name.equals(getName())) {
+					add(adding.structure);
+					itr.remove();
+				}
+			}
+		}
 	}
 	
 	/**
@@ -644,6 +769,15 @@ class StructureNameComparator implements Comparator<Structure> {
 		}
 		
 		return 1;
-	}
+	}	
+}
+
+class StructureAdding {
+	Structure structure;
+	String parent_structure_name;
 	
+	StructureAdding(Structure structure, String parent_structure_name) {
+		this.structure = structure;
+		this.parent_structure_name = parent_structure_name;
+	}
 }

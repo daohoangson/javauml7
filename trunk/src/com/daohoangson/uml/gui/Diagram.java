@@ -1,22 +1,27 @@
 package com.daohoangson.uml.gui;
 
-import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.Graphics;
+import java.awt.Image;
 import java.awt.Rectangle;
+import java.awt.image.BufferedImage;
+import java.awt.image.RenderedImage;
+import java.io.File;
+import java.io.IOException;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
-import javax.swing.BorderFactory;
+import javax.imageio.ImageIO;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JScrollPane;
 
 import com.daohoangson.uml.structures.Structure;
 import com.tranvietson.uml.structures.StructureEvent;
@@ -44,24 +49,17 @@ public class Diagram extends JPanel implements StructureListener {
 	 * It will be null at the beginning but will get updated 
 	 * in {@link #build(int)}
 	 */
-	private Component built[] = null;
+	private Component[] built = null;
 	/**
 	 * An array of all dependencies among structures.
 	 * Get updated in {@link #structureChanged(StructureEvent)}
 	 */
-	private boolean dependencies[][] = null;
+	private boolean[][] dependencies = null;
+	private Image image = null;
 	/**
 	 * Determines if we are in debug mode.
 	 */
-	private boolean debuging = false;
-	/**
-	 * The width of border for structure's component
-	 */
-	public int cfg_border_width = 5;
-	/**
-	 * The color of the border specified from {@link #cfg_border_width}
-	 */
-	public Color cfg_border_color = Color.black;
+	static public boolean debuging = false;
 	/**
 	 * The gap between 2 components vertically
 	 */
@@ -69,7 +67,7 @@ public class Diagram extends JPanel implements StructureListener {
 	/**
 	 * The gap between 2 components horizontally
 	 */
-	public int cfg_gap_horizontal = 10;
+	public int cfg_gap_horizontal = 25;
 	
 	/**
 	 * Constructor. Setup some useful configurations.
@@ -77,9 +75,54 @@ public class Diagram extends JPanel implements StructureListener {
 	public Diagram() {
 		super();
 		
-		setLayout(new FlowLayout());
+		setLayout(new FlowLayout(FlowLayout.CENTER,cfg_gap_horizontal,cfg_gap_vertical));
 		setPreferredSize(new Dimension(700,400));
 		setAlignmentY(Component.TOP_ALIGNMENT);
+	}
+	
+	/**
+	 * Get the scrollable component.
+	 * Use this for a better user experience. Anyway, this is
+	 * optional. You can always {@linkplain JComponent#add(Component)} directly
+	 * this object.
+	 * @return a JScrollPane object of the diagram
+	 */
+	public Component getScrollable() {
+		return new JScrollPane(this);
+	}
+	
+	/**
+	 * Generate an image of the diagram to the specified path.
+	 * Only support JPG and PNG format. Use the correct extension 
+	 * in the path to select image format. <br />
+	 * The trick here is done by calling drawing methods targeting
+	 * the {@link Graphics} instance of the image but not of the
+	 * diagram. Call {@link Component#repaint()} and let them do the drawing
+	 * part and then call it again to make sure the on-screen visualization
+	 * is correct. <br/>
+	 * The image quality is not perfect. There is some missing lines, I have
+	 * no idea :(
+	 * @param imagepath the new image path. Existing file will be overwritten
+	 * @throws IOException
+	 * 
+	 * @see {@link #paint(Graphics)}
+	 */
+	public boolean saveImage(String imagepath) throws IOException {
+		String ext = imagepath.substring(imagepath.length() - 3).toLowerCase();
+		if (!ext.equals("jpg") && !ext.equals("png")) return false;
+		
+		int width = getSize().width;
+		int height = getSize().height;
+		image = new BufferedImage(width,height,BufferedImage.TYPE_3BYTE_BGR);
+		
+		repaint(0,0,width,height);
+		
+		File file = new File(imagepath);
+		ImageIO.write((RenderedImage) image, ext, file);
+		image = null;
+		repaint();
+		
+		return true;
 	}
 	
 	/**
@@ -96,20 +139,19 @@ public class Diagram extends JPanel implements StructureListener {
 	
 	/**
 	 * Does custom painting procedures.
-	 * Draws relationships.
+	 * Draws relationships (only this, at this moment).
 	 */
 	public void paint(Graphics g) {
+		if (image != null) {
+			g = image.getGraphics();
+		}
+		
 		super.paint(g);
 		
-		// TODO: Figure out why this piece of code always cause con-current exception
-//		Iterator<Relationship> itr = relationships.iterator();
-//		while (itr.hasNext()) {
-//			itr.next().draw(g);
-//		}
-//		
-		
-		for (int i = 0; i < relationships.size(); i++) {
-			relationships.get(i).draw(g);
+		// TODO: Figure out a cleaner way to do this without causing con-current exception
+		Iterator<Relationship> itr = new LinkedList<Relationship>(relationships).iterator();
+		while (itr.hasNext()) {
+			itr.next().draw(g);
 		}
 	}
 	
@@ -161,6 +203,8 @@ public class Diagram extends JPanel implements StructureListener {
 		
 		int n = structures.size();
 		built = new Component[n];
+		int width = 0;
+		int height = 0;
 		
 		for (int dependency_limit = 0; dependency_limit < n; dependency_limit++)
 			for (int i = 0; i < n; i++) {
@@ -171,10 +215,20 @@ public class Diagram extends JPanel implements StructureListener {
 				
 				if (dependency_count == dependency_limit) {
 					Component c = build(i);
-					if (c != null) add(c);
+					if (c != null) {
+						add(c);
+						
+						Dimension d = c.getPreferredSize();
+						width += d.width + 2*cfg_gap_horizontal;
+						height = Math.max(height, d.height + 2*cfg_gap_vertical);
+					}
 				}
 			}
 		
+		setPreferredSize(new Dimension(width,height));
+		if (debuging) System.err.println(getPreferredSize());
+
+		setSize(getPreferredSize());
 		validate();
 		repaint();
 	}
@@ -225,29 +279,18 @@ public class Diagram extends JPanel implements StructureListener {
 	 * @param s the structure
 	 * @return the built component
 	 */
-	JComponent build(Structure s) {
+	Component build(Structure s) {
 		JComponent c;
 		
-		JLabel label = new DnDLabel(s,this);
+		JLabel label = new DnDLabel(s);
 		
 		if (s.checkHasChildren()) {
-			c = new JPanel();
-			c.setLayout(new BoxLayout(c,BoxLayout.Y_AXIS));
-			c.setAlignmentX(JComponent.CENTER_ALIGNMENT);
-			
-			c.add(label);
+			c = new DnDPanel(s,label);
 			
 			Structure children[] = s.getChildren();
 			for (int i = 0; i < children.length; i++) {
 				c.add(build(children[i]));
 			}
-			
-			c.setBorder(
-					BorderFactory.createCompoundBorder(
-							BorderFactory.createLineBorder(cfg_border_color)
-							, BorderFactory.createEmptyBorder(cfg_border_width, cfg_border_width, cfg_border_width, cfg_border_width)
-					)
-			);
 		} else {
 			label.setFont(label.getFont().deriveFont(Font.ITALIC));
 			c = label;
@@ -262,7 +305,7 @@ public class Diagram extends JPanel implements StructureListener {
 	 * @param dc the array of children's components
 	 * @return the wrapper component
 	 */
-	JComponent wrap(Component c, Component dc[]) {
+	JComponent wrap(Component c, Component[] dc) {
 		JPanel dependent_container = new JPanel();
 		dependent_container.setLayout(new BoxLayout(dependent_container,BoxLayout.X_AXIS));
 		for (int i = 0; i < dc.length; i++) {
@@ -286,7 +329,9 @@ public class Diagram extends JPanel implements StructureListener {
 		
 		//update dependencties
 		dependencies = new boolean[n][n];
-		relationships.clear();
+		synchronized (relationships) {
+			relationships.clear();
+		}
 		
 		Iterator<Structure> itr = structures.iterator();
 		int i = 0;
@@ -316,7 +361,7 @@ public class Diagram extends JPanel implements StructureListener {
 				Structure[] types = children[j].getTypeAsStructure();
 				for (int l = 0, m = types.length; l < m; l++) {
 					int itype = structures.indexOf(types[l]);
-					if (itype != -1) dependencies[l][itype] = true;
+					if (itype != -1) dependencies[i][itype] = true;
 					
 					relationships.add(new MultiplicityRelationship(this, s, types[l]));
 				}

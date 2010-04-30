@@ -53,7 +53,7 @@ public class Interface extends Structure {
 	 * @param modifiers
 	 * @throws StructureException
 	 */
-	public Interface(String name, String modifiers[]) throws StructureException {
+	public Interface(String name, String[] modifiers) throws StructureException {
 		setName(name);
 		for (int i = 0, n = modifiers.length; i < n; i++)
 			setModifier(modifiers[i]);
