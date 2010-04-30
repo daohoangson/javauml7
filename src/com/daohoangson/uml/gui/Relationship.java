@@ -11,7 +11,7 @@ import com.daohoangson.uml.structures.Structure;
  * @version 1.0
  *
  */
-public abstract class Relationship {
+abstract class Relationship {
 	/**
 	 * The original diagram
 	 */
@@ -31,7 +31,7 @@ public abstract class Relationship {
 	 * @param from the source structure
 	 * @param to the destination structure
 	 */
-	public Relationship(Diagram diagram, Structure from, Structure to) {
+	Relationship(Diagram diagram, Structure from, Structure to) {
 		this.diagram = diagram;
 		this.from = from;
 		this.to = to;
@@ -41,7 +41,7 @@ public abstract class Relationship {
 	 * Gets the source structure
 	 * @return
 	 */
-	public Structure getFrom() {
+	Structure getFrom() {
 		return from;
 	}
 	
@@ -49,7 +49,7 @@ public abstract class Relationship {
 	 * Gets the destination structure
 	 * @return
 	 */
-	public Structure getTo() {
+	Structure getTo() {
 		return to;
 	}
 	
@@ -135,7 +135,7 @@ public abstract class Relationship {
 	 * with appropriate arguments
 	 * @param g the target graphics
 	 */
-	abstract public void draw(Graphics g);
+	abstract void draw(Graphics g);
 }
 
 /**

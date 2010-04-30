@@ -1,5 +1,7 @@
 package com.tranvietson.uml.structures;
 
+import java.util.Arrays;
+
 import com.daohoangson.uml.structures.Structure;
 
 /**
@@ -57,11 +59,20 @@ public class Method extends Structure {
 	 * @param modifiers
 	 * @throws StructureException
 	 */
-	public Method(String name,String type,String modifiers[]) throws StructureException {
+	public Method(String name,String type,String[] modifiers) throws StructureException {
 		setName(name);
 		setType(type);
 		for (int i = 0, n = modifiers.length; i < n; i++)
 			setModifier(modifiers[i]);
+	}
+	
+	public boolean setType(String type) throws StructureException {
+		if (type == null) {
+			cfg_use_type = false;
+			return true;
+		}
+		
+		return super.setType(type);
 	}
 	
 	/**
@@ -84,13 +95,31 @@ public class Method extends Structure {
 
 	@Override
 	public boolean checkIsAlike(Structure that) {
+		if (debuging) {
+			System.err.println("Comparing: " + this + " vs. " + that);
+		}
+		
 		if (that.getStructureName().equals(getStructureName()) 
 				&& getName().equals(that.getName())
 				&& getChildrenCount() == that.getChildrenCount()) {
 			Structure this_arguments[] = getChildren();
-			for (int i = 0, n = this_arguments.length; i < n; i++) {
-				if (that.checkHasChildLike(this_arguments[i]))
+			Structure that_arguments[] = that.getChildren();
+			int n = getChildrenCount();
+			String this_types[] = new String[n];
+			String that_types[] = new String[n];
+			
+			for(int i = 0; i < n; i++) {
+				this_types[i] = this_arguments[i].getType();
+				that_types[i] = that_arguments[i].getType();
+			}
+			
+			Arrays.sort(this_types);
+			Arrays.sort(that_types);
+			
+			for (int i = 0; i < n; i++) {
+				if (!this_types[i].equals(that_types[i])) {
 					return false;
+				}
 			}
 			
 			return true;

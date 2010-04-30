@@ -1,8 +1,5 @@
 package com.tranvietson.uml.structures;
 
-import java.util.LinkedList;
-import java.util.List;
-
 import com.daohoangson.uml.structures.Structure;
 
 
@@ -13,8 +10,6 @@ import com.daohoangson.uml.structures.Structure;
  *
  */
 public class Class extends Structure {
-	protected List<Interface> interfaces = new LinkedList<Interface>();
-	
 	/**
 	 * Class doesn't use type.
 	 */
@@ -61,7 +56,7 @@ public class Class extends Structure {
 	 * @param modifiers
 	 * @throws StructureException
 	 */
-	public Class(String name, String modifiers[]) throws StructureException {
+	public Class(String name, String[] modifiers) throws StructureException {
 		setName(name);
 		for (int i = 0, n = modifiers.length; i < n; i++)
 			setModifier(modifiers[i]);

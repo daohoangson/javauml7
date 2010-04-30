@@ -53,7 +53,7 @@ public class Property extends Structure {
 	 * @param modifiers
 	 * @throws StructureException
 	 */
-	public Property(String name,String type,String modifiers[]) throws StructureException {
+	public Property(String name,String type,String[] modifiers) throws StructureException {
 		setName(name);
 		setType(type);
 		for (int i = 0, n = modifiers.length; i < n; i++)
@@ -62,6 +62,10 @@ public class Property extends Structure {
 	
 	@Override
 	public boolean checkIsAlike(Structure that) {
+		if (debuging) {
+			System.err.println("Comparing: " + this + " vs. " + that);
+		}
+		
 		return that.getStructureName().equals(getStructureName())
 			&& getName().equals(that.getName());
 	}
