@@ -15,7 +15,7 @@ public class TestParser {
 	Diagram d;
 	Parser parser;
 	
-	public TestParser() throws StructureException, ParserException, IOException {
+	public TestParser(String[] args) throws StructureException, ParserException, IOException {
 		d = new Diagram();
 		JFrame f = new JFrame();
 		f.add(d.getScrollable());		
@@ -25,13 +25,18 @@ public class TestParser {
 		
 		parser =  new Parser(d);
 		
-//		Diagram.debuging = true;
-//		Structure.debuging = true;
-		parse(new File("src"));
-//		parse(new File("src/com/tranvietson/uml"));
-//		parse(new File("src/com/daohoangson/uml/structures"));
-		
-//		d.saveImage("diagram2.png");
+		if (args.length > 0) {
+			parse(new File(args[0]));
+			
+			for (int i = 0; i < args.length; i++) {
+				if (args[i].equals("--image") && i < args.length - 1) {
+					d.saveImage(args[i+1]);
+					break;
+				}
+			}
+		} else {
+			parse(new File("src"));
+		}
 	}
 	
 	private void parse(File dir) throws StructureException, ParserException, IOException {
@@ -55,6 +60,6 @@ public class TestParser {
 	}
 	
 	public static void main(String[] args) throws StructureException, ParserException, IOException {
-		new TestParser();
+		new TestParser(args);
 	}
 }
