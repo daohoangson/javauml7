@@ -21,7 +21,8 @@ public class CodeGenerator {
 		String newDir2 = "UML\\Interfaces";
 		new File(newDir1).mkdirs();
 		new File(newDir2).mkdirs();
-		Structure[] structures = diagram.structures.toArray(new Structure[0]);
+		
+		Structure[] structures = diagram.getStructures();
 		System.err.println("Size = " + structures.length);
 		for(int i =0; i < structures.length; i++){
 			Structure structure = structures[i];
@@ -31,41 +32,41 @@ public class CodeGenerator {
 				if (structure.getStructureName().equals("Class")){
 					try
 					{
-						FileWriter fw = new FileWriter("UML\\Classes\\" + diagram.structures.get(i).getName() + ".java", true);
+						FileWriter fw = new FileWriter("UML\\Classes\\" + structures[i].getName() + ".java", true);
 						BufferedWriter bw = new BufferedWriter(fw);
-						bw.write(diagram.structures.get(i).getVisibility() + " class " + diagram.structures.get(i).getName());
+						bw.write(structures[i].getVisibility() + " class " + structures[i].getName());
 						
-						if (diagram.structures.get(i).getContainer() != null && diagram.structures.get(i).getParents() != null){
-						bw.write(" extends " + diagram.structures.get(i).getContainer().getName());
-							Structure[] parent = diagram.structures.get(i).getParents();
+						if (structures[i].getContainer() != null && structures[i].getParents() != null){
+						bw.write(" extends " + structures[i].getContainer().getName());
+							Structure[] parent = structures[i].getParents();
 							for (int index = 0; index < parent.length; index++){
 								bw.write(" implements " + parent[index]+ " ");
 							}
 							bw.write("{ \n");
 						}
 						
-						if (diagram.structures.get(i).getContainer() != null && diagram.structures.get(i).getParents() == null){
-						bw.write(" extends " + diagram.structures.get(i).getContainer().getName() + "{ \n");	
+						if (structures[i].getContainer() != null && structures[i].getParents() == null){
+						bw.write(" extends " + structures[i].getContainer().getName() + "{ \n");	
 						}
 						
-						if (diagram.structures.get(i).getContainer() == null && diagram.structures.get(i).getParents() != null){
-						Structure[] parent = diagram.structures.get(i).getParents();
+						if (structures[i].getContainer() == null && structures[i].getParents() != null){
+						Structure[] parent = structures[i].getParents();
 							for (int index = 0; index < parent.length; index++){
 								bw.write(" implements " + parent[index]+ " ");
 							}
 							bw.write("{ \n");
 						}
 						
-						if (diagram.structures.get(i).getContainer() == null && diagram.structures.get(i).getParents() == null){
+						if (structures[i].getContainer() == null && structures[i].getParents() == null){
 						bw.write(" { \n");
 						}
 						
 						//Write constructor
 						bw.write("\n//Constructor: \n");
-						bw.write("\tpublic " + diagram.structures.get(i).getName() + "(){}" + "\n \n");
+						bw.write("\tpublic " + structures[i].getName() + "(){}" + "\n \n");
 						
-						for (int j = 0; j < diagram.structures.get(i).getChildrenCount(); j++){
-							Structure[] a = diagram.structures.get(i).getChildren();
+						for (int j = 0; j < structures[i].getChildrenCount(); j++){
+							Structure[] a = structures[i].getChildren();
 							
 							//Write Properties of class
 							if (a[j].getStructureName().equalsIgnoreCase("Property")){ 
@@ -106,23 +107,23 @@ public class CodeGenerator {
 				else if (structure.getStructureName().equals("Interface")){
 					try
 					{
-						FileWriter fw = new FileWriter("UML\\Interfaces\\" + diagram.structures.get(i).getName() + ".java", true);
+						FileWriter fw = new FileWriter("UML\\Interfaces\\" + structures[i].getName() + ".java", true);
 						BufferedWriter bw = new BufferedWriter(fw);
-						bw.write(diagram.structures.get(i).getVisibility() + " inteface " + diagram.structures.get(i).getName());
+						bw.write(structures[i].getVisibility() + " inteface " + structures[i].getName());
 						
-						if (diagram.structures.get(i).getParents() != null){
-								Structure[] parent = diagram.structures.get(i).getParents();
+						if (structures[i].getParents() != null){
+								Structure[] parent = structures[i].getParents();
 								for (int index = 0; index < parent.length; index++){
 									bw.write(" implements " + parent[index]+ " ");
 								}
 								bw.write("{ \n");
 							}
 							
-						if (diagram.structures.get(i).getParents() == null){
+						if (structures[i].getParents() == null){
 								bw.write("{ \n");	
 							}
-						for (int j = 0; j < diagram.structures.get(i).getChildrenCount(); j++){
-							Structure[] a = diagram.structures.get(i).getChildren();
+						for (int j = 0; j < structures[i].getChildrenCount(); j++){
+							Structure[] a = structures[i].getChildren();
 							
 							//Write Properties of interface
 							if (a[j].getStructureName().equalsIgnoreCase("Property")){
