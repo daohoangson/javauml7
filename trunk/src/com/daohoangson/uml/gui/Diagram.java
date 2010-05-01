@@ -2,7 +2,6 @@ package com.daohoangson.uml.gui;
 
 import java.awt.Component;
 import java.awt.Dimension;
-import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Image;
@@ -55,19 +54,27 @@ public class Diagram extends JPanel implements StructureListener {
 	 * Get updated in {@link #structureChanged(StructureEvent)}
 	 */
 	private boolean[][] dependencies = null;
+	/**
+	 * The pending image path to save
+	 */
+	private String imagepath = null;
+	/**
+	 * The pending image object to save
+	 */
 	private Image image = null;
 	/**
 	 * Determines if we are in debug mode.
 	 */
 	static public boolean debuging = false;
+	public boolean cfg_draw_on_change = true;
 	/**
 	 * The gap between 2 components vertically
 	 */
-	public int cfg_gap_vertical = 25;
+	private int cfg_gap_vertical = 25;
 	/**
 	 * The gap between 2 components horizontally
 	 */
-	public int cfg_gap_horizontal = 25;
+	private int cfg_gap_horizontal = 25;
 	
 	/**
 	 * Constructor. Setup some useful configurations.
@@ -75,7 +82,7 @@ public class Diagram extends JPanel implements StructureListener {
 	public Diagram() {
 		super();
 		
-		setLayout(new FlowLayout(FlowLayout.CENTER,cfg_gap_horizontal,cfg_gap_vertical));
+		setLayout(new FlowLayoutTopAligned(cfg_gap_horizontal,cfg_gap_vertical));
 		setPreferredSize(new Dimension(700,400));
 		setAlignmentY(Component.TOP_ALIGNMENT);
 	}
@@ -107,24 +114,21 @@ public class Diagram extends JPanel implements StructureListener {
 	 * The image quality is not perfect. There is some missing lines, I have
 	 * no idea :(
 	 * @param imagepath the new image path. Existing file will be overwritten
+	 * @return true if the imagepath is valid (with correct extension)
 	 * @throws IOException
 	 * 
 	 * @see {@link #paint(Graphics)}
 	 */
 	public boolean saveImage(String imagepath) throws IOException {
-		String ext = imagepath.substring(imagepath.length() - 3).toLowerCase();
-		if (!ext.equals("jpg") && !ext.equals("png")) return false;
+		String ext = imagepath.substring(imagepath.length() - 4).toLowerCase();
+		if (!ext.equals(".jpg") && !ext.equals(".png")) return false;
 		
+		this.imagepath = imagepath;
 		int width = getSize().width;
 		int height = getSize().height;
 		image = new BufferedImage(width,height,BufferedImage.TYPE_3BYTE_BGR);
 		
 		repaint(0,0,width,height);
-		
-		File file = new File(imagepath);
-		ImageIO.write((RenderedImage) image, ext, file);
-		image = null;
-		repaint();
 		
 		return true;
 	}
@@ -156,6 +160,18 @@ public class Diagram extends JPanel implements StructureListener {
 		Iterator<Relationship> itr = new LinkedList<Relationship>(relationships).iterator();
 		while (itr.hasNext()) {
 			itr.next().draw(g);
+		}
+		
+		if (image != null && imagepath != null) {
+			File file = new File(imagepath);
+			try {
+				ImageIO.write((RenderedImage) image, imagepath.substring(imagepath.length() - 3).toLowerCase(), file);
+			} catch (IOException e) {
+				//ignore
+			}
+			imagepath = null;
+			image = null;
+			repaint();
 		}
 	}
 	
@@ -202,7 +218,7 @@ public class Diagram extends JPanel implements StructureListener {
 	 * Remove all existing components. 
 	 * Re-build them in order of dependencies.
 	 */
-	private void draw() {
+	public void draw() {
 		removeAll();
 		
 		int n = structures.size();
@@ -311,10 +327,8 @@ public class Diagram extends JPanel implements StructureListener {
 	 */
 	JComponent wrap(Component c, Component[] dc) {
 		JPanel dependent_container = new JPanel();
-		dependent_container.setLayout(new BoxLayout(dependent_container,BoxLayout.X_AXIS));
+		dependent_container.setLayout(new FlowLayoutTopAligned(cfg_gap_horizontal, cfg_gap_vertical));
 		for (int i = 0; i < dc.length; i++) {
-			if (i > 0) 
-				dependent_container.add(Box.createRigidArea(new Dimension(cfg_gap_horizontal,0)));
 			dependent_container.add(dc[i]);
 		}
 		
@@ -385,6 +399,6 @@ public class Diagram extends JPanel implements StructureListener {
 			System.err.println();
 		}
 		
-		draw();
+		if (cfg_draw_on_change) draw();
 	}
 }

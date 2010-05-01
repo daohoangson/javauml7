@@ -1,7 +1,5 @@
 package com.nguyenthanhan.uml.gui;
 
-import java.awt.event.MouseEvent;
-
 import com.daohoangson.uml.gui.Diagram;
 import com.tranvietson.uml.structures.Class;
 import com.tranvietson.uml.structures.StructureException;
@@ -19,13 +17,12 @@ public class ClassForm extends StructureForm {
 	}
 
 	@Override
-	public void mouseClicked(MouseEvent e) {
+	public void __submit() {
 		try {
 			Class newClass = new Class(txt_name.getText());
 			if (visibility.length() > 0) newClass.setModifier(visibility);
 			
 			diagram.add(newClass);
-			setVisible(false);
 		} catch (StructureException e1) {
 			e1.printStackTrace();
 		}

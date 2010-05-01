@@ -1,5 +1,9 @@
 package com.daohoangson.uml.parser;
 
+import java.io.BufferedInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -14,9 +18,37 @@ import com.tranvietson.uml.structures.StructureException;
 
 public class Parser {
 	private Diagram diagram;
+	/**
+	 * Determines if we are in debug mode.
+	 */
+	static public boolean debuging = false;
 	
 	public Parser(Diagram diagram) {
 		this.diagram = diagram;
+		
+		LexicalAnalyzer.debuging = debuging;
+	}
+	
+	static private String readFileAsString(File file) throws IOException {
+		byte[] buffer = new byte[(int) file.length()];
+		BufferedInputStream f = new BufferedInputStream(new FileInputStream(file));
+		f.read(buffer);
+		return new String(buffer);
+	}
+	
+	public void parse(File file) throws StructureException, ParserException, IOException {
+		if (Parser.debuging) 
+			System.err.println("Parsing " + file.getAbsolutePath());
+		if (file.isDirectory()) {
+			File[] files = file.listFiles();
+			for (int i = 0; i < files.length; i++) {
+				parse(files[i]);
+			}
+		} else if (file.isFile()) {
+			String path = file.getAbsolutePath();
+			if (path.substring(path.length() - 5).equalsIgnoreCase(".java"))
+				parse(readFileAsString(file));
+		}
 	}
 	
 	public void parse(String source) throws StructureException, ParserException {
@@ -28,6 +60,7 @@ public class Parser {
 		
 		while (analyzer.hasMoreElements()) {
 			ParserToken token = analyzer.nextElement();
+			if (Parser.debuging) System.err.println(token.token);
 			switch (token.type) {
 			case ParserToken.is_name:
 				if (adding_parent) {
@@ -87,6 +120,7 @@ public class Parser {
 		
 		while (analyzer.hasMoreElements()) {
 			ParserToken token = analyzer.nextElement();
+			if (Parser.debuging) System.err.println(token.token);
 			switch (token.type) {
 			case ParserToken.is_name:
 				if (type == null) {
@@ -146,8 +180,7 @@ public class Parser {
 			}
 		}
 		
-		//reach here?
-		//should be an error
+		//reach here? Should be an error
 		throw new ParserException("Incomplete body for " + structure);
 	}
 	
@@ -158,6 +191,7 @@ public class Parser {
 		
 		while (analyzer.hasMoreElements()) {
 			ParserToken token = analyzer.nextElement();
+			if (Parser.debuging) System.err.println(token.token);
 			switch (token.type) {
 			case ParserToken.is_name:
 				if (type == null) {

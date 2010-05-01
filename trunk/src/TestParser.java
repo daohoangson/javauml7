@@ -77,6 +77,7 @@ public class TestParser {
 	}
 	
 	public static void main(String[] args) throws StructureException, ParserException, IOException {
-		new TestParser(args);
+		//new TestParser(args);
+		new TestParser(new String[]{"src"});
 	}
 }

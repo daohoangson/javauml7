@@ -1,5 +1,4 @@
 import com.daohoangson.uml.gui.UMLGUI;
-import com.tranvietson.uml.structures.Class;
 import com.tranvietson.uml.structures.StructureException;
 
 public class TestGUI {
@@ -9,10 +8,17 @@ public class TestGUI {
 	 * @throws StructureException 
 	 */
 	public static void main(String[] args) throws StructureException {
-		UMLGUI gui = new UMLGUI();
-		gui.diagram.add(new Class("A"));
-		gui.diagram.add(new Class("B"));
-		gui.diagram.add(new Class("C"));
+		for (int i = 0; i < args.length; i++) {
+			if (args[i].equals("--debug")) {
+				UMLGUI.debuging = true;
+			} else if (args[i].equals("--help") || args[i].equals("-h")) {
+				System.out.println("Usage: ");
+				System.out.println("Commandline modifiers:");
+				System.out.println("\t--debug\tDebug mode. Be careful of massive ouput data!");
+				System.exit(0);
+			}
+		}
+		new UMLGUI();
 	}
 
 }

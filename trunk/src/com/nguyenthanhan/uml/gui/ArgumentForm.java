@@ -1,7 +1,5 @@
 package com.nguyenthanhan.uml.gui;
 
-import java.awt.event.MouseEvent;
-
 import com.daohoangson.uml.structures.Structure;
 import com.tranvietson.uml.structures.Argument;
 import com.tranvietson.uml.structures.StructureException;
@@ -19,14 +17,13 @@ public class ArgumentForm extends StructureForm {
 	}
 	
 	@Override
-	public void mouseClicked(MouseEvent e) {
+	public void __submit() {
 		try {
 			Argument newArgument = new Argument(txt_name.getText(), txt_type.getText());
 			if (visibility.length() > 0) newArgument.setModifier(visibility);
 			if (scope != null) newArgument.setModifier(scope);
-			
+
 			container.add(newArgument);
-			setVisible(false);
 		} catch (StructureException e1) {
 			e1.printStackTrace();
 		}
