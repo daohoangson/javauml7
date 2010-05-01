@@ -17,8 +17,8 @@ public class CodeGenerator {
 	}
 
 	public void generate() {
-		String newDir1 = "UML\\Classes";
-		String newDir2 = "UML\\Interfaces";
+		String newDir1 = "D:\\UML\\Classes";
+		String newDir2 = "D:\\UML\\Interfaces";
 		new File(newDir1).mkdirs();
 		new File(newDir2).mkdirs();
 		
@@ -32,7 +32,7 @@ public class CodeGenerator {
 				if (structure.getStructureName().equals("Class")){
 					try
 					{
-						FileWriter fw = new FileWriter("UML\\Classes\\" + structures[i].getName() + ".java", true);
+						FileWriter fw = new FileWriter(newDir1 + "\\" + structures[i].getName() + ".java", true);
 						BufferedWriter bw = new BufferedWriter(fw);
 						bw.write(structures[i].getVisibility() + " class " + structures[i].getName());
 						
@@ -107,7 +107,7 @@ public class CodeGenerator {
 				else if (structure.getStructureName().equals("Interface")){
 					try
 					{
-						FileWriter fw = new FileWriter("UML\\Interfaces\\" + structures[i].getName() + ".java", true);
+						FileWriter fw = new FileWriter(newDir2 + "\\" + structures[i].getName() + ".java", true);
 						BufferedWriter bw = new BufferedWriter(fw);
 						bw.write(structures[i].getVisibility() + " inteface " + structures[i].getName());
 						

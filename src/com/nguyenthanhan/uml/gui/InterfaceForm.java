@@ -1,7 +1,5 @@
 package com.nguyenthanhan.uml.gui;
 
-import java.awt.event.MouseEvent;
-
 import com.daohoangson.uml.gui.Diagram;
 import com.tranvietson.uml.structures.Interface;
 import com.tranvietson.uml.structures.StructureException;
@@ -19,13 +17,12 @@ public class InterfaceForm extends StructureForm{
 	}
 	
 	@Override
-	public void mouseClicked(MouseEvent e) {
+	public void __submit() {
 		try {
 			Interface newInterface = new Interface(txt_name.getText());
 			if (visibility.length() > 0) newInterface.setModifier(visibility);
 			
 			diagram.add(newInterface);
-			setVisible(false);
 		} catch (StructureException e1) {
 			e1.printStackTrace();
 		}

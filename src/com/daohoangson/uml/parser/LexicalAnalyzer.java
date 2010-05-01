@@ -5,8 +5,9 @@ import java.util.StringTokenizer;
 
 public class LexicalAnalyzer implements Enumeration<ParserToken> {
 	private StringTokenizer st;
-	private String delim = " (){};\r\n";
+	private String delim = " (){};\r\n\"\\";
 	private int flag_in_parentheses = 0;
+	static public boolean debuging = false;
 	
 	public LexicalAnalyzer(String source) {
 		st = new StringTokenizer(source,delim,true);
@@ -34,6 +35,11 @@ public class LexicalAnalyzer implements Enumeration<ParserToken> {
 					token = "";
 					continue;
 				}
+				
+				if (token.charAt(0) == '"') {
+					token += getString();
+				}
+				
 				if (token.length() >= 2) {
 					String first2 = token.substring(0, 2); 
 					if (first2.equals("/*")) {
@@ -61,8 +67,10 @@ public class LexicalAnalyzer implements Enumeration<ParserToken> {
 	}
 	
 	private void skipCommentBlockClosure() {
+		if (LexicalAnalyzer.debuging)
+			System.err.println("LexicalAnalyzer: skipping comment block");
 		while (st.hasMoreElements()) {
-			String token = st.nextToken();
+			String token = st.nextToken(delim);
 			if (token.length() >= 2) {
 				if (token.substring(token.length() - 2).equals("*/"))
 					return;
@@ -71,23 +79,35 @@ public class LexicalAnalyzer implements Enumeration<ParserToken> {
 	}
 	
 	public void skipLeftBrace() {
+		if (LexicalAnalyzer.debuging)
+			System.err.println("LexicalAnalyzer: skipping left brace");
+		
 		int type = -1;
 		
 		do {
-			type = new ParserToken(st.nextToken()).type;
+			type = new ParserToken(st.nextToken(delim)).type;
 		} while (type != ParserToken.is_left_brace);
 	}
 	
 	public void skipRightBrace() throws ParserException {
+		if (LexicalAnalyzer.debuging)
+			System.err.println("LexicalAnalyzer: skipping right brace... ");
+		
 		int opened_count = 1;
 		
-		while (opened_count > 0 && st.hasMoreTokens()) {
-			int type = new ParserToken(st.nextToken()).type;
+		while (opened_count > 0 && hasMoreElements()) {
+			ParserToken token = nextElement();
+			if (LexicalAnalyzer.debuging)
+				System.err.println("Skipped: " + token.token + " (" + opened_count + ")");
+			int type = token.type;
 			switch (type) {
 			case ParserToken.is_left_brace: opened_count++; break;
 			case ParserToken.is_right_brace: opened_count--; break;
 			}
 		}
+		
+		if (LexicalAnalyzer.debuging)
+			System.err.println("Final opened_count = " + opened_count);
 		
 		if (opened_count > 0) {
 			//there must be something wrong
@@ -96,6 +116,32 @@ public class LexicalAnalyzer implements Enumeration<ParserToken> {
 	}
 	
 	public void skipLine() {
-		st.nextToken("\r\n");
+		String token = st.nextToken("\r\n");
+		if (debuging) System.err.println("skipLine: " + token);
+	}
+	
+	public String getString() {
+		String str = "";
+		boolean escaping = false;
+		
+		while (st.hasMoreTokens()) {
+			String token = st.nextToken(delim);
+			str += token;
+			
+			if (token.length() == 1) {
+				char c = token.charAt(0);
+				if (c == '"' && !escaping) {
+					return str;
+				}
+				
+				if (escaping) {
+					escaping = false;
+				} else if (c == '\\') {
+					escaping = true;
+				}
+			}
+		}
+		
+		return str;
 	}
 }

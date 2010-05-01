@@ -1,7 +1,5 @@
 package com.nguyenthanhan.uml.gui;
 
-import java.awt.event.MouseEvent;
-
 import com.daohoangson.uml.structures.Structure;
 import com.tranvietson.uml.structures.Property;
 import com.tranvietson.uml.structures.StructureException;
@@ -19,14 +17,13 @@ public class PropertyForm extends StructureForm {
 	}
 
 	@Override
-	public void mouseClicked(MouseEvent e) {
+	public void __submit() {
 		try {
 			Property newProperty = new Property(txt_name.getText(),txt_type.getText());
 			if (visibility.length() > 0) newProperty.setModifier(visibility);
 			if (scope != null) newProperty.setModifier(scope);
 			
 			container.add(newProperty);
-			setVisible(false);
 		} catch (StructureException e1) {
 			e1.printStackTrace();
 		}
