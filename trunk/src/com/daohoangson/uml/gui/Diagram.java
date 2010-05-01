@@ -39,7 +39,7 @@ public class Diagram extends JPanel implements StructureListener {
 	 * A list of all global structures.
 	 * @see Structure#checkIsUniqueGlobally()
 	 */
-	public List<Structure> structures = new LinkedList<Structure>();
+	private List<Structure> structures = new LinkedList<Structure>();
 	/**
 	 * A list of all relationships among structures.
 	 */
@@ -89,6 +89,10 @@ public class Diagram extends JPanel implements StructureListener {
 	 */
 	public Component getScrollable() {
 		return new JScrollPane(this);
+	}
+	
+	public Structure[] getStructures() {
+		return structures.toArray(new Structure[0]);
 	}
 	
 	/**

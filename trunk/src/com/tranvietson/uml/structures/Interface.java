@@ -58,7 +58,7 @@ public class Interface extends Structure {
 		for (int i = 0, n = modifiers.length; i < n; i++)
 			setModifier(modifiers[i]);
 	}
-
+	
 	@Override
 	public boolean checkIsAlike(Structure that) {
 		return that.getStructureName().equals(getStructureName())
