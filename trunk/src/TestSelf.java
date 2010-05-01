@@ -14,7 +14,6 @@ public class TestSelf implements StructureListener {
 	Diagram d;
 	
 	public TestSelf() throws StructureException {
-		//fuck you man
 		d = new Diagram();
 		JFrame f = new JFrame();
 		f.add(d);
