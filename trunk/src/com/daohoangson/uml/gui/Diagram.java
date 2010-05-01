@@ -39,7 +39,7 @@ public class Diagram extends JPanel implements StructureListener {
 	 * A list of all global structures.
 	 * @see Structure#checkIsUniqueGlobally()
 	 */
-	private List<Structure> structures = new LinkedList<Structure>();
+	public List<Structure> structures = new LinkedList<Structure>();
 	/**
 	 * A list of all relationships among structures.
 	 */
