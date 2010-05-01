@@ -11,9 +11,11 @@ public class PropertyForm extends StructureForm {
 	private Structure container;
 
 	public PropertyForm(Structure container) {
-		super(true,true,true);
+		super(true, true, true);
 		
 		this.container = container;
+		
+		setTitle("Adding new Property for " + container);
 	}
 
 	@Override
@@ -24,6 +26,7 @@ public class PropertyForm extends StructureForm {
 			if (scope != null) newProperty.setModifier(scope);
 			
 			container.add(newProperty);
+			setVisible(false);
 		} catch (StructureException e1) {
 			e1.printStackTrace();
 		}

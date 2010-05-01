@@ -1,4 +1,3 @@
-
 package com.nguyenthanhan.uml.gui;
 
 import java.awt.event.MouseEvent;
@@ -7,21 +6,16 @@ import com.daohoangson.uml.structures.Structure;
 import com.tranvietson.uml.structures.Method;
 import com.tranvietson.uml.structures.StructureException;
 
-
 public class MethodForm extends StructureForm{
-	
-	/**
-	 * 
-	 */
-	private static final long serialVersionUID = 1L;
-	
+	private static final long serialVersionUID = 6957222110006867837L;
 	private Structure container;
 	
-	public MethodForm(Structure container)
-	{
+	public MethodForm(Structure container) {
 		super(true, true, true);
-		setTitle("addMethod");	
+		
 		this.container = container;
+		
+		setTitle("Adding new Method for " + container);
 	}
 	
 	public void mouseClicked(MouseEvent e) {
@@ -31,6 +25,7 @@ public class MethodForm extends StructureForm{
 			if (scope != null) newMethod.setModifier(scope);
 			
 			container.add(newMethod);
+			setVisible(false);
 		} catch (StructureException e1) {
 			e1.printStackTrace();
 		}

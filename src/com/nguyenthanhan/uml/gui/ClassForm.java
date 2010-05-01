@@ -11,9 +11,11 @@ public class ClassForm extends StructureForm {
 	private Diagram diagram;
 	
 	public ClassForm(Diagram diagram){
-		super(false,true,false);
+		super(false, true, false);
 		
 		this.diagram = diagram;
+		
+		setTitle("Adding new Class");
 	}
 
 	@Override
@@ -23,6 +25,7 @@ public class ClassForm extends StructureForm {
 			if (visibility.length() > 0) newClass.setModifier(visibility);
 			
 			diagram.add(newClass);
+			setVisible(false);
 		} catch (StructureException e1) {
 			e1.printStackTrace();
 		}

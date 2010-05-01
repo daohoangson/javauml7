@@ -92,7 +92,7 @@ public class Method extends Structure {
 		
 		return str;
 	}
-
+	
 	@Override
 	public boolean checkIsAlike(Structure that) {
 		if (debuging) {

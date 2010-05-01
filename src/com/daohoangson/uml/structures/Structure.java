@@ -269,6 +269,7 @@ public abstract class Structure implements StructureListener {
 				if (visibilities[i].equals(modifier)) {
 					if (visibility == -1) {
 						visibility = i;
+						if (debuging) System.err.println(getStructureName() + ".setModifier (visibility): " + modifier);
 						return true;
 					} else {
 						throw new StructureException(this + " can not have multiple access modifiers");
@@ -283,6 +284,7 @@ public abstract class Structure implements StructureListener {
 				if (is_static == false) {
 					is_static = true;
 				}
+				if (debuging) System.err.println(getStructureName() + ".setModifier (scope): is_static = " + is_static);
 				return true;
 			}
 		}
@@ -330,26 +332,6 @@ public abstract class Structure implements StructureListener {
 	 */
 	public boolean checkUseType() {
 		return cfg_use_type;
-	}
-	
-	/**
-	 * Gets all allowed modifiers for the structure
-	 * @return
-	 */
-	public String[] checkAllowedModifiers() {
-		List<String> modifiers = new LinkedList<String>();
-		
-		if (cfg_use_visibility) {
-			modifiers.add("public");
-			modifiers.add("protected");
-			modifiers.add("private");
-		}
-		
-		if (cfg_use_scope) {
-			modifiers.add("static");
-		}
-		
-		return modifiers.toArray(new String[0]);
 	}
 	
 	/**
@@ -568,6 +550,9 @@ public abstract class Structure implements StructureListener {
 	 */
 	public boolean add(Structure that) throws StructureException {
 		boolean added = false;
+		
+		if (this == that)
+			throw new StructureException("You can't do \"it\" yourself, man!");
 		
 		//checks if it's safe to add that as a child of this
 		if (cfg_child_structures.length > 0) {
