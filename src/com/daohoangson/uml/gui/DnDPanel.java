@@ -48,6 +48,10 @@ class DnDPanel extends JPanel implements DropTargetListener {
 		add(head);
 	}
 	
+	public String toString() {
+		return "DnDPanel of " + head;
+	}
+	
 	public Component add(Component comp) {
 		try {
 			DnDLabel label = (DnDLabel) comp;

@@ -57,7 +57,7 @@ public class TestCodeGen {
 		C.add(A3);
 		
 		CodeGenerator codegen = new CodeGenerator(d);
-		codegen.generate();
+		codegen.generate("D:\\CodeGen");
 	}
 	
 	public static void main(String[] args) throws StructureException {

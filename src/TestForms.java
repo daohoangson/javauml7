@@ -2,7 +2,6 @@ import javax.swing.JFrame;
 
 import com.daohoangson.uml.gui.Diagram;
 import com.daohoangson.uml.structures.Structure;
-import com.nguyenthanhan.uml.gui.ArgumentForm;
 import com.tranvietson.uml.structures.Argument;
 import com.tranvietson.uml.structures.Class;
 import com.tranvietson.uml.structures.Interface;
@@ -76,7 +75,7 @@ public class TestForms {
 		//new PropertyForm(C);
 		//new InterfaceForm(d);
 		//new MethodForm(C);
-		new ArgumentForm(m1);
+//		new ArgumentForm(this,m1);
 	}
 
 }

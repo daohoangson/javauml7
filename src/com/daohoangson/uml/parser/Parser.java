@@ -36,19 +36,25 @@ public class Parser {
 		return new String(buffer);
 	}
 	
-	public void parse(File file) throws StructureException, ParserException, IOException {
+	public int parse(File file) throws StructureException, ParserException, IOException {
+		int parsed = 0;
+		
 		if (Parser.debuging) 
 			System.err.println("Parsing " + file.getAbsolutePath());
 		if (file.isDirectory()) {
 			File[] files = file.listFiles();
 			for (int i = 0; i < files.length; i++) {
-				parse(files[i]);
+				parsed += parse(files[i]);
 			}
 		} else if (file.isFile()) {
 			String path = file.getAbsolutePath();
-			if (path.substring(path.length() - 5).equalsIgnoreCase(".java"))
+			if (path.substring(path.length() - 5).equalsIgnoreCase(".java")) {
+				parsed++;
 				parse(readFileAsString(file));
+			}
 		}
+		
+		return parsed;
 	}
 	
 	public void parse(String source) throws StructureException, ParserException {

@@ -18,7 +18,7 @@ import com.tranvietson.uml.structures.StructureListener;
 /**
  * A very basic structure.
  * @author Dao Hoang Son
- * @version 1.2
+ * @version 1.3
  *
  */
 public abstract class Structure implements StructureListener {
@@ -524,6 +524,14 @@ public abstract class Structure implements StructureListener {
 	}
 	
 	/**
+	 * Gets number of parents of this tructure.
+	 * @return
+	 */
+	public int getParentsCount() {
+		return parents.size();
+	}
+	
+	/**
 	 * Returns an array containing all children of the current structure.
 	 * It is sorted: class > interface > property > method > argument
 	 * @return the array
@@ -708,12 +716,29 @@ public abstract class Structure implements StructureListener {
 		fireChanged();
 	}
 	
+	/**
+	 * Checks if there is a String in an array. 
+	 * Uses equals() method
+	 * @param str
+	 * @param array
+	 * @return
+	 */
 	private static boolean foundStringInArray(String str, String[] array) {
 		for (int i = 0, n = array.length; i < n; i++) 
 			if (array[i].equals(str)) 
 				return true;
 		
 		return false;
+	}
+	
+	public static Structure[] filterStructureArray(Structure[] structures, String[] structureNames) {
+		List<Structure> result = new LinkedList<Structure>();
+		for (int i = 0; i < structures.length; i++) {
+			if (foundStringInArray(structures[i].getStructureName(),structureNames)) {
+				result.add(structures[i]);
+			}
+		}
+		return result.toArray(new Structure[0]);
 	}
 }
 

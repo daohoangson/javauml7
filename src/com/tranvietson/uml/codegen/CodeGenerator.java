@@ -1,10 +1,9 @@
 package com.tranvietson.uml.codegen;
 
 import java.io.BufferedWriter;
-import java.io.FileNotFoundException;
+import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.File;
 
 import com.daohoangson.uml.gui.Diagram;
 import com.daohoangson.uml.structures.Structure;
@@ -15,150 +14,96 @@ public class CodeGenerator {
 	public CodeGenerator(Diagram diagram) {
 		this.diagram = diagram;
 	}
-
-	public void generate() {
-		String newDir1 = "D:\\UML\\Classes";
-		String newDir2 = "D:\\UML\\Interfaces";
-		new File(newDir1).mkdirs();
-		new File(newDir2).mkdirs();
-		
+	
+	public int generate(String path) {
+		new File(path).mkdirs();
 		Structure[] structures = diagram.getStructures();
-		System.err.println("Size = " + structures.length);
-		for(int i =0; i < structures.length; i++){
+		String pathSeparator = File.separator;
+		String lineSeparator = System.getProperty("line.separator");
+		int files = 0;
+		
+		for (int i = 0; i < structures.length; i++) {
 			Structure structure = structures[i];
-			System.err.println("Generating " + structure);
+			
+			try {
+				//Create new file
+				//Setup the writer
+				FileWriter fw = new FileWriter(path + pathSeparator + structure.getName() + ".java");
+				BufferedWriter bw = new BufferedWriter(fw);
 				
-				//Write Classes
-				if (structure.getStructureName().equals("Class")){
-					try
-					{
-						FileWriter fw = new FileWriter(newDir1 + "\\" + structures[i].getName() + ".java", true);
-						BufferedWriter bw = new BufferedWriter(fw);
-						bw.write(structures[i].getVisibility() + " class " + structures[i].getName());
-						
-						if (structures[i].getContainer() != null && structures[i].getParents() != null){
-						bw.write(" extends " + structures[i].getContainer().getName());
-							Structure[] parent = structures[i].getParents();
-							for (int index = 0; index < parent.length; index++){
-								bw.write(" implements " + parent[index]+ " ");
-							}
-							bw.write("{ \n");
-						}
-						
-						if (structures[i].getContainer() != null && structures[i].getParents() == null){
-						bw.write(" extends " + structures[i].getContainer().getName() + "{ \n");	
-						}
-						
-						if (structures[i].getContainer() == null && structures[i].getParents() != null){
-						Structure[] parent = structures[i].getParents();
-							for (int index = 0; index < parent.length; index++){
-								bw.write(" implements " + parent[index]+ " ");
-							}
-							bw.write("{ \n");
-						}
-						
-						if (structures[i].getContainer() == null && structures[i].getParents() == null){
-						bw.write(" { \n");
-						}
-						
-						//Write constructor
-						bw.write("\n//Constructor: \n");
-						bw.write("\tpublic " + structures[i].getName() + "(){}" + "\n \n");
-						
-						for (int j = 0; j < structures[i].getChildrenCount(); j++){
-							Structure[] a = structures[i].getChildren();
-							
-							//Write Properties of class
-							if (a[j].getStructureName().equalsIgnoreCase("Property")){ 
-								bw.write("//Properties:\n");
-								bw.write(a[j].getScope() + " " + a[j].getVisibility() + " " + a[j].getType() + " " + a[j].getName() + ";");
-								bw.write("\n");
-							}
-							//Write Methods class
-							else {
-								bw.write("//Methods:\n");
-								bw.write(a[j].getVisibility() + " " + a[j].getType() + " " + a[j].getName() + "(");
-								Structure[] b = a[j].getChildren();
-								bw.write(b[0].getType() + " " + b[0].getName());
-								
-								for(int k = 1; k < a[j].getChildrenCount(); k++){
-									bw.write(", " + b[k].getType() + " " + b[k].getName());
-								}
-								bw.write("){} \n \n");	
-							}
-							
-							}
-
-						bw.write("} \n \n");
-						bw.close();
-						fw.close();
-					}
-					catch (FileNotFoundException ex1)
-					{
-					System.out.println("new_class.java not found !");
-					}
-					catch (IOException ex2)
-					{
-					System.out.println("can not write into test_class.java !");
-					}
-				} 
+				if (structure.getVisibility().length() > 0)
+					bw.write(structure.getVisibility() + " "); //visibility
 				
-				//Write Interfaces
-				else if (structure.getStructureName().equals("Interface")){
-					try
-					{
-						FileWriter fw = new FileWriter(newDir2 + "\\" + structures[i].getName() + ".java", true);
-						BufferedWriter bw = new BufferedWriter(fw);
-						bw.write(structures[i].getVisibility() + " inteface " + structures[i].getName());
-						
-						if (structures[i].getParents() != null){
-								Structure[] parent = structures[i].getParents();
-								for (int index = 0; index < parent.length; index++){
-									bw.write(" implements " + parent[index]+ " ");
-								}
-								bw.write("{ \n");
-							}
-							
-						if (structures[i].getParents() == null){
-								bw.write("{ \n");	
-							}
-						for (int j = 0; j < structures[i].getChildrenCount(); j++){
-							Structure[] a = structures[i].getChildren();
-							
-							//Write Properties of interface
-							if (a[j].getStructureName().equalsIgnoreCase("Property")){
-								bw.write(a[j].getScope() + " " + a[j].getVisibility() + " " + a[j].getType() + " " + a[j].getName() + ";");
-								bw.write("\n \n");
-							}
-							
-							//Write Methods of interface
-							else {
-								bw.write(a[j].getVisibility() + " " + a[j].getType() + " " + a[j].getName() + "(");
-								Structure[] b = a[j].getChildren();
-								bw.write(b[0].getType() + " " + b[0].getName());
-								
-								for(int k = 1; k < a[j].getChildrenCount(); k++){
-									bw.write(", " + b[k].getType() + " " + b[k].getName());
-								}
-								bw.write("){} \n \n");	
-							}
-							
-							}
-						
-						bw.write("} \n \n");
-						bw.close();
-						fw.close();
+				if (structure.getStructureName().equals("Class")) {
+					//class declaration
+					bw.write("class " + structure.getName()); //class name
+					if (structure.getContainer() != null) 
+						bw.write(" extends " + structure.getContainer().getName()); //ancestor
+					if (structure.getParentsCount() > 0) {
+						Structure[] interfaces = structure.getParents();
+						bw.write(" implements ");
+						for (int j = 0; j < interfaces.length; j++) {
+							if (j > 0) bw.write(", ");
+							bw.write(interfaces[j].getName()); //interfaces
+						}
 					}
-					catch (FileNotFoundException ex1)
-					{
-					System.out.println("File's not found !");
-					}
-					catch (IOException ex2)
-					{
-					System.out.println("Can not write into file !");
+				} else {
+					//interface declaration
+					bw.write("interface " + structure.getName()); //interface name
+					if (structure.getContainer() != null) {
+						bw.write(" extends " + structure.getContainer().getName()); //ancestor
 					}
 				}
-				else return;
+				
+				bw.write(" {" + lineSeparator); //ready for children
+				
+				Structure[] children = structure.getChildren();
+				for (int j = 0; j < children.length; j++) {
+					Structure child = children[j];
+					
+					if (child.getStructureName().equals("Method"))
+						bw.write(lineSeparator); //separating methods
+					
+					bw.write("\t"); //indent
+					if (child.getScope().length() > 0)
+						bw.write(child.getScope() + " "); //scope
+					if (child.getVisibility().length() > 0) 
+						bw.write(child.getVisibility() + " "); //visibility
+					if (child.getType() != null) 
+						bw.write(child.getType() + " "); //type (can be null with constructors)
+					bw.write(child.getName());
+					
+					if (child.getStructureName().equals("Property")) {
+						bw.write(";" + lineSeparator);
+					} else {
+						bw.write("("); //ready for arguments
+						
+						Structure[] arguments = child.getChildren();
+						for (int k = 0; k < arguments.length; k++) {
+							if (k > 0) bw.write(", ");
+							bw.write(arguments[k].getType() + " " + arguments[k].getName());
+						}
+						
+						bw.write(") {" + lineSeparator);
+						if (child.getType() == null) {
+							bw.write("\t\t// TODO Auto-generated constructor stub" + lineSeparator);
+						} else {
+							bw.write("\t\t// TODO Auto-generated method stub" + lineSeparator);
+						}
+						bw.write("\t}" + lineSeparator);
+					}
+				}
+				
+				bw.write("}"); //end of file
+				
+				bw.close();
+				fw.close();
+				files++;
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
 		}
+		
+		return files;
 	}
 }

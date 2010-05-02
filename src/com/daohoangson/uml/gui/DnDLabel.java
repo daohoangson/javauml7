@@ -39,6 +39,10 @@ class DnDLabel extends JLabel implements DragGestureListener, DragSourceListener
 		dragSource.createDefaultDragGestureRecognizer(this, DnDConstants.ACTION_COPY_OR_MOVE, this);
 	}
 	
+	public String toString() {
+		return "DnDLabel of " + structure;
+	}
+	
 	String getStructureName() {
 		return structure.getStructureName();
 	}
