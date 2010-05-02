@@ -40,14 +40,14 @@ public class TestParser {
 			
 			parse(new File(args[0]));
 			
-			for (int i = 0; i < args.length; i++) {
-				if (args[i].equals("--image") && i < args.length - 1) {
-					if (d.saveImage(args[i+1])) {
-						System.out.println("Saved image: " + args[i+1]);
-					}
-					break;
-				}
-			}
+//			for (int i = 0; i < args.length; i++) {
+//				if (args[i].equals("--image") && i < args.length - 1) {
+//					if (d.saveImage(args[i+1])) {
+//						System.out.println("Saved image: " + args[i+1]);
+//					}
+//					break;
+//				}
+//			}
 		} else {
 			System.err.println("Usage: TestParser SOURCEPATH [--debug] [--image IMAGEPATH]");
 			System.err.println("Exiting now...");

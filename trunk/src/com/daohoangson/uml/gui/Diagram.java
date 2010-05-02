@@ -7,14 +7,11 @@ import java.awt.Graphics;
 import java.awt.Image;
 import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
-import java.awt.image.RenderedImage;
-import java.io.File;
-import java.io.IOException;
+import java.awt.image.ImageObserver;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
-import javax.imageio.ImageIO;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JComponent;
@@ -29,7 +26,7 @@ import com.tranvietson.uml.structures.StructureListener;
 /**
  * Diagram Manager and Swing-based Component.
  * @author Dao Hoang Son
- * @version 1.0
+ * @version 1.1
  *
  */
 public class Diagram extends JPanel implements StructureListener {
@@ -55,13 +52,13 @@ public class Diagram extends JPanel implements StructureListener {
 	 */
 	private boolean[][] dependencies = null;
 	/**
-	 * The pending image path to save
-	 */
-	private String imagepath = null;
-	/**
 	 * The pending image object to save
 	 */
 	private Image image = null;
+	/**
+	 * The observer awaiting for image
+	 */
+	private ImageObserver observer = null;
 	/**
 	 * Determines if we are in debug mode.
 	 */
@@ -70,7 +67,7 @@ public class Diagram extends JPanel implements StructureListener {
 	/**
 	 * The gap between 2 components vertically
 	 */
-	private int cfg_gap_vertical = 25;
+	private int cfg_gap_vertical = 50;
 	/**
 	 * The gap between 2 components horizontally
 	 */
@@ -82,7 +79,7 @@ public class Diagram extends JPanel implements StructureListener {
 	public Diagram() {
 		super();
 		
-		setLayout(new FlowLayoutTopAligned(cfg_gap_horizontal,cfg_gap_vertical));
+		setLayout(new FlowLayoutTopAligned(cfg_gap_horizontal,cfg_gap_vertical,true));
 		setPreferredSize(new Dimension(700,400));
 		setAlignmentY(Component.TOP_ALIGNMENT);
 	}
@@ -115,22 +112,16 @@ public class Diagram extends JPanel implements StructureListener {
 	 * no idea :(
 	 * @param imagepath the new image path. Existing file will be overwritten
 	 * @return true if the imagepath is valid (with correct extension)
-	 * @throws IOException
 	 * 
 	 * @see {@link #paint(Graphics)}
 	 */
-	public boolean saveImage(String imagepath) throws IOException {
-		String ext = imagepath.substring(imagepath.length() - 4).toLowerCase();
-		if (!ext.equals(".jpg") && !ext.equals(".png")) return false;
-		
-		this.imagepath = imagepath;
+	public void saveImage(ImageObserver observer) {
+		this.observer = observer;
 		int width = getSize().width;
 		int height = getSize().height;
 		image = new BufferedImage(width,height,BufferedImage.TYPE_3BYTE_BGR);
 		
 		repaint(0,0,width,height);
-		
-		return true;
 	}
 	
 	/**
@@ -162,15 +153,17 @@ public class Diagram extends JPanel implements StructureListener {
 			itr.next().draw(g);
 		}
 		
-		if (image != null && imagepath != null) {
-			File file = new File(imagepath);
-			try {
-				ImageIO.write((RenderedImage) image, imagepath.substring(imagepath.length() - 3).toLowerCase(), file);
-			} catch (IOException e) {
-				//ignore
-			}
-			imagepath = null;
+		if (image != null) {
+			Image painted = image;
 			image = null;
+			
+			synchronized (observer) {
+				if (observer != null) {
+					observer.imageUpdate(painted, ALLBITS, 0, 0, 0, 0);
+					observer = null;
+				}
+			}
+			
 			repaint();
 		}
 	}
@@ -225,6 +218,7 @@ public class Diagram extends JPanel implements StructureListener {
 		built = new Component[n];
 		int width = 0;
 		int height = 0;
+		int built_count = 0;
 		
 		for (int dependency_limit = 0; dependency_limit < n; dependency_limit++)
 			for (int i = 0; i < n; i++) {
@@ -239,16 +233,21 @@ public class Diagram extends JPanel implements StructureListener {
 						add(c);
 						
 						Dimension d = c.getPreferredSize();
-						width += d.width + 2*cfg_gap_horizontal;
-						height = Math.max(height, d.height + 2*cfg_gap_vertical);
+						width += d.width;
+						height = Math.max(height, d.height);
+						built_count++;
 					}
 				}
 			}
 		
+		if (built_count > 0) {
+			width += built_count*cfg_gap_horizontal;
+			width += 2*cfg_gap_horizontal;
+			height += 2*cfg_gap_vertical;
+		}
 		setPreferredSize(new Dimension(width,height));
-		if (debuging) System.err.println(getPreferredSize());
-
 		setSize(getPreferredSize());
+		
 		validate();
 		repaint();
 	}
@@ -327,10 +326,12 @@ public class Diagram extends JPanel implements StructureListener {
 	 */
 	JComponent wrap(Component c, Component[] dc) {
 		JPanel dependent_container = new JPanel();
-		dependent_container.setLayout(new FlowLayoutTopAligned(cfg_gap_horizontal, cfg_gap_vertical));
+		dependent_container.setLayout(new FlowLayoutTopAligned(cfg_gap_horizontal, cfg_gap_vertical,false));
 		for (int i = 0; i < dc.length; i++) {
 			dependent_container.add(dc[i]);
 		}
+		dependent_container.setPreferredSize(FlowLayoutTopAligned.calculateRequiredSize(dependent_container, false, cfg_gap_horizontal, cfg_gap_vertical));
+		dependent_container.setSize(dependent_container.getPreferredSize());
 		
 		JPanel container = new JPanel();
 		container.setLayout(new BoxLayout(container,BoxLayout.Y_AXIS));
@@ -378,8 +379,8 @@ public class Diagram extends JPanel implements StructureListener {
 			for (int j = 0, k = children.length; j < k; j++) {
 				Structure[] types = children[j].getTypeAsStructure();
 				for (int l = 0, m = types.length; l < m; l++) {
-					int itype = structures.indexOf(types[l]);
-					if (itype != -1) dependencies[i][itype] = true;
+//					int itype = structures.indexOf(types[l]);
+//					if (itype != -1) dependencies[i][itype] = true;
 					
 					relationships.add(new MultiplicityRelationship(this, s, types[l]));
 				}

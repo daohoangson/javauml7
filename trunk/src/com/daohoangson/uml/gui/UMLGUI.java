@@ -4,10 +4,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
-import java.awt.event.WindowEvent;
-import java.awt.event.WindowListener;
 import java.io.File;
-import java.io.IOException;
 
 import javax.swing.AbstractButton;
 import javax.swing.JFileChooser;
@@ -15,18 +12,21 @@ import javax.swing.JFrame;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
+import javax.swing.JOptionPane;
 import javax.swing.KeyStroke;
 import javax.swing.filechooser.FileFilter;
 
 import com.daohoangson.uml.parser.Parser;
 import com.daohoangson.uml.structures.Structure;
+import com.nguyenthanhan.uml.gui.ArgumentForm;
 import com.nguyenthanhan.uml.gui.ClassForm;
 import com.nguyenthanhan.uml.gui.InterfaceForm;
+import com.nguyenthanhan.uml.gui.ListForm;
 import com.nguyenthanhan.uml.gui.MethodForm;
 import com.nguyenthanhan.uml.gui.PropertyForm;
-import com.nguyenthanhan.uml.gui.StructureListForm;
+import com.tranvietson.uml.codegen.CodeGenerator;
 
-public class UMLGUI extends JFrame implements ActionListener, WindowListener {
+public class UMLGUI extends JFrame implements ActionListener {
 	private static final long serialVersionUID = -2192671131702680754L;
 	/**
 	 * Determines if we are in debug mode.
@@ -55,6 +55,13 @@ public class UMLGUI extends JFrame implements ActionListener, WindowListener {
 		mfi.addActionListener(this);
 		mfi.setMnemonic(KeyEvent.VK_S);
 		mfi.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_S, InputEvent.CTRL_DOWN_MASK));
+		menuFile.add(mfi);
+		
+		mfi = new JMenuItem("Export Source File(s)");
+		mfi.setActionCommand("generate");
+		mfi.addActionListener(this);
+		mfi.setMnemonic(KeyEvent.VK_E);
+		mfi.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_E, InputEvent.CTRL_DOWN_MASK));
 		menuFile.add(mfi);
 		
 		mfi = new JMenuItem("Exit");
@@ -100,26 +107,41 @@ public class UMLGUI extends JFrame implements ActionListener, WindowListener {
 		if (action.equals("exit")) {
 			dispose();
 		} else if (action.equals("load")) {
-			doLoad();
+			doLoad(s.getText());
 		} else if (action.equals("image")) {
-			doImage();
+			doImage(s.getText());
+		} else if (action.equals("generate")) {
+			doGenerate(s.getText());
 		} else if (action.equals("new")) {
 			//creating new structure
 			String type = s.getText();
 			if (type.equals("Class")) {
-				new ClassForm(diagram);
+				new ClassForm(this,diagram);
 			} else if (type.equals("Interface")) {
-				new InterfaceForm(diagram);
+				new InterfaceForm(this,diagram);
 			} else if (type.equals("Property")) {
-				new StructureListForm(diagram,"Property").addWindowListener(this);
+				Structure structure = ListForm.select(this, "New Property", diagram.getStructures(), "Class/Interface");
+				if (structure != null) 
+					new PropertyForm(this, structure);
 			} else if (type.equals("Method")) {
-				new StructureListForm(diagram,"Method").addWindowListener(this);
+				Structure structure = ListForm.select(this, "New Method", diagram.getStructures(), "Class/Interface");
+				if (structure != null) 
+					new MethodForm(this, structure);
+			} else if (type.equals("Argument")) {
+				Structure structure1 = ListForm.select(this, "New Argument", diagram.getStructures(), "Class/Interface");
+				if (structure1 != null) {
+					Structure structure2 = ListForm.select(this, "New Argument", Structure.filterStructureArray(structure1.getChildren(), new String[]{"Method"}), "Method");
+					if (structure2 != null) {
+						new ArgumentForm(this, structure2);
+					}
+				}
 			}
 		}
 	}
 	
-	private void doLoad() {
+	private void doLoad(String title) {
 		JFileChooser fc = new JFileChooser(".");
+		fc.setDialogTitle(title);
 		fc.setApproveButtonText("Load Source");
 		fc.setApproveButtonToolTipText("Load source file(s) inside selected directory (and its' sub-directories)");
 		fc.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
@@ -127,18 +149,33 @@ public class UMLGUI extends JFrame implements ActionListener, WindowListener {
 			try {
 				diagram.cfg_draw_on_change = false;
 				Parser parser =  new Parser(diagram);
-				parser.parse(fc.getSelectedFile());
+				int parsed = parser.parse(fc.getSelectedFile());
 				diagram.cfg_draw_on_change = true;
-				diagram.draw();
+				
+				if (parsed > 0) {
+					diagram.draw();
+					JOptionPane.showMessageDialog(this
+							, String.format("Loaded %d file!", parsed)
+							, title
+							, JOptionPane.INFORMATION_MESSAGE);
+				} else {
+					JOptionPane.showMessageDialog(this
+							, "Loaded 0 file!"
+							, title
+							, JOptionPane.ERROR_MESSAGE);
+				}
 			} catch (Exception e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+				JOptionPane.showMessageDialog(this
+						, e.getMessage()
+						, title
+						, JOptionPane.ERROR_MESSAGE);
 			}
 		}
 	}
 	
-	private void doImage() {
+	private void doImage(String title) {
 		JFileChooser fc = new JFileChooser(".");
+		fc.setDialogTitle(title);
 		fc.setFileFilter(new FileFilter() {
 
 			@Override
@@ -156,65 +193,32 @@ public class UMLGUI extends JFrame implements ActionListener, WindowListener {
 		});
 		
 		if (fc.showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
+			diagram.saveImage(new DiagramImageObserver(fc.getSelectedFile().getAbsolutePath()));
+		}
+	}
+	
+	private void doGenerate(String title) {
+		JFileChooser fc = new JFileChooser(".");
+		fc.setDialogTitle(title);
+		fc.setApproveButtonText("Export Here");
+		fc.setApproveButtonToolTipText("Export source file(s) into selected directory");
+		fc.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+		if (fc.showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
 			try {
-				String imagepath = fc.getSelectedFile().getAbsolutePath();
-				if (imagepath.indexOf('.') == -1) imagepath += ".png";
-				boolean result = diagram.saveImage(imagepath);
-				if (UMLGUI.debuging) {
-					System.err.println("Saving Image Result: " + result);
-				}
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+				CodeGenerator cg = new CodeGenerator(diagram);
+				int files = cg.generate(fc.getSelectedFile().getAbsolutePath());
+				JOptionPane.showMessageDialog(this
+						, String.format("Successfully generated %d file(s)", files)
+						, title
+						, JOptionPane.INFORMATION_MESSAGE);
+			} catch (Exception e) {
+				JOptionPane.showMessageDialog(this
+						, e.getMessage()
+						, title
+						, JOptionPane.ERROR_MESSAGE);
 			}
 		}
-	}
-
-	@Override
-	public void windowActivated(WindowEvent e) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void windowClosed(WindowEvent e) {
-		StructureListForm f = (StructureListForm) e.getSource();
-		if (f.getSelected() != null) {
-			String action = f.getActionCommand();
-			if (action.equals("Property")) {
-				new PropertyForm(f.getSelected());
-			} else if (action.equals("Method")) {
-				new MethodForm(f.getSelected());
-			}
-		}
-	}
-
-	@Override
-	public void windowClosing(WindowEvent e) {
-		// TODO Auto-generated method stub
-	}
-
-	@Override
-	public void windowDeactivated(WindowEvent e) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void windowDeiconified(WindowEvent e) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void windowIconified(WindowEvent e) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void windowOpened(WindowEvent e) {
-		// TODO Auto-generated method stub
-		
 	}
 }
+
+

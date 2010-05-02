@@ -1,22 +1,25 @@
 package com.nguyenthanhan.uml.gui;
 
 import java.awt.FlowLayout;
+import java.awt.Frame;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
+import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
 
 import javax.swing.AbstractButton;
 import javax.swing.ButtonGroup;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
-import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JRadioButton;
 import javax.swing.JTextField;
 
-public abstract class StructureForm extends JFrame implements MouseListener, ActionListener {
+import com.tranvietson.uml.structures.StructureException;
+
+public abstract class StructureForm extends ConvenientForm implements ActionListener {
 	private static final long serialVersionUID = 297547056430421671L;
 	protected JTextField txt_name;
 	protected JTextField txt_type;
@@ -26,13 +29,15 @@ public abstract class StructureForm extends JFrame implements MouseListener, Act
 	protected JCheckBox cb_multiple;
 
 	public StructureForm(
-			boolean cfg_use_type
+			Frame owner
+			,String title
+			,boolean cfg_use_type
 			,boolean cfg_use_visibility
 			,boolean cfg_use_scope) {
+		super(owner, title, ModalityType.APPLICATION_MODAL);
 		setLayout(new FlowLayout());
 		
 		txt_name = new JTextField(15);
-		txt_name.addActionListener(this);
 		JLabel lb_name = new JLabel("Name");
 		lb_name.setLabelFor(txt_name);
 		lb_name.setDisplayedMnemonic(KeyEvent.VK_N);
@@ -77,12 +82,15 @@ public abstract class StructureForm extends JFrame implements MouseListener, Act
 		add(cb_multiple);
 		
 		btn_create = new JButton("Create");
-		btn_create.addMouseListener(this);
+		btn_create.addMouseListener(new MouseAdapter() {
+			public void mouseClicked(MouseEvent e) {
+				submit();
+			}
+		});
 		add(btn_create);
 		
 		pack();
 		setLocationRelativeTo(null);
-		setVisible(true);
 	}
 	
 	private void reset() {
@@ -92,35 +100,23 @@ public abstract class StructureForm extends JFrame implements MouseListener, Act
 		txt_name.requestFocusInWindow();
 	}
 	
-	abstract protected void __submit();
+	abstract protected void __submit() throws StructureException;
 	
-	private void submit() {
-		__submit();
-		
-		if (cb_multiple.isSelected()) {
-			reset();
-		} else {
-			dispose();
+	@Override
+	protected void submit() {
+		try {
+			__submit();
+			
+			if (cb_multiple.isSelected()) {
+				reset();
+			} else {
+				dispose();
+			}
+		} catch (StructureException e) {
+			JOptionPane.showMessageDialog(this, e.getMessage(), getTitle(), JOptionPane.ERROR_MESSAGE);
 		}
 	}
 	
-	@Override
-	public void mouseClicked(MouseEvent e) {
-		submit();
-	}
-
-	@Override
-	public void mouseEntered(MouseEvent e) {}
-
-	@Override
-	public void mouseExited(MouseEvent e) {}
-
-	@Override
-	public void mousePressed(MouseEvent e) {}
-
-	@Override
-	public void mouseReleased(MouseEvent e) {}
-
 	@Override
 	public void actionPerformed(ActionEvent e) {
 		String action = e.getActionCommand();
@@ -135,8 +131,6 @@ public abstract class StructureForm extends JFrame implements MouseListener, Act
 			} else {
 				scope = null;
 			}
-		} else if (e.getSource() == txt_name) {
-			submit();
 		}
 	}
 	
