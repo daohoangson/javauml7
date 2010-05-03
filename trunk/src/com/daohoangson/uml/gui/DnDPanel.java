@@ -13,20 +13,44 @@ import java.awt.dnd.DropTargetListener;
 
 import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
-import javax.swing.JComponent;
 import javax.swing.JPanel;
 
 import com.daohoangson.uml.structures.Structure;
 import com.tranvietson.uml.structures.StructureException;
 
+/**
+ * Drag and Drop Panel for {@link Structure}s
+ * 
+ * @author Dao Hoang Son
+ * @version 1.0
+ * 
+ */
 class DnDPanel extends JPanel implements DropTargetListener {
 	private static final long serialVersionUID = -6330448983826031865L;
+	/**
+	 * The corresponding structure of the panel
+	 */
 	private Structure structure;
+	/**
+	 * The heading component for the panel. Usually, it should be a
+	 * {@link DnDLabel} of the same {@link #structure}
+	 */
 	private Component head;
+	/**
+	 * The first property's component
+	 */
 	private Component property_first;
+	/**
+	 * The first method's component
+	 */
 	private Component method_first;
-	
+	/**
+	 * The original (foreground) color of the panel
+	 */
 	private Color original_color;
+	/**
+	 * The color when the panel has something dragging by
+	 */
 	private Color cfg_hover_color = Color.red;
 	/**
 	 * The width of border for structure's component
@@ -35,57 +59,67 @@ class DnDPanel extends JPanel implements DropTargetListener {
 
 	DnDPanel(Structure structure, Component head) {
 		super();
-		
+
 		this.structure = structure;
 		this.head = head;
-		new DropTarget(this,this);
-		
+		new DropTarget(this, this);
+
 		original_color = getForeground();
-		setLayout(new BoxLayout(this,BoxLayout.Y_AXIS));
-		setAlignmentX(JComponent.CENTER_ALIGNMENT);
+		setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
+		setAlignmentX(Component.CENTER_ALIGNMENT);
 		setBorder(getForeground());
-		
+
 		add(head);
 	}
-	
+
+	@Override
 	public String toString() {
 		return "DnDPanel of " + head;
 	}
-	
+
+	Component getHead() {
+		return head;
+	}
+
+	@Override
 	public Component add(Component comp) {
 		try {
 			DnDLabel label = (DnDLabel) comp;
-			if (property_first == null && label.getStructureName().equals("Property")) {
+			if (property_first == null
+					&& label.getStructureName().equals("Property")) {
 				property_first = comp;
 			}
-			if (method_first == null && label.getStructureName().equals("Method")) {
+			if (method_first == null
+					&& label.getStructureName().equals("Method")) {
 				method_first = comp;
 			}
 		} catch (ClassCastException e) {
-			//oops
+			// oops
 		}
-		
+
 		return super.add(comp);
 	}
-	
+
+	@Override
 	public void setForeground(Color fg) {
 		super.setForeground(fg);
-		if (head != null) head.setForeground(fg);
+		if (head != null) {
+			head.setForeground(fg);
+		}
 		setBorder(fg);
 	}
 
 	private void setBorder(Color color) {
-		setBorder(
-				BorderFactory.createCompoundBorder(
-						BorderFactory.createLineBorder(color)
-						, BorderFactory.createEmptyBorder(cfg_border_width, cfg_border_width, cfg_border_width, cfg_border_width)
-				)
-		);
+		setBorder(BorderFactory.createCompoundBorder(BorderFactory
+				.createLineBorder(color), BorderFactory.createEmptyBorder(
+				cfg_border_width, cfg_border_width, cfg_border_width,
+				cfg_border_width)));
 	}
-	
+
+	@Override
 	public void paint(Graphics g) {
 		super.paint(g);
-		
+
 		if (property_first != null) {
 			int py = property_first.getBounds().y;
 			g.drawLine(0, py, getWidth(), py);
@@ -114,18 +148,20 @@ class DnDPanel extends JPanel implements DropTargetListener {
 	@Override
 	public void drop(DropTargetDropEvent dtde) {
 		setForeground(original_color);
-		
+
 		try {
-			Structure structure = (Structure)dtde.getTransferable().getTransferData(TransferableStructure.df);
-			
+			Structure structure = (Structure) dtde.getTransferable()
+					.getTransferData(TransferableStructure.df);
+
 			if (structure.getContainer() != this.structure) {
 				if (structure.getContainer() != null
-						&& structure.getContainer().getStructureName().equals(this.structure.getStructureName())) {
+						&& structure.getContainer().getStructureName().equals(
+								this.structure.getStructureName())) {
 					structure.getContainer().remove(structure);
 				}
-				
+
 				this.structure.add(structure);
-				
+
 				dtde.acceptDrop(DnDConstants.ACTION_MOVE);
 				return;
 			}
@@ -134,15 +170,15 @@ class DnDPanel extends JPanel implements DropTargetListener {
 		} catch (StructureException e) {
 			System.err.println(e);
 		} catch (Exception e) {
-			//skip all other exceptions
+			// skip all other exceptions
 		}
-		
+
 		dtde.rejectDrop();
 	}
 
 	@Override
 	public void dropActionChanged(DropTargetDragEvent dtde) {
 		// TODO Auto-generated method stub
-		
+
 	}
 }

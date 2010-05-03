@@ -11,7 +11,6 @@ import com.tranvietson.uml.structures.Interface;
 import com.tranvietson.uml.structures.Method;
 import com.tranvietson.uml.structures.StructureException;
 
-
 public class Test {
 	public static void main(String[] args) throws StructureException {
 		final Diagram d = new Diagram();
@@ -20,7 +19,7 @@ public class Test {
 		f.pack();
 		f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		f.setVisible(true);
-		
+
 		JFrame f2 = new JFrame();
 		f2.setLayout(new FlowLayout());
 		JButton b1 = new JButton("Test 1");
@@ -31,40 +30,40 @@ public class Test {
 		f2.add(b3);
 		f2.pack();
 		f2.setVisible(true);
-		
+
 		final Class cb = new Class("Big");
 		d.add(cb);
-		
+
 		b1.addMouseListener(new MouseAdapter() {
+			@Override
 			public void mouseClicked(MouseEvent e) {
 				try {
 					d.add(new Interface("interface"));
 				} catch (StructureException e1) {
-					// TODO Auto-generated catch block
 					e1.printStackTrace();
 				}
 			}
 		});
-		
+
 		b2.addMouseListener(new MouseAdapter() {
+			@Override
 			public void mouseClicked(MouseEvent e) {
 				try {
-					cb.add(new Method("Hihi","Blah"));
+					cb.add(new Method("Hihi", "Blah"));
 				} catch (StructureException e1) {
-					// TODO Auto-generated catch block
 					e1.printStackTrace();
 				}
 			}
 		});
-		
+
 		b3.addMouseListener(new MouseAdapter() {
+			@Override
 			public void mouseClicked(MouseEvent e) {
 				try {
 					Interface i = new Interface("Huh");
 					d.add(i);
 					cb.add(i);
 				} catch (StructureException e1) {
-					// TODO Auto-generated catch block
 					e1.printStackTrace();
 				}
 			}

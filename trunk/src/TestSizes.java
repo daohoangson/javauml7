@@ -11,7 +11,6 @@ public class TestSizes {
 	 * @throws StructureException 
 	 */
 	public static void main(String[] args) throws StructureException {
-		// TODO Auto-generated method stub
 		Diagram diagram = new UMLGUI().diagram;
 		
 		//horizontal test
