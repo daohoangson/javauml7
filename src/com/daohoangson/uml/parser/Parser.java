@@ -4,6 +4,8 @@ import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.text.ParseException;
+import java.util.Enumeration;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -30,6 +32,7 @@ public class Parser {
 	 * The target diagram which will get updated
 	 */
 	private Diagram diagram;
+	private Grammar grammar;
 	/**
 	 * Determines if we are in debug mode.
 	 */
@@ -44,6 +47,7 @@ public class Parser {
 	 */
 	public Parser(Diagram diagram) {
 		this.diagram = diagram;
+		grammar = new GrammarOfJava();
 
 		LexicalAnalyzer.debuging = Parser.debuging;
 	}
@@ -75,7 +79,7 @@ public class Parser {
 	 * @throws ParserException
 	 * @throws IOException
 	 */
-	public int parse(File file) throws ParserException, IOException {
+	public int parse(File file) throws ParseException, IOException {
 		int parsed = 0;
 
 		if (Parser.debuging) {
@@ -92,8 +96,9 @@ public class Parser {
 				parsed++;
 				try {
 					parse(Parser.readFileAsString(file));
-				} catch (Exception e) {
-					throw new ParserException("Can not parse " + path, e);
+				} catch (StructureException e) {
+					throw new ParseException("Structure Hierarchy: "
+							+ e.getMessage(), -1);
 				}
 			}
 		}
@@ -111,74 +116,168 @@ public class Parser {
 	 * @throws ParserException
 	 * @throws StructureException
 	 */
-	public void parse(String source) throws ParserException, StructureException {
-		LexicalAnalyzer analyzer = new LexicalAnalyzer(source);
+	public void parse(String source) throws ParseException, StructureException {
+		Enumeration<Token> analyzer = new LexicalAnalyzer(source, grammar);
 
-		List<String> modifiers = new LinkedList<String>();
+		String packagename = "";
 		Structure structure = null;
-		boolean adding_parent = false;
+		int pending_type = -1;
+		List<String> pending_modifiers = new LinkedList<String>();
+		boolean flag_adding_parent = false;
 
 		while (analyzer.hasMoreElements()) {
-			ParserToken token = analyzer.nextElement();
-			if (Parser.debuging) {
-				System.err.println(token.token);
-			}
+			Token token = analyzer.nextElement();
+
 			switch (token.type) {
-			case ParserToken.is_name:
-				if (adding_parent) {
-					structure.addParentName(token.token);
+			case Token.CLASS:
+			case Token.INTERFACE:
+				if (pending_type == -1) {
+					pending_type = token.type;
 				} else {
-					if (structure != null) {
-						structure.setName(token.token);
-					} else {
-						throw new ParserException(
-								"Undefined structure type for " + token.token);
-					}
+					throw new ParseException("Unexpected " + token.content,
+							token.offset);
 				}
 				break;
-			case ParserToken.is_modifier:
-				modifiers.add(token.token);
+			case Token.VISIBILITY:
+			case Token.SCOPE:
+				pending_modifiers.add(token.content);
+				break;
+			case Token.ABSTRACT:
+				// ignore
+				break;
+			case Token.TYPE:
+				if (flag_adding_parent) {
+					structure.addParentName(token.content);
+				} else {
+					throw new ParseException(
+							"Unexpected type " + token.content, token.offset);
+				}
+			case Token.NAME:
+				if (flag_adding_parent) {
+					structure.addParentName(token.content);
+				} else {
+					String name = token.content;
+					String[] modifiers = pending_modifiers
+							.toArray(new String[0]);
+					switch (pending_type) {
+					case Token.CLASS:
+						structure = new Class(name, modifiers);
+						break;
+					case Token.INTERFACE:
+						structure = new Interface(name, modifiers);
+						break;
+					default:
+						throw new ParseException("Unexpected name found: "
+								+ name, token.offset);
+					}
+					pending_type = -1;
+					pending_modifiers.clear();
+				}
+				break;
+			case Token.EXTENDS:
+			case Token.IMPLEMENTS:
+				flag_adding_parent = true;
 				break;
 
-			case ParserToken.is_left_brace:
-				adding_parent = false;
+			case Token.LBRACE:
+				flag_adding_parent = false;
 				parsePropertyAndMethod(structure, analyzer);
-				// the parsePropertyAndMethod method should proceed a right
-				// brace by itself
-				// we will finish this structure now
+				break;
+			case Token.RBRACE:
+				structure.setInfo("package", packagename);
 				diagram.add(structure);
 				structure = null;
 				break;
 
-			case ParserToken.kw_class:
-				structure = new Class(randomName(), modifiers
-						.toArray(new String[0]));
-				modifiers.clear();
-				break;
-			case ParserToken.kw_interface:
-				structure = new Interface(randomName(), modifiers
-						.toArray(new String[0]));
-				modifiers.clear();
-				break;
-			case ParserToken.kw_extends:
-			case ParserToken.kw_implements:
-				adding_parent = true;
+			case Token.COMMA:
+				if (flag_adding_parent) {
+					// ignore
+				} else {
+					throw new ParseException("Unexpected ,", token.offset);
+				}
 				break;
 
-			case ParserToken.kw_package:
-			case ParserToken.kw_import:
-				analyzer.skipLine();
+			case Token.PACKAGE:
+				packagename = requires(analyzer,
+						new int[] { Token.PACKAGENAME }).content;
+				requires(analyzer, new int[] { Token.COLON });
+				break;
+			case Token.IMPORT:
+				requires(analyzer, new int[] { Token.PACKAGENAME });
+				requires(analyzer, new int[] { Token.COLON });
+				break;
+
+			case -1:
+				if (pending_type == -1 && pending_modifiers.size() == 0
+						&& structure == null) {
+					// all good
+					return;
+				} else if (Parser.debuging) {
+					System.err.println(pending_type);
+					System.err.println(pending_modifiers);
+					System.err.println(structure);
+				}
+
+			default:
+				throw new ParseException("Unexpected " + token.content,
+						token.offset);
 			}
 		}
 	}
 
-	/**
-	 * Builds a random valid name for classes/interfaces
-	 * 
-	 * @return the random name
-	 */
-	private String randomName() {
-		return "randomName" + (int) Math.ceil((Math.random() * 100000));
+	private Token requires(Enumeration<Token> analyzer, int[] types)
+			throws ParseException {
+		if (!analyzer.hasMoreElements()) {
+			throw new ParseException("Unexpected end of file", -1);
+		}
+		Token token;
+		do {
+			token = analyzer.nextElement();
+		} while (token != null && token.type == Token.SPACE);
+
+		if (token == null) {
+			throw new ParseException("Unexpected end of file", -1);
+		}
+
+		for (int i = 0; i < types.length; i++) {
+			if (types[i] == token.type) {
+				return token;
+			}
+		}
+
+		throw new ParseException("Unexpected " + token.content, token.offset);
+	}
+
+	private void skipTo(Enumeration<Token> analyzer, int type) {
+		while (analyzer.hasMoreElements()) {
+			Token token = analyzer.nextElement();
+			if (token.type == type) {
+				return;
+			}
+		}
+	}
+
+	private void skipRightBrace(Enumeration<Token> analyzer, int opened) {
+		if (Parser.debuging) {
+			System.err.println("SkipRightBrace is in action!");
+		}
+		while (analyzer.hasMoreElements() && opened > 0) {
+			Token token = analyzer.nextElement();
+			switch (token.type) {
+			case Token.LBRACE:
+				opened++;
+				if (Parser.debuging) {
+					System.err.println("SkipRightBrace: opened = " + opened);
+				}
+				break;
+			case Token.RBRACE:
+				opened--;
+				if (Parser.debuging) {
+					System.err.println("SkipRightBrace: opened = " + opened);
+				}
+				break;
+			}
+		}
 	}
 
 	/**
@@ -193,89 +292,127 @@ public class Parser {
 	 * @throws ParserException
 	 */
 	private void parsePropertyAndMethod(Structure structure,
-			LexicalAnalyzer analyzer) throws StructureException,
-			ParserException {
-		List<String> modifiers = new LinkedList<String>();
-		String name = null;
-		String type = null;
+			Enumeration<Token> analyzer) throws StructureException,
+			ParseException {
+		List<String> pending_modifiers = new LinkedList<String>();
+		String pending_name = null;
+		String pending_type = null;
 		Structure child = null;
 		boolean flag_abstract_method = false;
 		boolean flag_inside_interface = structure.getStructureName().equals(
 				"Interface");
 
+		if (Parser.debuging) {
+			System.err.println("parsePropertyAndMethod for " + structure);
+		}
+
 		while (analyzer.hasMoreElements()) {
-			ParserToken token = analyzer.nextElement();
-			if (Parser.debuging) {
-				System.err.println(token.token);
-			}
+			Token token = analyzer.nextElement();
+
 			switch (token.type) {
-			case ParserToken.is_name:
-				if (type == null) {
-					type = token.token;
-				} else {
-					name = token.token;
-				}
+			case Token.VISIBILITY:
+			case Token.SCOPE:
+				pending_modifiers.add(token.content);
 				break;
-			case ParserToken.is_modifier:
-				modifiers.add(token.token);
-				if (token.token.equals("abstract")) {
-					flag_abstract_method = true;
+			case Token.ABSTRACT:
+				flag_abstract_method = true;
+				break;
+			case Token.TYPE:
+				if (pending_type == null) {
+					pending_type = token.content;
+				} else {
+					throw new ParseException(
+							"Unexpected type " + token.content, token.offset);
+				}
+			case Token.NAME:
+				if (pending_type == null) {
+					pending_type = token.content;
+				} else {
+					pending_name = token.content;
 				}
 				break;
 
-			case ParserToken.is_left_parentheses:
-				if (name == null && type.equals(structure.getName())) {
-					// constructor
-					name = "" + type;
-					type = null;
+			case Token.LPAR:
+				if (pending_name == null && pending_type != null
+						&& pending_type.equals(structure.getName())) {
+					// must be a constructor
+					pending_name = "" + pending_type;
+					pending_type = null;
 				}
-				child = new Method(name, type, modifiers.toArray(new String[0]));
-				name = null;
-				type = null;
-				modifiers.clear();
+				if (pending_name == null) {
+					throw new ParseException("Unexpected '('. Expecting name",
+							token.offset);
+				}
+				child = new Method(pending_name, pending_type,
+						pending_modifiers.toArray(new String[0]));
+				pending_name = null;
+				pending_type = null;
+				pending_modifiers.clear();
 				parseArgument(child, analyzer);
-				// the parseArgument method should proceed a right parentheses
-				// by itself
-				// we will finish this method now
+				break;
+			case Token.RPAR:
 				structure.add(child);
 				child = null;
 				break;
-			case ParserToken.is_left_brace:
-				analyzer.skipRightBrace();
+			case Token.LBRACE:
+				skipRightBrace(analyzer, 1);
 				break;
-			case ParserToken.is_right_brace:
+			case Token.RBRACE:
+				((LexicalAnalyzer) analyzer).pushback();
 				return;
-			case ParserToken.op_assign:
-			case ParserToken.is_colon:
+			case Token.COMMA:
+				if (pending_name == null || pending_type == null) {
+					throw new ParseException(
+							"Unexpected ','. Expecting type with name",
+							token.offset);
+				}
+				structure.add(new Property(pending_name, pending_type,
+						pending_modifiers.toArray(new String[0])));
+				pending_name = null;
+				break;
+			case Token.COLON:
 				if (flag_abstract_method || flag_inside_interface) {
-					flag_abstract_method = false; // switch back
+					flag_abstract_method = false; // switch back the flag
 				} else {
-					if (token.type == ParserToken.op_assign || name != null
-							&& type != null) {
-						child = new Property(name, type, modifiers
-								.toArray(new String[0]));
-						structure.add(child);
+					if (pending_name == null || pending_type == null) {
+						throw new ParseException(
+								"Unexpected ';'. Expecting type with name",
+								token.offset);
 					}
-					name = null;
-					type = null;
-					modifiers.clear();
-					child = null;
-					switch (token.type) {
-					case ParserToken.op_assign:
-						analyzer.skipColon();
-					}
+					structure.add(new Property(pending_name, pending_type,
+							pending_modifiers.toArray(new String[0])));
+					pending_name = null;
+					pending_type = null;
+					pending_modifiers.clear();
 				}
 				break;
-
-			case ParserToken.kw_throws:
-				analyzer.skipLeftBrace();
-				analyzer.skipRightBrace();
+			case Token.ASSIGN:
+				if (pending_name == null || pending_type == null) {
+					throw new ParseException(
+							"Unexpected '='. Expecting type with name",
+							token.offset);
+				}
+				structure.add(new Property(pending_name, pending_type,
+						pending_modifiers.toArray(new String[0])));
+				pending_name = null;
+				pending_type = null;
+				pending_modifiers.clear();
+				skipTo(analyzer, Token.COLON);
 				break;
+
+			case Token.THROWS:
+				skipTo(analyzer, Token.LBRACE);
+				((LexicalAnalyzer) analyzer).pushback();
+				break;
+
+			default:
+				throw new ParseException("Unexpected " + token.content,
+						token.offset);
 			}
 		}
 
 		// reach here? Should be an error
-		throw new ParserException("Incomplete body for " + structure);
+		throw new ParseException("Incomplete body for " + structure, 0);
 	}
 
 	/**
@@ -289,142 +426,58 @@ public class Parser {
 	 * @throws ParserException
 	 * @throws StructureException
 	 */
-	private void parseArgument(Structure method, LexicalAnalyzer analyzer)
-			throws ParserException, StructureException {
-		String name = null;
-		String type = null;
-		Structure argument = null;
+	private void parseArgument(Structure method, Enumeration<Token> analyzer)
+			throws ParseException, StructureException {
+		String pending_type = null;
+		boolean flag_awaiting = false;
+
+		if (Parser.debuging) {
+			System.err.println("parseArgument for " + method);
+		}
 
 		while (analyzer.hasMoreElements()) {
-			ParserToken token = analyzer.nextElement();
-			if (Parser.debuging) {
-				System.err.println(token.token);
-			}
+			Token token = analyzer.nextElement();
+
 			switch (token.type) {
-			case ParserToken.is_name:
-				if (type == null) {
-					type = token.token;
+			case Token.TYPE:
+				if (pending_type == null) {
+					pending_type = token.content;
 				} else {
-					name = token.token;
+					throw new ParseException(
+							"Unexpected type " + token.content, token.offset);
 				}
 				break;
-			case ParserToken.is_right_parentheses:
-			case ParserToken.is_comma:
-				if (name != null && type != null) {
-					argument = new Argument(name, type);
-					name = null;
-					type = null;
-					method.add(argument);
-					argument = null;
-				}
-				switch (token.type) {
-				case ParserToken.is_right_parentheses:
-					return;
+			case Token.NAME:
+				if (pending_type == null) {
+					pending_type = token.content;
+				} else {
+					flag_awaiting = false;
+					String name = token.content;
+					method.add(new Argument(name, pending_type));
+					pending_type = null;
 				}
 				break;
+			case Token.COMMA:
+				flag_awaiting = true;
+				break;
+			case Token.RPAR:
+				if (flag_awaiting) {
+					throw new ParseException(
+							"Unexpected ')'. Expecting argument declaration",
+							token.offset);
+				}
+				LexicalAnalyzer la = (LexicalAnalyzer) analyzer;
+				la.pushback();
+				return;
+
+			default:
+				throw new ParseException("Unexpected " + token.content,
+						token.offset);
 			}
 		}
 
 		// reach here?
 		// should be an error
-		throw new ParserException("Incomplete declaration for " + method);
-	}
-}
-
-/**
- * A Token being used in parsing source files.
- * 
- * @author Dao Hoang Son
- * @version 1.0
- * 
- */
-class ParserToken {
-	final static int is_empty = -1;
-	final static int is_name = 0;
-	final static int is_modifier = 1;
-
-	final static int is_left_parentheses = 101;
-	final static int is_comma = 102;
-	final static int is_right_parentheses = 103;
-	final static int is_left_brace = 104;
-	final static int is_right_brace = 105;
-	final static int is_colon = 106;
-	final static int op_assign = 107;
-
-	final static int kw_class = 901;
-	final static int kw_interface = 902;
-	final static int kw_extends = 903;
-	final static int kw_implements = 904;
-
-	final static int kw_throws = 801;
-
-	final static int kw_package = 1001;
-	final static int kw_import = 1002;
-
-	int type = 0;
-	String token;
-
-	ParserToken(String token) {
-		this.token = token;
-
-		if (token.length() == 0) {
-			type = ParserToken.is_empty;
-		} else if (token.length() == 1) {
-			char c = token.charAt(0);
-			switch (c) {
-			case '(':
-				type = ParserToken.is_left_parentheses;
-				break;
-			case ',':
-				type = ParserToken.is_comma;
-				break;
-			case ')':
-				type = ParserToken.is_right_parentheses;
-				break;
-			case '{':
-				type = ParserToken.is_left_brace;
-				break;
-			case '}':
-				type = ParserToken.is_right_brace;
-				break;
-			case ';':
-				type = ParserToken.is_colon;
-				break;
-			case '=':
-				type = ParserToken.op_assign;
-				break;
-			}
-		} else {
-			if (token.equals("class")) {
-				type = ParserToken.kw_class;
-			} else if (token.equals("interface")) {
-				type = ParserToken.kw_interface;
-			} else if (token.equals("extends")) {
-				type = ParserToken.kw_extends;
-			} else if (token.equals("implements")) {
-				type = ParserToken.kw_implements;
-			} else if (token.equals("throws")) {
-				type = ParserToken.kw_throws;
-			} else if (token.equals("package")) {
-				type = ParserToken.kw_package;
-			} else if (token.equals("import")) {
-				type = ParserToken.kw_import;
-			} else if (isModifier(token)) {
-				type = ParserToken.is_modifier;
-			}
-		}
-	}
-
-	private boolean isModifier(String token) {
-		if (token.equals("public") || token.equals("protected")
-				|| token.equals("private") || token.equals("static")
-				|| token.equals("abstract") || token.equals("final")
-				|| token.equals("native") || token.equals("strictfp")
-				|| token.equals("synchronized") || token.equals("transient")
-				|| token.equals("volatile")) {
-			return true;
-		}
-
-		return false;
+		throw new ParseException("Incomplete declaration for " + method, 0);
 	}
 }

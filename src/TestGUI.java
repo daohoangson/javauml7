@@ -5,7 +5,7 @@ public class TestGUI {
 
 	/**
 	 * @param args
-	 * @throws StructureException 
+	 * @throws StructureException
 	 */
 	public static void main(String[] args) throws StructureException {
 		for (int i = 0; i < args.length; i++) {
@@ -14,11 +14,14 @@ public class TestGUI {
 			} else if (args[i].equals("--help") || args[i].equals("-h")) {
 				System.out.println("Usage: ");
 				System.out.println("Commandline modifiers:");
-				System.out.println("\t--debug\tDebug mode. Be careful of massive ouput data!");
+				System.out
+						.println("\t--debug\tDebug mode. Be careful of massive ouput data!");
 				System.exit(0);
 			}
 		}
-		new UMLGUI();
+
+		UMLGUI gui = new UMLGUI();
+		gui.setVisible(true);
 	}
 
 }

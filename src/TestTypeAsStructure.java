@@ -11,7 +11,6 @@ public class TestTypeAsStructure {
 	 * @throws StructureException 
 	 */
 	public static void main(String[] args) throws StructureException {
-		// TODO Auto-generated method stub
 		new Class("A");
 		Structure B = new Class("B");
 		Structure C = new Class("C");
