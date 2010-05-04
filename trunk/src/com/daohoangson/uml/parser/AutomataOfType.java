@@ -1,5 +1,14 @@
 package com.daohoangson.uml.parser;
 
+/**
+ * An automata for Java type string. Supports generalized type and array.
+ * 
+ * @author Dao Hoang Son
+ * @version 1.0
+ * 
+ * @see GrammarOfJava
+ * 
+ */
 class AutomataOfType extends Automata {
 
 	AutomataOfType() {

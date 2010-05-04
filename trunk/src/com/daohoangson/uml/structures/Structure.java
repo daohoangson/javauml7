@@ -879,7 +879,8 @@ public abstract class Structure implements StructureListener {
 }
 
 /**
- * Comparator to sort structures.
+ * Comparator to sort structures. The structures are arranged by structure name
+ * from upper lever down: Interface > Class > Property > Method > Argument
  * 
  * @author Dao Hoang Son
  * 
@@ -919,6 +920,15 @@ class StructureNameComparator implements Comparator<Structure> {
 	}
 }
 
+/**
+ * A adding parent request object. Hold a reference of the to-be-child structure
+ * and the name of the to-be-parent structure. Used in
+ * {@link Structure#addParentName(String)}
+ * 
+ * @author Dao Hoang Son
+ * @version 1.0
+ * 
+ */
 class StructureAdding {
 	Structure structure;
 	String parent_structure_name;

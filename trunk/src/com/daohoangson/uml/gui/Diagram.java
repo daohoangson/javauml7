@@ -162,7 +162,8 @@ public class Diagram extends JPanel implements StructureListener {
 		super.paint(g);
 
 		// TODO: Figure out a cleaner way to do this without causing con-current
-		// exception
+		// exception. Well, this seem not to happen any more. Maybe this to-do
+		// note need removing?
 		Iterator<Relationship> itr = new LinkedList<Relationship>(relationships)
 				.iterator();
 		while (itr.hasNext()) {

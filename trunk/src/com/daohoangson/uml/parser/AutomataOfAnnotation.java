@@ -1,5 +1,14 @@
 package com.daohoangson.uml.parser;
 
+/**
+ * An automata for Java annotation.<br/>
+ * RegEx equivalent: <code>@[a-zA-Z]*(\(.*\))?</code>
+ * 
+ * @author Dao Hoang Son
+ * 
+ * @see GrammarOfJava
+ * 
+ */
 class AutomataOfAnnotation extends Automata {
 	public AutomataOfAnnotation() {
 		setId(Token.ANNOTATION);
