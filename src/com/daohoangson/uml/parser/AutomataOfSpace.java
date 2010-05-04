@@ -1,7 +1,16 @@
 package com.daohoangson.uml.parser;
 
+/**
+ * An automata for Java space. Spaces consist of blank space, line feeds, tabs
+ * and comments (both single line comment and block comment)
+ * 
+ * @author Dao Hoang Son
+ * @version 1.0
+ * 
+ * @see GrammarOfJava
+ * 
+ */
 class AutomataOfSpace extends Automata {
-
 	public AutomataOfSpace() {
 		setId(Token.SPACE);
 

@@ -1,5 +1,14 @@
 package com.daohoangson.uml.parser;
 
+/**
+ * An automata for number value. Supports sign, exponent, etc
+ * 
+ * @author Dao Hoang Son
+ * @version 1.0
+ * 
+ * @see GrammarOfJava
+ * 
+ */
 class AutomataOfNumberValue extends Automata {
 	public AutomataOfNumberValue() {
 		setId(Token.VALUE_NUMBER);

@@ -1,30 +1,42 @@
 package com.daohoangson.uml.parser;
 
+/**
+ * An automata for static strings/characters
+ * 
+ * @author Dao Hoang Son
+ * @version 1.0
+ * 
+ */
 class AutomataOfStatic extends Automata {
-	private String string;
+	public AutomataOfStatic(int id, String[] strings) {
+		setId(id);
+
+		AutomataState sStart = getStartState();
+		AutomataState sFinish = new AutomataState();
+		for (int i = 0; i < strings.length; i++) {
+			sStart.add(strings[i], sFinish);
+		}
+
+		setAcceptStage(sFinish);
+	}
+
+	public AutomataOfStatic(int id, char[] chars) {
+		setId(id);
+
+		AutomataState sStart = getStartState();
+		AutomataState sFinish = new AutomataState();
+		for (int i = 0; i < chars.length; i++) {
+			sStart.add(chars[i], sFinish);
+		}
+
+		setAcceptStage(sFinish);
+	}
 
 	public AutomataOfStatic(int id, String string) {
-		setId(id);
-		this.string = string;
-		config();
+		this(id, new String[] { string });
 	}
 
 	public AutomataOfStatic(int id, char c) {
-		setId(id);
-		string = String.valueOf(c);
-		config();
+		this(id, new char[] { c });
 	}
-
-	protected void config() {
-		AutomataState last = getStartState();
-
-		for (int i = 0; i < string.length(); i++) {
-			AutomataState state = new AutomataState();
-			last.add(string.charAt(i), state);
-			last = state;
-		}
-
-		setAcceptStage(last);
-	}
-
 }

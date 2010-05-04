@@ -1,5 +1,15 @@
 package com.daohoangson.uml.parser;
 
+/**
+ * Automata for Java package name. Quite the same as {@link AutomataOfName} but
+ * with dots.
+ * 
+ * @author Dao Hoang Son
+ * @version 1.0
+ * 
+ * @see GrammarOfJava
+ * 
+ */
 class AutomataOfPackageName extends Automata {
 
 	AutomataOfPackageName() {

@@ -1,5 +1,15 @@
 package com.daohoangson.uml.parser;
 
+/**
+ * An automata for Java character value.<br/>
+ * RegEx equivalent: <code>'\\?.'</code>
+ * 
+ * @author Dao Hoang Son
+ * @version 1.0
+ * 
+ * @see GrammarOfJava
+ * 
+ */
 class AutomataOfCharValue extends Automata {
 
 	public AutomataOfCharValue() {
