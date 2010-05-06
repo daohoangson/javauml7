@@ -149,6 +149,23 @@ public class Diagram extends JPanel implements StructureListener {
 		}
 	}
 
+	public void remove(Structure structure) {
+		if (structures.contains(structure)) {
+			structures.remove(structure);
+			structure.removeStructureListener(this);
+			structureChanged(new StructureEvent(structure));
+		}
+	}
+
+	public void clear() {
+		Iterator<Structure> itr = structures.iterator();
+		while (itr.hasNext()) {
+			itr.next().removeStructureListener(this);
+		}
+		structures.clear();
+		prepare();
+	}
+
 	/**
 	 * Does custom painting procedures. Draws relationships (only this, at this
 	 * moment).
@@ -390,8 +407,7 @@ public class Diagram extends JPanel implements StructureListener {
 	 * Looks for relationships among our structures use the appropriate
 	 * {@linkplain Relationship} and make them ready to be drawn later
 	 */
-	@Override
-	public void structureChanged(StructureEvent e) {
+	private void prepare() {
 		int n = structures.size();
 
 		// update dependencies
@@ -456,5 +472,10 @@ public class Diagram extends JPanel implements StructureListener {
 		if (cfg_draw_on_change) {
 			draw();
 		}
+	}
+
+	@Override
+	public void structureChanged(StructureEvent e) {
+		prepare();
 	}
 }

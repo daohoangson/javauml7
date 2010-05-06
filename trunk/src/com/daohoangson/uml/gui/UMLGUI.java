@@ -78,6 +78,14 @@ public class UMLGUI extends JFrame implements ActionListener, ContainerListener 
 
 		JMenuItem mfi;
 
+		mfi = new JMenuItem("Clear");
+		mfi.setActionCommand("clear");
+		mfi.addActionListener(this);
+		mfi.setMnemonic(KeyEvent.VK_R);
+		menuFile.add(mfi);
+
+		menuFile.addSeparator();
+
 		mfi = new JMenuItem("Load Source File(s)");
 		mfi.setActionCommand("load");
 		mfi.addActionListener(this);
@@ -101,6 +109,8 @@ public class UMLGUI extends JFrame implements ActionListener, ContainerListener 
 		mfi.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_E,
 				InputEvent.CTRL_DOWN_MASK));
 		menuFile.add(mfi);
+
+		menuFile.addSeparator();
 
 		mfi = new JMenuItem("Exit");
 		mfi.setActionCommand("exit");
@@ -151,6 +161,7 @@ public class UMLGUI extends JFrame implements ActionListener, ContainerListener 
 	 * {@link #doImage(String)}</li>
 	 * <li>generate: Do the generate source procedure by calling
 	 * {@link #doGenerate(String)}</li>
+	 * <li>clear: Confirm and clear the entire diagram</li>
 	 * <li>new: Create new structure
 	 * <ul>
 	 * <li>Class: use {@link ClassForm}</li>
@@ -183,6 +194,14 @@ public class UMLGUI extends JFrame implements ActionListener, ContainerListener 
 			doImage(s.getText());
 		} else if (action.equals("generate")) {
 			doGenerate(s.getText());
+		} else if (action.equals("clear")) {
+			if (JOptionPane
+					.showConfirmDialog(
+							this,
+							"Are you sure you want to clear the Diagram?\nThis action can not be undone!",
+							"Clear", JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION) {
+				diagram.clear();
+			}
 		} else if (action.equals("new")) {
 			// creating new structure
 			String type = s.getText();
