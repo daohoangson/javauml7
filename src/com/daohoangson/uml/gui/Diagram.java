@@ -5,6 +5,9 @@ import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Image;
 import java.awt.Rectangle;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseMotionAdapter;
+import java.awt.event.MouseMotionListener;
 import java.awt.image.BufferedImage;
 import java.awt.image.ImageObserver;
 import java.util.Hashtable;
@@ -105,14 +108,32 @@ public class Diagram extends JPanel implements StructureListener {
 	}
 
 	/**
-	 * Get the scrollable component. Use this for a better user experience.
+	 * Get the scroll-able component. Use this for a better user experience.
 	 * Anyway, this is optional. You can always
 	 * {@linkplain JComponent#add(Component)} directly this object.
 	 * 
 	 * @return a JScrollPane object of the diagram
 	 */
 	public Component getScrollable() {
-		return new JScrollPane(this);
+		JScrollPane sp = new JScrollPane(this);
+
+		// TODO: Need a better way to move around
+		setAutoscrolls(true);
+		MouseMotionListener doScrollRectToVisible = new MouseMotionAdapter() {
+			@Override
+			public void mouseDragged(MouseEvent e) {
+				Rectangle r = new Rectangle(e.getX(), e.getY(), 1, 1);
+				((Diagram) e.getSource()).scrollRectToVisible(r);
+			}
+		};
+		addMouseMotionListener(doScrollRectToVisible);
+
+		return sp;
+	}
+
+	public void ensureStructureIsVisible(Structure structure) {
+		Rectangle rect = getBoundsFor(structure);
+		scrollRectToVisible(rect);
 	}
 
 	/**
@@ -187,10 +208,6 @@ public class Diagram extends JPanel implements StructureListener {
 				System.err.println("Missed the cache!");
 			}
 			getBoundsCache();
-		} else {
-			if (Diagram.debuging) {
-				System.err.println("Hit the cache!");
-			}
 		}
 
 		if (boundsCacheArray == null) {
@@ -269,6 +286,7 @@ public class Diagram extends JPanel implements StructureListener {
 		super.paint(g);
 
 		boundsCache = null; // remove the cache because it's useless now
+
 		// TODO: Figure out a cleaner way to do this without causing con-current
 		// exception. Well, this seem not to happen any more. Maybe this to-do
 		// note need removing?

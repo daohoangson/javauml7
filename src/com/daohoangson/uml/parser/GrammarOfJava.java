@@ -10,6 +10,7 @@ class GrammarOfJava extends Grammar {
 		add(new AutomataOfStatic(Token.ABSTRACT, "abstract"));
 		add(new AutomataOfStatic(Token.CLASS, "class"));
 		add(new AutomataOfStatic(Token.INTERFACE, "interface"));
+		add(new AutomataOfStatic(Token.ENUM, "enum"));
 		add(new AutomataOfStatic(Token.EXTENDS, "extends"));
 		add(new AutomataOfStatic(Token.IMPLEMENTS, "implements"));
 		add(new AutomataOfStatic(Token.THROWS, "throws"));

@@ -357,6 +357,10 @@ public abstract class Structure implements StructureListener {
 
 	@Override
 	public String toString() {
+		return toString("", "");
+	}
+
+	public String toString(String prefix, String suffix) {
 		String str = "";
 		if (cfg_use_visibility && !cfg_hide_visibility) {
 			switch (visibility) {
@@ -374,12 +378,15 @@ public abstract class Structure implements StructureListener {
 				break;
 			}
 		}
-		if (cfg_use_scope) {
-			// TODO: Need something special here
+		if (cfg_use_type) {
+			str += getType() + " ";
 		}
 		str += getName();
-		if (cfg_use_type) {
-			str += ": " + getType();
+
+		str = prefix + str + suffix;
+
+		if (is_static) {
+			str = "<html><u>" + str + "</u></html>";
 		}
 
 		return str;

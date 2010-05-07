@@ -5,7 +5,6 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.text.ParseException;
-import java.util.Enumeration;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -117,7 +116,7 @@ public class Parser {
 	 * @throws StructureException
 	 */
 	public void parse(String source) throws ParseException, StructureException {
-		Enumeration<Token> analyzer = new LexicalAnalyzer(source, grammar);
+		LexicalAnalyzer analyzer = new LexicalAnalyzer(source, grammar);
 
 		String packagename = "";
 		Structure structure = null;
@@ -131,6 +130,7 @@ public class Parser {
 			switch (token.type) {
 			case Token.CLASS:
 			case Token.INTERFACE:
+			case Token.ENUM:
 				if (pending_type == -1) {
 					pending_type = token.type;
 				} else {
@@ -165,6 +165,11 @@ public class Parser {
 						break;
 					case Token.INTERFACE:
 						structure = new Interface(name, modifiers);
+						break;
+					case Token.ENUM:
+						// skip enum
+						skipTo(analyzer, Token.LBRACE);
+						skipRightBrace(analyzer, 1);
 						break;
 					default:
 						throw new ParseException("Unexpected name found: "
@@ -225,14 +230,14 @@ public class Parser {
 		}
 	}
 
-	private Token requires(Enumeration<Token> analyzer, int[] types)
+	private Token requires(LexicalAnalyzer analyzer, int[] types)
 			throws ParseException {
 		if (!analyzer.hasMoreElements()) {
 			throw new ParseException("Unexpected end of file", -1);
 		}
 		Token token;
 		do {
-			token = analyzer.nextElement();
+			token = analyzer.nextElement(types);
 		} while (token != null && token.type == Token.SPACE);
 
 		if (token == null) {
@@ -245,10 +250,20 @@ public class Parser {
 			}
 		}
 
-		throw new ParseException("Unexpected " + token.content, token.offset);
+		// TODO: Actually, this exception will never be raised because of type
+		// filtering
+		String types_string = "";
+		for (int i = 0; i < types.length; i++) {
+			if (types_string.length() > 0) {
+				types_string += ", ";
+			}
+			types_string += types[i];
+		}
+		throw new ParseException("Unexpected " + token.content + ". Expecting "
+				+ types_string, token.offset);
 	}
 
-	private void skipTo(Enumeration<Token> analyzer, int type) {
+	private void skipTo(LexicalAnalyzer analyzer, int type) {
 		while (analyzer.hasMoreElements()) {
 			Token token = analyzer.nextElement();
 			if (token.type == type) {
@@ -257,7 +272,7 @@ public class Parser {
 		}
 	}
 
-	private void skipRightBrace(Enumeration<Token> analyzer, int opened) {
+	private void skipRightBrace(LexicalAnalyzer analyzer, int opened) {
 		if (Parser.debuging) {
 			System.err.println("SkipRightBrace is in action!");
 		}
@@ -292,8 +307,7 @@ public class Parser {
 	 * @throws ParserException
 	 */
 	private void parsePropertyAndMethod(Structure structure,
-			Enumeration<Token> analyzer) throws StructureException,
-			ParseException {
+			LexicalAnalyzer analyzer) throws StructureException, ParseException {
 		List<String> pending_modifiers = new LinkedList<String>();
 		String pending_name = null;
 		String pending_type = null;
@@ -318,17 +332,29 @@ public class Parser {
 				flag_abstract_method = true;
 				break;
 			case Token.TYPE:
-				if (pending_type == null) {
-					pending_type = token.content;
-				} else {
-					throw new ParseException(
-							"Unexpected type " + token.content, token.offset);
-				}
 			case Token.NAME:
 				if (pending_type == null) {
 					pending_type = token.content;
-				} else {
+					Token name = requires(analyzer, new int[] { Token.NAME,
+							Token.LPAR });
+					if (name.type == Token.NAME) {
+						pending_name = name.content;
+					} else {
+						analyzer.pushback();
+					}
+				} else if (pending_type != null && token.type == Token.NAME) {
 					pending_name = token.content;
+				} else {
+					throw new ParseException("Unexpected " + token.content,
+							token.offset);
+				}
+				break;
+			case Token.OPERATOR:
+				if (token.content.equals("[]") && pending_type != null) {
+					pending_type += "[]";
+				} else {
+					throw new ParseException("Unexpected operator "
+							+ token.content, token.offset);
 				}
 				break;
 
@@ -358,7 +384,7 @@ public class Parser {
 				skipRightBrace(analyzer, 1);
 				break;
 			case Token.RBRACE:
-				((LexicalAnalyzer) analyzer).pushback();
+				analyzer.pushback();
 				return;
 			case Token.COMMA:
 				if (pending_name == null || pending_type == null) {
@@ -402,7 +428,7 @@ public class Parser {
 
 			case Token.THROWS:
 				skipTo(analyzer, Token.LBRACE);
-				((LexicalAnalyzer) analyzer).pushback();
+				analyzer.pushback();
 				break;
 
 			default:
@@ -426,9 +452,10 @@ public class Parser {
 	 * @throws ParserException
 	 * @throws StructureException
 	 */
-	private void parseArgument(Structure method, Enumeration<Token> analyzer)
+	private void parseArgument(Structure method, LexicalAnalyzer analyzer)
 			throws ParseException, StructureException {
 		String pending_type = null;
+		String pending_name = null;
 		boolean flag_awaiting = false;
 
 		if (Parser.debuging) {
@@ -440,35 +467,46 @@ public class Parser {
 
 			switch (token.type) {
 			case Token.TYPE:
-				if (pending_type == null) {
-					pending_type = token.content;
-				} else {
-					throw new ParseException(
-							"Unexpected type " + token.content, token.offset);
-				}
-				break;
 			case Token.NAME:
 				if (pending_type == null) {
 					pending_type = token.content;
+					Token name = requires(analyzer, new int[] { Token.NAME });
+					pending_name = name.content;
 				} else {
-					flag_awaiting = false;
-					String name = token.content;
-					method.add(new Argument(name, pending_type));
-					pending_type = null;
-				}
-				break;
-			case Token.COMMA:
-				flag_awaiting = true;
-				break;
-			case Token.RPAR:
-				if (flag_awaiting) {
-					throw new ParseException(
-							"Unexpected ')'. Expecting argument declaration",
+					throw new ParseException("Unexpected " + token.content,
 							token.offset);
 				}
-				LexicalAnalyzer la = (LexicalAnalyzer) analyzer;
-				la.pushback();
-				return;
+				break;
+			case Token.OPERATOR:
+				if (token.content.equals("[]") && pending_type != null) {
+					pending_type += "[]";
+				} else {
+					throw new ParseException("Unexpected operator "
+							+ token.content, token.offset);
+				}
+				break;
+
+			case Token.COMMA:
+			case Token.RPAR:
+				if (pending_type != null && pending_name != null) {
+					method.add(new Argument(pending_name, pending_type));
+					pending_name = null;
+					pending_type = null;
+					flag_awaiting = false;
+				} else if (flag_awaiting) {
+					throw new ParseException(
+							"Unexpected '('. Expecting argument declaration",
+							token.offset);
+				}
+				switch (token.type) {
+				case Token.COMMA:
+					flag_awaiting = true;
+					break;
+				case Token.RPAR:
+					analyzer.pushback();
+					return;
+				}
+				break;
 
 			default:
 				throw new ParseException("Unexpected " + token.content,
