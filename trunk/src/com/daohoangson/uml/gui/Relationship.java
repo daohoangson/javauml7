@@ -85,6 +85,10 @@ abstract public class Relationship {
 
 		Rectangle fromBound = diagram.getBoundsFor(getFrom());
 		Rectangle toBound = diagram.getBoundsFor(getTo());
+		if (fromBound == null || toBound == null) {
+			return;
+		}
+
 		PointSet ps;
 		Color original_color = g.getColor();
 		g.setColor(cfg_color);

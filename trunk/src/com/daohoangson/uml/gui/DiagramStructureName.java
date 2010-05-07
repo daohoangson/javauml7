@@ -59,14 +59,10 @@ class DiagramStructureName extends JLabel implements DragGestureListener,
 		dragSource.createDefaultDragGestureRecognizer(this,
 				DnDConstants.ACTION_COPY_OR_MOVE, this);
 
-		if (!structure.checkHasChildren()) {
-			setFont(getFont().deriveFont(Font.PLAIN));
-		}
-
-		if (structure.getScope().equals("static")) {
-			// using HTML code for label text
-			// this is amazing!!!!
-			setText("<html><u>" + getText() + "</u></html>");
+		if (structure.checkHasChildren()) {
+			setFont(getFont().deriveFont(Font.BOLD, 12));
+		} else {
+			setFont(getFont().deriveFont(Font.PLAIN, 10));
 		}
 	}
 

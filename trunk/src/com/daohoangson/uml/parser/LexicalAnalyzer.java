@@ -40,14 +40,23 @@ public class LexicalAnalyzer implements Enumeration<Token> {
 		return offset < source.length();
 	}
 
+	@Override
+	public Token nextElement() {
+		return nextElement(new int[0]);
+	}
+
 	/**
 	 * Returns the next token. Automatically skips comment (both comment line
 	 * and comment block). Automatically skips directive. Automatically skips
 	 * strings
+	 * 
+	 * @param types
+	 *            type filtering. Only automata that matches these types will
+	 *            get processed
+	 * @return
 	 */
-	@Override
-	public Token nextElement() {
-		GrammarMatch next = grammar.next(source, offset);
+	public Token nextElement(int[] types) {
+		GrammarMatch next = grammar.next(source, offset, types);
 
 		int length = next.found.length();
 		if (length == 0) {
@@ -66,7 +75,7 @@ public class LexicalAnalyzer implements Enumeration<Token> {
 				System.err.println("Auto Skipped: "
 						+ lastToken.content.length() + " character(s)");
 			}
-			return nextElement();
+			return nextElement(types);
 		default:
 			if (LexicalAnalyzer.debuging) {
 				System.err.println(lastToken);
@@ -102,9 +111,10 @@ class Token {
 
 	final static int CLASS = 110;
 	final static int INTERFACE = 111;
-	final static int EXTENDS = 112;
-	final static int IMPLEMENTS = 113;
-	final static int THROWS = 114;
+	final static int ENUM = 112;
+	final static int EXTENDS = 113;
+	final static int IMPLEMENTS = 114;
+	final static int THROWS = 115;
 
 	final static int KEYWORD_IGNORED = 500;
 	final static int ANNOTATION = 501;
@@ -120,8 +130,8 @@ class Token {
 	final static int COLON = 1006;
 	final static int ASSIGN = 1007;
 	final static int OPERATOR = 1100;
-	final static String[] operators = { "+", "-", "*", "/", "==", "!", "!=",
-			">", "<", ">=", "<=", "&&", "||", ".", "?", ":" };
+	final static String[] operators = { "+", "-", "*", "/", "%", "==", "!",
+			"!=", ">", "<", ">=", "<=", "&&", "||", ".", "?", ":", "[]" };
 
 	final static int VALUE_CHAR = 2001;
 	final static int VALUE_STRING = 2002;

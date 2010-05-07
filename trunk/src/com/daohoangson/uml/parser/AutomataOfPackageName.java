@@ -18,6 +18,7 @@ class AutomataOfPackageName extends Automata {
 		AutomataState sStart = new AutomataState();
 		AutomataState sDot = new AutomataState();
 		AutomataState sBody = new AutomataState();
+		AutomataState sStar = new AutomataState();
 
 		getStartState().addAlphabet(sStart);
 		getStartState().add('_', sStart);
@@ -30,8 +31,10 @@ class AutomataOfPackageName extends Automata {
 
 		sDot.addAlphabet(sStart);
 		sDot.add('_', sStart);
+		sDot.add('*', sStar);
 
 		setAcceptStage(sStart);
 		setAcceptStage(sBody);
+		setAcceptStage(sStar);
 	}
 }

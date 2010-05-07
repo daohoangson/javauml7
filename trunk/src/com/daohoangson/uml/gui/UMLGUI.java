@@ -26,8 +26,10 @@ import javax.swing.filechooser.FileFilter;
 
 import com.daohoangson.uml.parser.Parser;
 import com.daohoangson.uml.structures.Structure;
+import com.nguyenthanhan.uml.gui.AboutForm;
 import com.nguyenthanhan.uml.gui.ArgumentForm;
 import com.nguyenthanhan.uml.gui.ClassForm;
+import com.nguyenthanhan.uml.gui.FindForm;
 import com.nguyenthanhan.uml.gui.InfoForm;
 import com.nguyenthanhan.uml.gui.InterfaceForm;
 import com.nguyenthanhan.uml.gui.ListForm;
@@ -86,6 +88,14 @@ public class UMLGUI extends JFrame implements ActionListener, ContainerListener 
 		mfi.setMnemonic(KeyEvent.VK_R);
 		menuFile.add(mfi);
 
+		mfi = new JMenuItem("Quick Find");
+		mfi.setActionCommand("find");
+		mfi.addActionListener(this);
+		mfi.setMnemonic(KeyEvent.VK_F);
+		mfi.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_F,
+				InputEvent.CTRL_DOWN_MASK));
+		menuFile.add(mfi);
+
 		menuFile.addSeparator();
 
 		mfi = new JMenuItem("Load Source File(s)");
@@ -138,6 +148,18 @@ public class UMLGUI extends JFrame implements ActionListener, ContainerListener 
 			menuNew.add(mi);
 		}
 
+		JMenu menuHelp = new JMenu("Help");
+		menuHelp.setMnemonic(KeyEvent.VK_H);
+		menuBar.add(menuHelp);
+
+		JMenuItem mhi;
+
+		mhi = new JMenuItem("About");
+		mhi.setActionCommand("about");
+		mhi.addActionListener(this);
+		mhi.setMnemonic(KeyEvent.VK_A);
+		menuHelp.add(mhi);
+
 		setJMenuBar(menuBar);
 
 		diagram = new Diagram();
@@ -157,15 +179,16 @@ public class UMLGUI extends JFrame implements ActionListener, ContainerListener 
 
 	/**
 	 * Main handler for all actions.<br/>
-	 * Supported actions:<br/>
+	 * Supported actions (must be set using setActionCommand):<br/>
 	 * <ul>
-	 * <li>exit: Simply dispose the JFrame</li>
+	 * <li>clear: Confirm and clear the entire diagram</li>
+	 * <li>find: Display the quick find dialog</li>
 	 * <li>load: Do the load procedure by calling {@link #doLoad(String)}</li>
 	 * <li>image: Do the save image procedure by calling
 	 * {@link #doImage(String)}</li>
 	 * <li>generate: Do the generate source procedure by calling
 	 * {@link #doGenerate(String)}</li>
-	 * <li>clear: Confirm and clear the entire diagram</li>
+	 * <li>exit: Simply dispose the JFrame</li>
 	 * <li>new: Create new structure
 	 * <ul>
 	 * <li>Class: use {@link ClassForm}</li>
@@ -183,6 +206,7 @@ public class UMLGUI extends JFrame implements ActionListener, ContainerListener 
 	 * times before using {@link ArgumentForm}
 	 * </ul>
 	 * </li>
+	 * <li>about: Display author information</li>
 	 * </ul>
 	 */
 	@Override
@@ -190,15 +214,7 @@ public class UMLGUI extends JFrame implements ActionListener, ContainerListener 
 		String action = e.getActionCommand();
 		AbstractButton s = (AbstractButton) e.getSource();
 
-		if (action.equals("exit")) {
-			dispose();
-		} else if (action.equals("load")) {
-			doLoad(s.getText());
-		} else if (action.equals("image")) {
-			doImage(s.getText());
-		} else if (action.equals("generate")) {
-			doGenerate(s.getText());
-		} else if (action.equals("clear")) {
+		if (action.equals("clear")) {
 			if (JOptionPane
 					.showConfirmDialog(
 							this,
@@ -206,6 +222,20 @@ public class UMLGUI extends JFrame implements ActionListener, ContainerListener 
 							"Clear", JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION) {
 				diagram.clear();
 			}
+		} else if (action.equals("find")) {
+			Structure structure = FindForm.find(this, "Quick Find", diagram
+					.getStructures());
+			if (structure != null) {
+				diagram.ensureStructureIsVisible(structure);
+			}
+		} else if (action.equals("load")) {
+			doLoad(s.getText());
+		} else if (action.equals("image")) {
+			doImage(s.getText());
+		} else if (action.equals("generate")) {
+			doGenerate(s.getText());
+		} else if (action.equals("exit")) {
+			dispose();
 		} else if (action.equals("new")) {
 			// creating new structure
 			String type = s.getText();
@@ -238,6 +268,8 @@ public class UMLGUI extends JFrame implements ActionListener, ContainerListener 
 					}
 				}
 			}
+		} else if (action.equals("about")) {
+			new AboutForm(this);
 		}
 	}
 
