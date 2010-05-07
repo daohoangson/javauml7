@@ -1,6 +1,5 @@
 package com.daohoangson.uml.gui;
 
-import java.awt.Color;
 import java.awt.Graphics;
 
 import com.daohoangson.uml.structures.Structure;
@@ -32,7 +31,6 @@ class MultiplicityRelationship extends Relationship {
 
 	MultiplicityRelationship(Diagram diagram, Structure from, Structure to) {
 		super(diagram, from, to);
-		cfg_color = Color.RED;
 	}
 
 	@Override

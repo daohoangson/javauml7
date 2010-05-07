@@ -30,6 +30,7 @@ abstract public class Relationship {
 	 * The color to be drawn
 	 */
 	protected Color cfg_color = Color.BLACK;
+	protected int dash = 0;
 	protected int step = 5;
 	static public boolean debuging = false;
 
@@ -148,8 +149,7 @@ abstract public class Relationship {
 				y1 = y2;
 			}
 
-			if (fromBound.y + step < y1
-					&& y1 < fromBound.y + fromBound.height - step) {
+			if (fromBound.y + 1 < y1 && y1 < fromBound.y + fromBound.height - 1) {
 				ps = drawLine(g, x1, y1, x2, y2, start_length, end_length);
 			} else {
 				// we want to use the x from toBound in order to draw a
@@ -201,7 +201,7 @@ abstract public class Relationship {
 		x4 = (int) Math.ceil(x2 - end_length * Math.sin(delta));
 		y4 = (int) Math.ceil(y2 + end_length * Math.cos(delta));
 
-		__drawLine(g, x3, y3, x4, y4);
+		drawLineSmart(g, x3, y3, x4, y4);
 
 		if (Relationship.debuging) {
 			System.err.println("Drawing from " + x3 + "," + y3 + " to " + x4
@@ -211,7 +211,7 @@ abstract public class Relationship {
 		return new PointSet(x1, y1, x3, y3, delta, x4, y4, x2, y2, delta);
 	}
 
-	private void __drawLine(Graphics g, int x1, int y1, int x2, int y2) {
+	private void drawLineSmart(Graphics g, int x1, int y1, int x2, int y2) {
 		Rectangle[] onTheWay = Relationship.onTheWay(diagram.getBoundsForAll(),
 				x1, y1, x2, y2);
 
@@ -246,14 +246,14 @@ abstract public class Relationship {
 
 				if (use3legs) {
 					// normal case
-					g.drawLine(x, p1y, x, p2y);
-					g.drawLine(x, p2y, px, p2y);
-					g.drawLine(px, p2y, px, p3y);
-					g.drawLine(px, p3y, x, p3y);
+					__drawLine(g, x, p1y, x, p2y);
+					__drawLine(g, x, p2y, px, p2y);
+					__drawLine(g, px, p2y, px, p3y);
+					__drawLine(g, px, p3y, x, p3y);
 					y = p3y; // update the current position
 				} else {
 					// 2 legs only
-					g.drawLine(x, y, x, p3y);
+					__drawLine(g, x, y, x, p3y);
 					y = p3y; // update the current position
 				}
 			} else {
@@ -286,34 +286,87 @@ abstract public class Relationship {
 
 				if (use3legs) {
 					// normal case
-					g.drawLine(p1x, y, p2x, y);
-					g.drawLine(p2x, y, p2x, py);
-					g.drawLine(p2x, py, p3x, py);
-					g.drawLine(p3x, py, p3x, y);
+					__drawLine(g, p1x, y, p2x, y);
+					__drawLine(g, p2x, y, p2x, py);
+					__drawLine(g, p2x, py, p3x, py);
+					__drawLine(g, p3x, py, p3x, y);
 					x = p3x; // update the current position
 				} else {
 					// 2 legs only
 					// TODO
-					g.drawLine(x, y, p3x, y);
+					__drawLine(g, x, y, p3x, y);
 					x = p3x; // update the current position
 				}
 			}
 		}
 
 		if (x != x2 || y != y2) {
-			g.drawLine(x, y, x2, y2);
+			__drawLine(g, x, y, x2, y2);
+		}
+	}
+
+	private void __drawLine(Graphics g, int x1, int y1, int x2, int y2) {
+		if (dash == 0) {
+			g.drawLine(x1, y1, x2, y2);
+		} else {
+			int xx, yy, x, y;
+
+			if (x1 == x2) {
+				// vertical line
+				xx = 0;
+				yy = dash;
+				if (y1 > y2) {
+					yy *= -1;
+				}
+			} else {
+				// horizontal line
+				xx = dash;
+				yy = 0;
+				if (x1 > x2) {
+					xx *= -1;
+				}
+			}
+
+			x = x1;
+			y = y1;
+
+			boolean space = false;
+
+			while (Relationship.isBetween(x, x1, x2)
+					&& Relationship.isBetween(y, y1, y2)) {
+				int xnext = x + xx;
+				int ynext = y + yy;
+				if (Relationship.isBetween(xnext, x1, x2)
+						&& Relationship.isBetween(ynext, y1, y2)) {
+					if (space) {
+						g.drawLine(x, y, xnext, ynext);
+					}
+				}
+				x = xnext;
+				y = ynext;
+				space = !space;
+			}
 		}
 	}
 
 	static private boolean isBetween(int x, int x1, int x2) {
 		if (x1 > x2) {
-			return x1 > x && x > x2;
+			return x1 >= x && x >= x2;
 		} else {
-			return x1 < x && x < x2;
+			return x1 <= x && x <= x2;
 		}
 	}
 
 	static private boolean isOverlap(int x1, int x2, int range1, int range2) {
+		int border = 3;
+		if (range1 < range2) {
+			range1 += border;
+			range2 -= border;
+		} else {
+			range1 -= border;
+			range2 += border;
+		}
+
 		return Relationship.isBetween(x1, range1, range2)
 				|| Relationship.isBetween(x2, range1, range2);
 	}

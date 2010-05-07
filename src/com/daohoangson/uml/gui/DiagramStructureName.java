@@ -1,6 +1,7 @@
 package com.daohoangson.uml.gui;
 
 import java.awt.Color;
+import java.awt.Font;
 import java.awt.dnd.DnDConstants;
 import java.awt.dnd.DragGestureEvent;
 import java.awt.dnd.DragGestureListener;
@@ -57,6 +58,16 @@ class DiagramStructureName extends JLabel implements DragGestureListener,
 		dragSource = new DragSource();
 		dragSource.createDefaultDragGestureRecognizer(this,
 				DnDConstants.ACTION_COPY_OR_MOVE, this);
+
+		if (!structure.checkHasChildren()) {
+			setFont(getFont().deriveFont(Font.PLAIN));
+		}
+
+		if (structure.getScope().equals("static")) {
+			// using HTML code for label text
+			// this is amazing!!!!
+			setText("<html><u>" + getText() + "</u></html>");
+		}
 	}
 
 	@Override

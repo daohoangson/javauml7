@@ -2,7 +2,6 @@ package com.daohoangson.uml.gui;
 
 import java.awt.Component;
 import java.awt.Dimension;
-import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Image;
 import java.awt.Rectangle;
@@ -417,7 +416,6 @@ public class Diagram extends JPanel implements StructureListener {
 				c.add(build(children[i]));
 			}
 		} else {
-			label.setFont(label.getFont().deriveFont(Font.ITALIC));
 			c = label;
 		}
 
@@ -472,7 +470,7 @@ public class Diagram extends JPanel implements StructureListener {
 		while (itr.hasNext()) {
 			Structure s = itr.next();
 
-			// look for Generalization Relationships
+			// look for Realization Relationships
 			Structure[] parents = s.getParents();
 			for (int j = 0, k = parents.length; j < k; j++) {
 				int iparent = structures.indexOf(parents[j]);
@@ -480,10 +478,11 @@ public class Diagram extends JPanel implements StructureListener {
 					dependencies[i][iparent] = true;
 				}
 
-				relationships.add(new GeneralizationRelationship(this, s,
+				relationships.add(new RealizationRelationship(this, s,
 						parents[j]));
 			}
 
+			// look for Generalization Relationships
 			Structure container = s.getContainer();
 			if (container != null) {
 				int icontainer = structures.indexOf(container);

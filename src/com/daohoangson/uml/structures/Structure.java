@@ -377,10 +377,10 @@ public abstract class Structure implements StructureListener {
 		if (cfg_use_scope) {
 			// TODO: Need something special here
 		}
-		if (cfg_use_type) {
-			str += getType() + " ";
-		}
 		str += getName();
+		if (cfg_use_type) {
+			str += ": " + getType();
+		}
 
 		return str;
 	}
