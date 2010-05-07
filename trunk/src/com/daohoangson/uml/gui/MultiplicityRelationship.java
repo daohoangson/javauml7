@@ -45,27 +45,27 @@ class MultiplicityRelationship extends Relationship {
 	 */
 	@Override
 	protected void __drawConnectionLine(Graphics g, PointSet ps) {
-		int x0 = ps.x;
-		int y0 = ps.y;
-		double delta = ps.delta; // the delta angle between the line and
+		int x0 = ps.x4;
+		int y0 = ps.y4;
+		double delta = ps.delta2; // the delta angle between the line and
 		// vertical line
 
 		// calculate point 1 (diamond edges)
 		double delta1 = delta - cfg_diamond_side_angle;
-		int x1 = (int) Math.ceil(x0 + cfg_diamond_side_length
+		int x1 = (int) Math.ceil(x0 - cfg_diamond_side_length
 				* Math.sin(delta1));
 		int y1 = (int) Math.ceil(y0 + cfg_diamond_side_length
 				* Math.cos(delta1));
 
 		// calculate point 2 (diamond edges)
 		double delta2 = delta + cfg_diamond_side_angle;
-		int x2 = (int) Math.ceil(x0 + cfg_diamond_side_length
+		int x2 = (int) Math.ceil(x0 - cfg_diamond_side_length
 				* Math.sin(delta2));
 		int y2 = (int) Math.ceil(y0 + cfg_diamond_side_length
 				* Math.cos(delta2));
 
 		// calculate the joint point of diamond and connection line
-		int x3 = (int) Math.ceil(x0 + cfg_diamond_length * Math.sin(delta));
+		int x3 = (int) Math.ceil(x0 - cfg_diamond_length * Math.sin(delta));
 		int y3 = (int) Math.ceil(y0 + cfg_diamond_length * Math.cos(delta));
 
 		// draw diamond

@@ -22,7 +22,7 @@ public class InfoForm extends ConvenientForm implements ActionListener {
 	private Structure[] children = null;
 
 	public InfoForm(Frame owner, Structure structure) {
-		super(owner, structure.getName(), ModalityType.APPLICATION_MODAL);
+		super(owner, structure.getName(), ModalityType.MODELESS);
 
 		this.structure = structure;
 
@@ -72,6 +72,10 @@ public class InfoForm extends ConvenientForm implements ActionListener {
 		pack();
 		setLocationRelativeTo(null);
 		setVisible(true);
+	}
+
+	public Structure getStructure() {
+		return structure;
 	}
 
 	@Override

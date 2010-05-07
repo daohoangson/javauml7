@@ -8,9 +8,11 @@ import java.awt.Image;
 import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
 import java.awt.image.ImageObserver;
+import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map.Entry;
 
 import javax.swing.Box;
 import javax.swing.BoxLayout;
@@ -48,7 +50,10 @@ public class Diagram extends JPanel implements StructureListener {
 	 * An array of all built component. It will be null at the beginning but
 	 * will get updated in {@link #build(int)}
 	 */
-	private Component[] built = null;
+	private Hashtable<Structure, Component> built = null;
+	private Hashtable<Structure, Rectangle> boundsCache = null;
+	private Rectangle[] boundsCacheArray = null;
+	private Structure onFocusStructure = null;
 	/**
 	 * An array of all dependencies among structures. Get updated in
 	 * {@link #structureChanged(StructureEvent)}
@@ -56,10 +61,14 @@ public class Diagram extends JPanel implements StructureListener {
 	private boolean[][] dependencies = null;
 	/**
 	 * The pending image object to save
+	 * 
+	 * @see DiagramImageObserver
 	 */
 	private Image image = null;
 	/**
 	 * The observer awaiting for image
+	 * 
+	 * @see DiagramImageObserver
 	 */
 	private ImageObserver observer = null;
 	/**
@@ -77,7 +86,7 @@ public class Diagram extends JPanel implements StructureListener {
 	/**
 	 * The gap between 2 components horizontally
 	 */
-	private int cfg_gap_horizontal = 25;
+	private int cfg_gap_horizontal = 50;
 
 	/**
 	 * Constructor. Setup some useful configurations.
@@ -89,6 +98,11 @@ public class Diagram extends JPanel implements StructureListener {
 				cfg_gap_vertical, true));
 		setPreferredSize(new Dimension(700, 400));
 		setAlignmentY(Component.TOP_ALIGNMENT);
+	}
+
+	public void setFocus(Structure structure) {
+		onFocusStructure = structure;
+		prepare();
 	}
 
 	/**
@@ -109,6 +123,83 @@ public class Diagram extends JPanel implements StructureListener {
 	 */
 	public Structure[] getStructures() {
 		return structures.toArray(new Structure[0]);
+	}
+
+	/**
+	 * Calculate the bound of the component. The result is relative to the
+	 * Diagram itself (bypass all parents if any)
+	 * 
+	 * @param c
+	 *            the component. Should be in the components tree
+	 * @return
+	 */
+	private Rectangle getBoundsFor(Component c) {
+		if (c == null) {
+			return new Rectangle();
+		}
+
+		Rectangle bounce = c.getBounds();
+
+		while (c.getParent() != null) {
+			c = c.getParent();
+			if (c == this) {
+				break;
+			}
+			Rectangle bigger_bounce = c.getBounds();
+			bounce.setLocation(bigger_bounce.x + bounce.x, bigger_bounce.y
+					+ bounce.y);
+		}
+
+		return bounce;
+	}
+
+	private void getBoundsCache() {
+		if (Diagram.debuging) {
+			System.err.println("Generating boundsCache...");
+		}
+
+		boundsCache = new Hashtable<Structure, Rectangle>();
+		Iterator<Entry<Structure, Component>> entries = built.entrySet()
+				.iterator();
+		while (entries.hasNext()) {
+			Entry<Structure, Component> entry = entries.next();
+			Structure entry_structure = entry.getKey();
+			Component entry_component = entry.getValue();
+
+			boundsCache.put(entry_structure, getBoundsFor(entry_component));
+		}
+
+		boundsCacheArray = null; // reset the array instance
+	}
+
+	public Rectangle getBoundsFor(Structure structure) {
+		if (boundsCache == null) {
+			// cache is empty
+			// this will be ran one time (and ready to be used intensively!)
+			getBoundsCache();
+		}
+
+		return boundsCache.get(structure);
+	}
+
+	public Rectangle[] getBoundsForAll() {
+		if (boundsCache == null) {
+			if (Diagram.debuging) {
+				System.err.println("Missed the cache!");
+			}
+			getBoundsCache();
+		} else {
+			if (Diagram.debuging) {
+				System.err.println("Hit the cache!");
+			}
+		}
+
+		if (boundsCacheArray == null) {
+			boundsCacheArray = boundsCache.values().toArray(new Rectangle[0]);
+		}
+
+		return boundsCacheArray;
+
 	}
 
 	/**
@@ -178,13 +269,18 @@ public class Diagram extends JPanel implements StructureListener {
 
 		super.paint(g);
 
+		boundsCache = null; // remove the cache because it's useless now
 		// TODO: Figure out a cleaner way to do this without causing con-current
 		// exception. Well, this seem not to happen any more. Maybe this to-do
 		// note need removing?
 		Iterator<Relationship> itr = new LinkedList<Relationship>(relationships)
 				.iterator();
 		while (itr.hasNext()) {
-			itr.next().draw(g);
+			Relationship relationship = itr.next();
+			if (onFocusStructure == null
+					|| relationship.getFrom() == onFocusStructure) {
+				relationship.draw(g);
+			}
 		}
 
 		if (image != null) {
@@ -204,53 +300,6 @@ public class Diagram extends JPanel implements StructureListener {
 	}
 
 	/**
-	 * Looks for the built component for structure
-	 * 
-	 * @param structure
-	 *            the one needs component
-	 * @return component or null
-	 */
-	Component getComponentOf(Structure structure) {
-		if (built != null) {
-			for (int i = 0; i < built.length; i++) {
-				if (structures.get(i) == structure) {
-					return built[i];
-				}
-			}
-		}
-
-		return null;
-	}
-
-	/**
-	 * Calculate the bound of the component. The result is relative to the
-	 * Diagram itself (bypass all parents if any)
-	 * 
-	 * @param c
-	 *            the component. Should be in the components tree
-	 * @return
-	 */
-	Rectangle getBound(Component c) {
-		if (c == null) {
-			return new Rectangle();
-		}
-
-		Rectangle bounce = c.getBounds();
-
-		while (c.getParent() != null) {
-			c = c.getParent();
-			if (c == this) {
-				break;
-			}
-			Rectangle bigger_bounce = c.getBounds();
-			bounce.setLocation(bigger_bounce.x + bounce.x, bigger_bounce.y
-					+ bounce.y);
-		}
-
-		return bounce;
-	}
-
-	/**
 	 * Primary drawing method. Remove all existing components. Re-build them in
 	 * order of dependencies.
 	 */
@@ -258,7 +307,7 @@ public class Diagram extends JPanel implements StructureListener {
 		removeAll();
 
 		int n = structures.size();
-		built = new Component[n];
+		built = new Hashtable<Structure, Component>();
 		int width = 0;
 		int height = 0;
 		int built_count = 0;
@@ -307,10 +356,11 @@ public class Diagram extends JPanel implements StructureListener {
 	 */
 	private Component build(int i) {
 		Component container = null;
+		Structure structure = structures.get(i);
 
-		if (built[i] == null) {
-			Component component = build(structures.get(i));
-			built[i] = component;
+		if (built.get(structure) == null) {
+			Component component = build(structure);
+			built.put(structure, component);
 			List<Component> dependent_components = new LinkedList<Component>();
 
 			int n = structures.size();
@@ -356,10 +406,11 @@ public class Diagram extends JPanel implements StructureListener {
 	Component build(Structure s) {
 		JComponent c;
 
-		JLabel label = new DnDLabel(s);
+		JLabel label = new DiagramStructureName(s);
 
 		if (s.checkHasChildren()) {
-			c = new DnDPanel(s, label);
+			c = new DiagramStructureGroup(s, label, new Dimension(
+					cfg_gap_vertical / 5, cfg_gap_horizontal / 5));
 
 			Structure children[] = s.getChildren();
 			for (int i = 0; i < children.length; i++) {

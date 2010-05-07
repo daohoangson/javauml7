@@ -10,29 +10,31 @@ import java.awt.event.KeyListener;
 
 import javax.swing.JDialog;
 
-public abstract class ConvenientForm extends JDialog implements ContainerListener, KeyListener {
+public abstract class ConvenientForm extends JDialog implements
+		ContainerListener, KeyListener {
 	private static final long serialVersionUID = -1726732388115683951L;
 
 	public ConvenientForm(Frame owner, String title, ModalityType modalityType) {
 		super(owner, title, modalityType);
 		setResizable(false);
-		
+
 		addListener(this);
 	}
-	
+
 	protected abstract void submit();
-	
+
 	private void addListener(Component c) {
 		c.addKeyListener(this);
 		if (c instanceof Container) {
 			Container container = (Container) c;
 			container.addContainerListener(this);
 			Component[] children = container.getComponents();
-			for (int i = 0; i < children.length; i++) 
+			for (int i = 0; i < children.length; i++) {
 				addListener(children[i]);
+			}
 		}
 	}
-	
+
 	private void removeListener(Component c) {
 		c.removeKeyListener(this);
 		if (c instanceof Container) {
@@ -59,7 +61,7 @@ public abstract class ConvenientForm extends JDialog implements ContainerListene
 	public void keyPressed(KeyEvent e) {
 		int kc = e.getKeyCode();
 		if (kc == KeyEvent.VK_ESCAPE) {
-			setVisible(false);
+			dispose();
 		} else if (kc == KeyEvent.VK_ENTER) {
 			submit();
 		}
@@ -68,12 +70,12 @@ public abstract class ConvenientForm extends JDialog implements ContainerListene
 	@Override
 	public void keyReleased(KeyEvent e) {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	@Override
 	public void keyTyped(KeyEvent e) {
 		// TODO Auto-generated method stub
-		
+
 	}
 }

@@ -2,6 +2,7 @@ package com.daohoangson.uml.gui;
 
 import java.awt.Color;
 import java.awt.Component;
+import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.datatransfer.UnsupportedFlavorException;
 import java.awt.dnd.DnDConstants;
@@ -19,13 +20,13 @@ import com.daohoangson.uml.structures.Structure;
 import com.tranvietson.uml.structures.StructureException;
 
 /**
- * Drag and Drop Panel for {@link Structure}s
+ * Grouping for several {@linkplain Structure structure}s
  * 
  * @author Dao Hoang Son
  * @version 1.0
  * 
  */
-class DnDPanel extends JPanel implements DropTargetListener {
+class DiagramStructureGroup extends JPanel implements DropTargetListener {
 	private static final long serialVersionUID = -6330448983826031865L;
 	/**
 	 * The corresponding structure of the panel
@@ -33,7 +34,7 @@ class DnDPanel extends JPanel implements DropTargetListener {
 	private Structure structure;
 	/**
 	 * The heading component for the panel. Usually, it should be a
-	 * {@link DnDLabel} of the same {@link #structure}
+	 * {@link DiagramStructureName} of the same {@link #structure}
 	 */
 	private Component head;
 	/**
@@ -56,12 +57,15 @@ class DnDPanel extends JPanel implements DropTargetListener {
 	 * The width of border for structure's component
 	 */
 	private int cfg_border_width = 5;
+	private Dimension block_size;
 
-	DnDPanel(Structure structure, Component head) {
+	DiagramStructureGroup(Structure structure, Component head,
+			Dimension block_size) {
 		super();
 
 		this.structure = structure;
 		this.head = head;
+		this.block_size = block_size;
 		new DropTarget(this, this);
 
 		original_color = getForeground();
@@ -77,6 +81,26 @@ class DnDPanel extends JPanel implements DropTargetListener {
 		return "DnDPanel of " + head;
 	}
 
+	@Override
+	public Dimension getPreferredSize() {
+		Dimension d = super.getPreferredSize();
+
+		d.width = (int) (Math.ceil((double) d.width / block_size.width) * block_size.width);
+		d.height = (int) (Math.ceil((double) d.height / block_size.height) * block_size.height);
+
+		return d;
+	}
+
+	@Override
+	public Dimension getMinimumSize() {
+		return getPreferredSize();
+	}
+
+	@Override
+	public Dimension getMaximumSize() {
+		return getPreferredSize();
+	}
+
 	Component getHead() {
 		return head;
 	}
@@ -84,7 +108,7 @@ class DnDPanel extends JPanel implements DropTargetListener {
 	@Override
 	public Component add(Component comp) {
 		try {
-			DnDLabel label = (DnDLabel) comp;
+			DiagramStructureName label = (DiagramStructureName) comp;
 			if (property_first == null
 					&& label.getStructureName().equals("Property")) {
 				property_first = comp;
