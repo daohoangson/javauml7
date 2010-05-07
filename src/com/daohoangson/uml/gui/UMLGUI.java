@@ -2,7 +2,6 @@ package com.daohoangson.uml.gui;
 
 import java.awt.Component;
 import java.awt.Container;
-import java.awt.Cursor;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ContainerEvent;
@@ -11,6 +10,8 @@ import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.io.File;
 
 import javax.swing.AbstractButton;
@@ -64,6 +65,7 @@ public class UMLGUI extends JFrame implements ActionListener, ContainerListener 
 	 * The diagram which holds all the structure and build primary display area
 	 */
 	public Diagram diagram;
+	private InfoForm lastOpened = null;
 
 	/**
 	 * Constructor. Sets up everything up. Including a menu bar and the diagram.
@@ -146,9 +148,11 @@ public class UMLGUI extends JFrame implements ActionListener, ContainerListener 
 		setTitle("UML");
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
-		Structure.debuging = UMLGUI.debuging;
-		Diagram.debuging = UMLGUI.debuging;
-		Parser.debuging = UMLGUI.debuging;
+		if (UMLGUI.debuging) {
+			Structure.debuging = UMLGUI.debuging;
+			Diagram.debuging = UMLGUI.debuging;
+			Parser.debuging = UMLGUI.debuging;
+		}
 	}
 
 	/**
@@ -368,25 +372,48 @@ public class UMLGUI extends JFrame implements ActionListener, ContainerListener 
 			}
 		}
 
-		if (c instanceof DnDPanel) {
-			DnDPanel panel = (DnDPanel) c;
-			DnDLabel label = (DnDLabel) panel.getHead();
+		if (c instanceof DiagramStructureGroup) {
+			DiagramStructureGroup panel = (DiagramStructureGroup) c;
+			DiagramStructureName label = (DiagramStructureName) panel.getHead();
 			final UMLGUI owner = this;
 			label.addMouseListener(new MouseAdapter() {
 				@Override
 				public void mouseClicked(MouseEvent e) {
-					DnDLabel label = (DnDLabel) e.getSource();
-					new InfoForm(owner, label.getStructure());
+					if (lastOpened != null && lastOpened.isVisible()) {
+						// we don't allow multiple information form to be
+						// displayed
+						lastOpened.requestFocus();
+					} else {
+						DiagramStructureName label = (DiagramStructureName) e
+								.getSource();
+						lastOpened = new InfoForm(owner, label.getStructure());
+						diagram.setFocus(label.getStructure());
+						lastOpened.addWindowListener(new WindowAdapter() {
+							@Override
+							public void windowClosing(WindowEvent e) {
+								// TODO: Too complicated. Any other ways?
+								diagram.setFocus(null);
+							}
+
+							@Override
+							public void windowClosed(WindowEvent e) {
+								// TODO: This is also too complicated :(
+								diagram.setFocus(null);
+							}
+						});
+					}
 				}
 
 				@Override
 				public void mouseEntered(MouseEvent e) {
-					setCursor(new Cursor(Cursor.HAND_CURSOR));
+					// TODO: Need something more accurate!
+					// setCursor(new Cursor(Cursor.HAND_CURSOR));
 				}
 
 				@Override
 				public void mouseExited(MouseEvent e) {
-					setCursor(new Cursor(Cursor.DEFAULT_CURSOR));
+					// TODO: Need something more accurate!
+					// setCursor(new Cursor(Cursor.DEFAULT_CURSOR));
 				}
 			});
 		}

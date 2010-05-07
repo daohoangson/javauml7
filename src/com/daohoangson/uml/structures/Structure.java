@@ -385,6 +385,11 @@ public abstract class Structure implements StructureListener {
 		return str;
 	}
 
+	@Override
+	public int hashCode() {
+		return (getStructureName() + "." + getName()).hashCode();
+	}
+
 	public void setInfo(String key, String value) {
 		info.put(key, value);
 	}

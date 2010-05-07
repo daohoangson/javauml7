@@ -15,13 +15,13 @@ import javax.swing.JLabel;
 import com.daohoangson.uml.structures.Structure;
 
 /**
- * Drag and Drop Label for {@link Structure}s
+ * Primary component for {@linkplain Structure structure}s
  * 
  * @author Dao Hoang Son
  * @version 1.2
  * 
  */
-class DnDLabel extends JLabel implements DragGestureListener,
+class DiagramStructureName extends JLabel implements DragGestureListener,
 		DragSourceListener {
 	private static final long serialVersionUID = -6281032125570028093L;
 	/**
@@ -47,7 +47,7 @@ class DnDLabel extends JLabel implements DragGestureListener,
 	 * 
 	 * @param structure
 	 */
-	DnDLabel(Structure structure) {
+	DiagramStructureName(Structure structure) {
 		super(structure.toString());
 
 		this.structure = structure;

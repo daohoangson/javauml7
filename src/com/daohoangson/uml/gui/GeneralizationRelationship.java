@@ -45,20 +45,19 @@ class GeneralizationRelationship extends Relationship {
 	 */
 	@Override
 	protected void __drawConnectionLine(Graphics g, PointSet ps) {
-		int x0 = ps.x;
-		int y0 = ps.y;
-		double delta = ps.delta; // the delta angle between the line and
-									// vertical line
+		int x0 = ps.x4;
+		int y0 = ps.y4;
+		double delta = ps.delta2;
 
 		// calculate point 1 (arrow edges)
 		double delta1 = delta - cfg_arrow_side_angle;
+		int x1 = (int) Math.ceil(x0 - cfg_arrow_side_length * Math.sin(delta1));
 		int y1 = (int) Math.ceil(y0 + cfg_arrow_side_length * Math.cos(delta1));
-		int x1 = (int) Math.ceil(x0 + cfg_arrow_side_length * Math.sin(delta1));
 
 		// calculate point 2 (arrow edges)
 		double delta2 = delta + cfg_arrow_side_angle;
+		int x2 = (int) Math.ceil(x0 - cfg_arrow_side_length * Math.sin(delta2));
 		int y2 = (int) Math.ceil(y0 + cfg_arrow_side_length * Math.cos(delta2));
-		int x2 = (int) Math.ceil(x0 + cfg_arrow_side_length * Math.sin(delta2));
 
 		// draw arrow
 		g.drawLine(x1, y1, x2, y2);

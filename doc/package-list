@@ -1,3 +1,7 @@
+
 com.daohoangson.uml.gui
+com.daohoangson.uml.parser
 com.daohoangson.uml.structures
+com.nguyenthanhan.uml.gui
+com.tranvietson.uml.codegen
 com.tranvietson.uml.structures
