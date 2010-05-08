@@ -16,8 +16,8 @@ public class TestRelationship {
 	 * @throws StructureException
 	 */
 	public static void main(String[] args) throws StructureException {
-		Diagram.debuging = true;
-		Relationship.debuging = true;
+		Diagram.debugging = true;
+		Relationship.debugging = true;
 
 		UMLGUI gui = new UMLGUI();
 		Diagram d = gui.diagram;

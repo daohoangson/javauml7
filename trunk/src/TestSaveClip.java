@@ -55,7 +55,7 @@ public class TestSaveClip {
 
 		C.add(A3);
 
-		Diagram.debuging = true;
+		Diagram.debugging = true;
 		d.startClipping(new DiagramImageObserver("clip.png"));
 	}
 }

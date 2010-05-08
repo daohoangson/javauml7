@@ -14,7 +14,7 @@ import com.daohoangson.uml.structures.Structure;
  * Base Relationship class. No instance of this class should be created.
  * 
  * @author Dao Hoang Son
- * @version 1.0
+ * @version 1.2
  * 
  */
 abstract public class Relationship {
@@ -30,14 +30,24 @@ abstract public class Relationship {
 	 * The color to be drawn
 	 */
 	protected Color cfg_color = Color.BLACK;
-	protected int dash = 0;
-	protected int step = 5;
-	static public boolean debuging = false;
+	/**
+	 * The length of dashes. SPecifies 0 to draw straight line (no dash)
+	 */
+	protected int cfg_dash_length = 0;
+	/**
+	 * The distance between lines and components
+	 */
+	protected int cfg_distance = 5;
+	/**
+	 * Determines if we are in debug mode.
+	 */
+	static public boolean debugging = false;
 
 	/**
 	 * Constructor
 	 * 
 	 * @param diagram
+	 *            the root diagram
 	 * @param from
 	 *            the source structure
 	 * @param to
@@ -68,7 +78,7 @@ abstract public class Relationship {
 	}
 
 	/**
-	 * Select and draw the main connection line
+	 * Selects and draws the main connection line(s)
 	 * 
 	 * @param g
 	 *            the target graphics
@@ -79,7 +89,7 @@ abstract public class Relationship {
 	 */
 	protected void drawConnectionLine(Graphics g, double start_length,
 			double end_length) {
-		if (Relationship.debuging) {
+		if (Relationship.debugging) {
 			System.err.println("Drawing from " + getFrom() + " to " + getTo());
 		}
 
@@ -174,9 +184,29 @@ abstract public class Relationship {
 		g.setColor(original_color);
 	}
 
+	/**
+	 * Calculates and draw a straight line from 2 points (must be a vertical
+	 * line or a horizontal line)
+	 * 
+	 * @param g
+	 *            the <code>Graphics</code> object to be drawn
+	 * @param x1
+	 *            the x coordinate of the first point
+	 * @param y1
+	 *            the y coordinate of the first point
+	 * @param x2
+	 *            the x coordinate of the second point
+	 * @param y2
+	 *            the y coordinate of the second point
+	 * @param start_length
+	 *            the length to be left at the start
+	 * @param end_length
+	 *            the length to be left at the end
+	 * @return a {@link PointSet} containing left lines and the delta angles
+	 */
 	private PointSet drawLine(Graphics g, int x1, int y1, int x2, int y2,
 			double start_length, double end_length) {
-		if (Relationship.debuging) {
+		if (Relationship.debugging) {
 			System.err.println("Drawing from " + x1 + "," + y1 + " to " + x2
 					+ "," + y2 + ". Start = " + start_length + ". End = "
 					+ end_length);
@@ -207,7 +237,7 @@ abstract public class Relationship {
 
 		drawLineSmart(g, x3, y3, x4, y4);
 
-		if (Relationship.debuging) {
+		if (Relationship.debugging) {
 			System.err.println("Drawing from " + x3 + "," + y3 + " to " + x4
 					+ "," + y4 + ". Delta = " + delta);
 		}
@@ -215,6 +245,22 @@ abstract public class Relationship {
 		return new PointSet(x1, y1, x3, y3, delta, x4, y4, x2, y2, delta);
 	}
 
+	/**
+	 * Draws a straight line betwen 2 points but avoid all components on the way
+	 * 
+	 * @param g
+	 *            the <code>Graphics</code> object to be drawn
+	 * @param x1
+	 *            the x coordinate of the first point
+	 * @param y1
+	 *            the y coordinate of the first point
+	 * @param x2
+	 *            the x coordinate of the second point
+	 * @param y2
+	 *            the y coordinate of the second point
+	 * 
+	 * @see #onTheWay(Rectangle[], int, int, int, int)
+	 */
 	private void drawLineSmart(Graphics g, int x1, int y1, int x2, int y2) {
 		if (x1 == x2 && y1 == y2) {
 			// oops, some kind of pseudo line?
@@ -233,18 +279,18 @@ abstract public class Relationship {
 			if (x1 == x2) {
 				// vertical line
 				int p1y, p2y, p3y;
-				int px = rect.x - step;
+				int px = rect.x - cfg_distance;
 				boolean use3legs = true;
 				if (y1 < y2) {
 					// coming from above
 					p1y = y;
-					p2y = rect.y - step;
-					p3y = rect.y + rect.height + step;
+					p2y = rect.y - cfg_distance;
+					p3y = rect.y + rect.height + cfg_distance;
 				} else {
 					// coming from below
 					p1y = y;
-					p2y = rect.y + rect.height + step;
-					p3y = rect.y - step;
+					p2y = rect.y + rect.height + cfg_distance;
+					p3y = rect.y - cfg_distance;
 				}
 				if (Relationship.isBetween(p3y, y1, y2)) {
 					// oops
@@ -269,18 +315,18 @@ abstract public class Relationship {
 			} else {
 				// horizontal line
 				int p1x, p2x, p3x;
-				int py = rect.y - step;
+				int py = rect.y - cfg_distance;
 				boolean use3legs = true;
 				if (x1 < x2) {
 					// coming from the left
 					p1x = x;
-					p2x = rect.x - step;
-					p3x = rect.x + rect.width + step;
+					p2x = rect.x - cfg_distance;
+					p3x = rect.x + rect.width + cfg_distance;
 				} else {
 					// coming from the right
 					p1x = x;
-					p2x = rect.x + rect.width + step;
-					p3x = rect.x - step;
+					p2x = rect.x + rect.width + cfg_distance;
+					p3x = rect.x - cfg_distance;
 				}
 
 				if (!Relationship.isBetween(p3x, x1, x2)) {
@@ -311,8 +357,24 @@ abstract public class Relationship {
 		}
 	}
 
+	/**
+	 * Draws a straight line or a dashed line between 2 points
+	 * 
+	 * @param g
+	 *            the <code>Graphics</code> object to be drawn
+	 * @param x1
+	 *            the x coordinate of the first point
+	 * @param y1
+	 *            the y coordinate of the first point
+	 * @param x2
+	 *            the x coordinate of the second point
+	 * @param y2
+	 *            the y coordinate of the second point
+	 * 
+	 * @see #cfg_dash_length
+	 */
 	private void __drawLine(Graphics g, int x1, int y1, int x2, int y2) {
-		if (dash == 0) {
+		if (cfg_dash_length == 0) {
 			g.drawLine(x1, y1, x2, y2);
 		} else {
 			int xx, yy, x, y;
@@ -320,13 +382,13 @@ abstract public class Relationship {
 			if (x1 == x2) {
 				// vertical line
 				xx = 0;
-				yy = dash;
+				yy = cfg_dash_length;
 				if (y1 > y2) {
 					yy *= -1;
 				}
 			} else {
 				// horizontal line
-				xx = dash;
+				xx = cfg_dash_length;
 				yy = 0;
 				if (x1 > x2) {
 					xx *= -1;
@@ -355,6 +417,17 @@ abstract public class Relationship {
 		}
 	}
 
+	/**
+	 * Checks if a number is between 2 other numbers
+	 * 
+	 * @param x
+	 *            the number need checking
+	 * @param x1
+	 *            the range first edge
+	 * @param x2
+	 *            the range second edge
+	 * @return true if it is between (inclusive)
+	 */
 	static private boolean isBetween(int x, int x1, int x2) {
 		if (x1 > x2) {
 			return x1 >= x && x >= x2;
@@ -363,19 +436,48 @@ abstract public class Relationship {
 		}
 	}
 
-	static private boolean isOverlap(int x1, int x2, int range1, int range2) {
-		if (range1 < range2) {
-			range1++;
-			range2--;
+	/**
+	 * Checks if a range of numbers is overlap another range
+	 * 
+	 * @param range1_x1
+	 *            the first range first edge
+	 * @param range1_x2
+	 *            the first range second edge
+	 * @param range2_x1
+	 *            the second range first edge
+	 * @param range2_x2
+	 *            the second range second edge
+	 * @return true if the 2 ranges are overlapped (not inclusive)
+	 */
+	static private boolean isOverlap(int range1_x1, int range1_x2,
+			int range2_x1, int range2_x2) {
+		if (range2_x1 < range2_x2) {
+			range2_x1++;
+			range2_x2--;
 		} else {
-			range1--;
-			range2++;
+			range2_x1--;
+			range2_x2++;
 		}
 
-		return Relationship.isBetween(x1, range1, range2)
-				|| Relationship.isBetween(x2, range1, range2);
+		return Relationship.isBetween(range1_x1, range2_x1, range2_x2)
+				|| Relationship.isBetween(range1_x2, range2_x1, range2_x2);
 	}
 
+	/**
+	 * Finds all rectangles on the way of a line between 2 points
+	 * 
+	 * @param rectangles
+	 *            an array of rectangles to check against
+	 * @param x1
+	 *            the x coordinate of the first point
+	 * @param y1
+	 *            the y coordinate of the first point
+	 * @param x2
+	 *            the x coordinate of the second point
+	 * @param y2
+	 *            the y coordinate of the second point
+	 * @return an array of found rectangles
+	 */
 	static private Rectangle[] onTheWay(Rectangle[] rectangles, int x1, int y1,
 			int x2, int y2) {
 		List<Rectangle> found = new LinkedList<Rectangle>();
@@ -420,7 +522,7 @@ abstract public class Relationship {
 		}
 		Collections.sort(found, new RectangleComparator(comparator_direction));
 
-		if (Relationship.debuging) {
+		if (Relationship.debugging) {
 			System.err.println(x1 + "," + y1 + " ~> " + x2 + "," + y2 + ": "
 					+ found);
 		}
@@ -428,6 +530,33 @@ abstract public class Relationship {
 		return found.toArray(new Rectangle[0]);
 	}
 
+	/**
+	 * Draws the path between 2 points
+	 * 
+	 * @param g
+	 *            the <code>Graphics</code> object to be drawn
+	 * @param x1
+	 *            the x coordinate of the first point
+	 * @param y1
+	 *            the y coordinate of the first point
+	 * @param x2
+	 *            the x coordinate of the second point
+	 * @param y2
+	 *            the y coordinate of the second point
+	 * @param start_length
+	 *            the length to be left at the start
+	 * @param end_length
+	 *            the length to be left at the end
+	 * @param mode
+	 *            the mode for path. Possible values are
+	 *            <ul>
+	 *            <li>30: 3 lines. Go half the height before turning</li>
+	 *            <li>31: 3 lines. Go half the width before turning</li>
+	 *            <li>20: 2 lines. Keep the x coordinate as long as possible</li>
+	 *            <li>21: 2 lines. Keep the y coordinate as long as possible</li>
+	 *            </ul>
+	 * @return a {@link PointSet} containing left lines and the delta angles
+	 */
 	private PointSet drawPath(Graphics g, int x1, int y1, int x2, int y2,
 			double start_length, double end_length, int mode) {
 		int tmp_x1, tmp_y1, tmp_x2, tmp_y2;
@@ -481,12 +610,12 @@ abstract public class Relationship {
 
 	/**
 	 * Customized primary drawing method for each relationships. Must be
-	 * overriden in subclasses and should call
+	 * overridden in subclasses and should call
 	 * {@link #drawConnectionLine(Graphics, double, double)} with appropriate
 	 * arguments
 	 * 
 	 * @param g
-	 *            the target graphics
+	 *            the target <code>Graphics</code> to be drawn
 	 */
 	abstract void draw(Graphics g);
 }

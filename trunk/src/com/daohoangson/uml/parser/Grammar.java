@@ -4,9 +4,24 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
+/**
+ * The base class for a grammar. Provides basic methods of a grammar
+ * 
+ * @author Dao Hoang Son
+ * @version 1.0
+ * 
+ * @see GrammarOfJava
+ * 
+ */
 public abstract class Grammar {
+	/**
+	 * A list of automata in the grammar
+	 */
 	private List<Automata> automatas;
 
+	/**
+	 * Specifies grammar configuration. Subclasses must override this method
+	 */
 	protected abstract void config();
 
 	public Grammar() {
@@ -14,10 +29,29 @@ public abstract class Grammar {
 		config();
 	}
 
+	/**
+	 * Adds a new automata into the grammar
+	 * 
+	 * @param a
+	 *            the new automata
+	 */
 	public void add(Automata a) {
 		automatas.add(a);
 	}
 
+	/**
+	 * Finds the next matched {@link GrammarMatch} with grammar's automata
+	 * 
+	 * @param source
+	 *            the string to find matches
+	 * @param offset
+	 *            the starting offset
+	 * @param types
+	 *            an array of types limitation. Use zero-length array to accept
+	 *            all automata type. If an array is specified, only automata
+	 *            with that type is processed, others will be ignored
+	 * @return the matched <code>GrammarMatch</code>
+	 */
 	public GrammarMatch next(String source, int offset, int[] types) {
 		Automata found_automata = null;
 		String found = "";
@@ -53,6 +87,13 @@ public abstract class Grammar {
 	}
 }
 
+/**
+ * A grammar match object. Containing the source automata and the found string
+ * 
+ * @author Dao Hoang Son
+ * @version 1.0
+ * 
+ */
 class GrammarMatch {
 	Automata automata;
 	String found;

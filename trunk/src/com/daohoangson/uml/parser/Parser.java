@@ -18,12 +18,14 @@ import com.tranvietson.uml.structures.Property;
 import com.tranvietson.uml.structures.StructureException;
 
 /**
- * A Jave source parser. It makes use of {@link LexicalAnalyzer} and put
- * structure found into a diagram. Parse everything from Class/Interface to
- * Argument. The content of methods is ignored.
+ * A Java source parser. It makes use of {@link LexicalAnalyzer} and put
+ * structure found into a diagram. Parse everything from classes/interfaces to
+ * arguments. The content of methods is ignored.
  * 
  * @author Dao Hoang Son
  * @version 1.0
+ * 
+ * @see GrammarOfJava
  * 
  */
 public class Parser {
@@ -31,15 +33,18 @@ public class Parser {
 	 * The target diagram which will get updated
 	 */
 	private Diagram diagram;
+	/**
+	 * The grammar. It's not necessary to use this property but to prevent
+	 * creating the grammar again and again when parse multiple files
+	 */
 	private Grammar grammar;
 	/**
 	 * Determines if we are in debug mode.
 	 */
-	static public boolean debuging = false;
+	static public boolean debugging = false;
 
 	/**
-	 * Constructor. Accepts a diagram and set it own object in order to update
-	 * later when something is parsed
+	 * Constructor. Accepts a diagram
 	 * 
 	 * @param diagram
 	 *            the target diagram
@@ -48,11 +53,11 @@ public class Parser {
 		this.diagram = diagram;
 		grammar = new GrammarOfJava();
 
-		LexicalAnalyzer.debuging = Parser.debuging;
+		LexicalAnalyzer.debugging = Parser.debugging;
 	}
 
 	/**
-	 * Reads file into a string. Simple enough
+	 * Reads file into a string. Just a helper method
 	 * 
 	 * @param file
 	 *            the source file
@@ -74,14 +79,13 @@ public class Parser {
 	 * @param file
 	 *            the file or directory
 	 * @return number of file parsed
-	 * @throws StructureException
 	 * @throws ParserException
 	 * @throws IOException
 	 */
 	public int parse(File file) throws ParseException, IOException {
 		int parsed = 0;
 
-		if (Parser.debuging) {
+		if (Parser.debugging) {
 			System.err.println("Parsing " + file.getAbsolutePath());
 		}
 
@@ -218,7 +222,7 @@ public class Parser {
 						&& structure == null) {
 					// all good
 					return;
-				} else if (Parser.debuging) {
+				} else if (Parser.debugging) {
 					System.err.println(pending_type);
 					System.err.println(pending_modifiers);
 					System.err.println(structure);
@@ -231,6 +235,16 @@ public class Parser {
 		}
 	}
 
+	/**
+	 * Looks for a specific set of types of automata
+	 * 
+	 * @param analyzer
+	 *            the analyzer
+	 * @param types
+	 *            an array of types
+	 * @return found token
+	 * @throws ParseException
+	 */
 	private Token requires(LexicalAnalyzer analyzer, int[] types)
 			throws ParseException {
 		if (!analyzer.hasMoreElements()) {
@@ -252,7 +266,7 @@ public class Parser {
 		}
 
 		// TODO: Actually, this exception will never be raised because of type
-		// filtering
+		// filtering. But it was here to handle the worst cases if any
 		String types_string = "";
 		for (int i = 0; i < types.length; i++) {
 			if (types_string.length() > 0) {
@@ -264,6 +278,14 @@ public class Parser {
 				+ types_string, token.offset);
 	}
 
+	/**
+	 * Parses tokens until a token with a specified type is found
+	 * 
+	 * @param analyzer
+	 *            the analyzer
+	 * @param type
+	 *            the needed type
+	 */
 	private void skipTo(LexicalAnalyzer analyzer, int type) {
 		while (analyzer.hasMoreElements()) {
 			Token token = analyzer.nextElement();
@@ -273,8 +295,16 @@ public class Parser {
 		}
 	}
 
+	/**
+	 * Parses tokens with braces in mind until braces are all closed
+	 * 
+	 * @param analyzer
+	 *            the analyzer
+	 * @param opened
+	 *            the number of opened braces (left braces) that need closing
+	 */
 	private void skipRightBrace(LexicalAnalyzer analyzer, int opened) {
-		if (Parser.debuging) {
+		if (Parser.debugging) {
 			System.err.println("SkipRightBrace is in action!");
 		}
 		while (analyzer.hasMoreElements() && opened > 0) {
@@ -282,13 +312,13 @@ public class Parser {
 			switch (token.type) {
 			case Token.LBRACE:
 				opened++;
-				if (Parser.debuging) {
+				if (Parser.debugging) {
 					System.err.println("SkipRightBrace: opened = " + opened);
 				}
 				break;
 			case Token.RBRACE:
 				opened--;
-				if (Parser.debuging) {
+				if (Parser.debugging) {
 					System.err.println("SkipRightBrace: opened = " + opened);
 				}
 				break;
@@ -317,7 +347,7 @@ public class Parser {
 		boolean flag_inside_interface = structure.getStructureName().equals(
 				"Interface");
 
-		if (Parser.debuging) {
+		if (Parser.debugging) {
 			System.err.println("parsePropertyAndMethod for " + structure);
 		}
 
@@ -459,7 +489,7 @@ public class Parser {
 		String pending_name = null;
 		boolean flag_awaiting = false;
 
-		if (Parser.debuging) {
+		if (Parser.debugging) {
 			System.err.println("parseArgument for " + method);
 		}
 

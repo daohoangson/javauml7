@@ -55,29 +55,67 @@ import com.tranvietson.uml.structures.StructureException;
  * </pre>
  * 
  * You may enable the debug mode of ALL other component by triggering
- * <code>UMLGUI.debuging = true;</code>. It's kind of a shortcut to debug
+ * <code>UMLGUI.debugging = true;</code>. It's kind of a shortcut to debug
  * globally.
  * 
  * @author Dao Hoang Son
  * @version 1.0
  * 
- * @see UMLGUI#debuging
+ * @see UMLGUI#debugging
  */
 public class UMLGUI extends JFrame implements ActionListener, ContainerListener {
 	private static final long serialVersionUID = -2192671131702680754L;
 	/**
 	 * Determines if we are in debug mode.
 	 */
-	static public boolean debuging = false;
+	static public boolean debugging = false;
 	/**
 	 * The diagram which holds all the structure and build primary display area
 	 */
 	public Diagram diagram;
+	/**
+	 * Hold the last opened window and used to make sure no more than one
+	 * additional window is opened at a given time.
+	 * 
+	 * @see #doInfo(Structure)
+	 * @see #doRelated(String, Structure, boolean)
+	 */
 	private Window lastOpened = null;
 
 	/**
 	 * Constructor. Sets up everything up. Including a menu bar and the diagram.
-	 * 
+	 * The structure of menu bar is as follow
+	 * <ul>
+	 * <li><u>F</u>ile (file)
+	 * <ul>
+	 * <li>Clea<u>r</u> (clear)</li>
+	 * <li>Quick <u>F</u>ind (find)</li>
+	 * <li>Show Re<u>l</u>ated Structures (related)</li>
+	 * <li>L<u>o</u>ad Source File(s) (load)</li>
+	 * <li><u>S</u>ave as Image (image)</li>
+	 * <li><u>C</u>lipping (clipping)</li>
+	 * <li><u>E</u>xport Source File(s) (export)</li>
+	 * <li>Close (exit)</li>
+	 * </ul>
+	 * </li>
+	 * <li><u>N</u>ew (new)
+	 * <ul>
+	 * <li><u>C</u>lass</li>
+	 * <li><u>I</u>nterface</li>
+	 * <li><u>P</u>roperty</li>
+	 * <li><u>M</u>ethod</li>
+	 * <li><u>A</u>rgument</li>
+	 * </ul>
+	 * </li>
+	 * <li><u>H</u>elp (help)
+	 * <ul>
+	 * <li><u>A</u>bout (about)</li>
+	 * </ul>
+	 * </li>
+	 * </ul>
+	 * Menu/Menuitem can be disable by using
+	 * {@link #setActionEnabled(String, boolean)} with the correct action
+	 * command (specified in parenthesis above)
 	 */
 	public UMLGUI() {
 		JMenuBar menuBar = new JMenuBar();
@@ -141,7 +179,7 @@ public class UMLGUI extends JFrame implements ActionListener, ContainerListener 
 		menuFile.add(mfi);
 
 		mfi = new JMenuItem("Export Source File(s)");
-		mfi.setActionCommand("generate");
+		mfi.setActionCommand("export");
 		mfi.addActionListener(this);
 		mfi.setMnemonic(KeyEvent.VK_E);
 		mfi.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_E,
@@ -209,18 +247,42 @@ public class UMLGUI extends JFrame implements ActionListener, ContainerListener 
 			// in an Applet for example?
 		}
 
-		if (UMLGUI.debuging) {
-			Structure.debuging = UMLGUI.debuging;
-			Diagram.debuging = UMLGUI.debuging;
-			Parser.debuging = UMLGUI.debuging;
+		if (UMLGUI.debugging) {
+			Structure.debugging = UMLGUI.debugging;
+			Diagram.debugging = UMLGUI.debugging;
+			Parser.debugging = UMLGUI.debugging;
 		}
 	}
 
+	/**
+	 * Set the enabled property for menu/menuitem by action command
+	 * 
+	 * @param action
+	 *            the action command
+	 * @param enabled
+	 *            the new value for the menu/menuitem
+	 * @return true if the menu/menuitem can be found and set
+	 * 
+	 * @see #findAndSetActionEnabled(Component[], String, boolean)
+	 */
 	public boolean setActionEnabled(String action, boolean enabled) {
 		return findAndSetActionEnabled(getJMenuBar().getComponents(), action,
 				enabled);
 	}
 
+	/**
+	 * Finds in a list of components, looks for specified action command, set
+	 * the enabled property to the requested value. This method recurses with
+	 * children of components until it can find the requested action command
+	 * 
+	 * @param components
+	 *            an array of components
+	 * @param action
+	 *            the needed action command
+	 * @param enabled
+	 *            the new value for the component
+	 * @return true if the requested action command component can be found
+	 */
 	private boolean findAndSetActionEnabled(Component[] components,
 			String action, boolean enabled) {
 		for (int i = 0; i < components.length; i++) {
@@ -243,30 +305,52 @@ public class UMLGUI extends JFrame implements ActionListener, ContainerListener 
 		return false;
 	}
 
-	private void setIcon(AbstractButton component, String icon_path,
-			String pressedIcon_path) {
-		Icon icon = getIcon(icon_path);
+	/**
+	 * Gets the icon resource and sets it for the component. It's kind of a
+	 * shortcut method to quickly do things
+	 * 
+	 * @param component
+	 *            the component that needs icons
+	 * @param icon_name
+	 *            the name of the icon
+	 * @param pressedIcon_name
+	 *            the name of the pressed icon
+	 * 
+	 * @see #getIcon(String)
+	 */
+	private void setIcon(AbstractButton component, String icon_name,
+			String pressedIcon_name) {
+		Icon icon = getIcon(icon_name);
 		if (icon != null) {
 			component.setIcon(icon);
 		}
 
-		Icon pressedIcon = getIcon(pressedIcon_path);
+		Icon pressedIcon = getIcon(pressedIcon_name);
 		if (pressedIcon != null) {
 			component.setPressedIcon(pressedIcon);
 		}
 	}
 
-	private Icon getIcon(String path) {
-		if (path == null) {
+	/**
+	 * Get the icon resource using {@link Class#getResource(String)}. The name
+	 * for the resource is built with the pattern
+	 * icon/<strong>[name]</strong>.gif
+	 * 
+	 * @param name
+	 *            the icon name
+	 * @return the <code>Icon</code> object if found or null otherwise
+	 */
+	private Icon getIcon(String name) {
+		if (name == null) {
 			return null;
 		}
-		path = "icon/" + path + ".gif";
-		URL iconURL = UMLGUI.class.getResource(path);
+		name = "icon/" + name + ".gif";
+		URL iconURL = UMLGUI.class.getResource(name);
 		if (iconURL != null) {
 			return new ImageIcon(iconURL);
 		} else {
-			if (UMLGUI.debuging) {
-				System.err.println("Icon not found: " + path);
+			if (UMLGUI.debugging) {
+				System.err.println("Icon not found: " + name);
 			}
 			return null;
 		}
@@ -274,19 +358,19 @@ public class UMLGUI extends JFrame implements ActionListener, ContainerListener 
 
 	/**
 	 * Main handler for all actions.<br/>
-	 * Supported actions (must be set using setActionCommand):<br/>
+	 * Supported actions (listed by action command):<br/>
 	 * <ul>
 	 * <li>clear: Confirm and clear the entire diagram</li>
 	 * <li>find: Display the quick find dialog</li>
 	 * <li>related: Display related structures by calling
-	 * {@link #doRelated(String)}</li>
+	 * {@link #doRelated(String, Structure, boolean)}</li>
 	 * <li>load: Do the load procedure by calling {@link #doLoad(String)}</li>
 	 * <li>image: Do the save image procedure by calling
 	 * {@link #doImage(String)}</li>
 	 * <li>clipping: Do the clipping procedure by calling
 	 * {@link #doClipping(String)}</li>
-	 * <li>generate: Do the generate source procedure by calling
-	 * {@link #doGenerate(String)}</li>
+	 * <li>export: Do the export source procedure by calling
+	 * {@link #doExport(String)}</li>
 	 * <li>exit: Simply dispose the JFrame</li>
 	 * <li>new: Create new structure
 	 * <ul>
@@ -336,7 +420,7 @@ public class UMLGUI extends JFrame implements ActionListener, ContainerListener 
 				diagram.ensureStructureIsVisible(structure);
 			}
 		} else if (action.equals("related")) {
-			doRelated(s.getText(), null);
+			doRelated(s.getText(), null, true);
 		} else if (action.equals("load")) {
 			try {
 				doLoad(s.getText());
@@ -355,9 +439,9 @@ public class UMLGUI extends JFrame implements ActionListener, ContainerListener 
 			} catch (SecurityException se) {
 				showPolicyError(s.getText());
 			}
-		} else if (action.equals("generate")) {
+		} else if (action.equals("export")) {
 			try {
-				doGenerate(s.getText());
+				doExport(s.getText());
 			} catch (SecurityException se) {
 				showPolicyError(s.getText());
 			}
@@ -402,7 +486,7 @@ public class UMLGUI extends JFrame implements ActionListener, ContainerListener 
 			Structure structure = ((InfoForm) lastOpened).getStructure();
 			if (real_action.equals("related")) {
 				lastOpened.dispose();
-				doRelated(s.getText(), structure);
+				doRelated(s.getText(), structure, false);
 			} else if (real_action.equals("remove")) {
 				try {
 					structure.dispose();
@@ -416,7 +500,22 @@ public class UMLGUI extends JFrame implements ActionListener, ContainerListener 
 		}
 	}
 
-	private void doRelated(String title, Structure structure) {
+	/**
+	 * Display the related structures of a structure. It will ask for the
+	 * structure if null is passed. It also display a dialog to ask if the users
+	 * want to show multiplicity related structure or not.
+	 * 
+	 * @param title
+	 *            the title for the window
+	 * @param structure
+	 *            the root structure. Pass null to use a {@link FindForm}
+	 * @param ask_for_mode
+	 *            a boolean value specifies to ask for mode or not. If
+	 *            <code>false</code> is passed, the mode is automatically set to
+	 *            <code>true</code>
+	 */
+	private void doRelated(String title, Structure structure,
+			boolean ask_for_mode) {
 		if (lastOpened != null && lastOpened.isVisible()) {
 			lastOpened.requestFocus();
 			return;
@@ -432,18 +531,32 @@ public class UMLGUI extends JFrame implements ActionListener, ContainerListener 
 			return;
 		}
 
+		boolean flag_display_multiplicity_related;
+		if (ask_for_mode) {
+			if (JOptionPane.showOptionDialog(this,
+					"Do you want to display Multiplicity Related structures?",
+					title, JOptionPane.YES_NO_OPTION,
+					JOptionPane.QUESTION_MESSAGE, null, null, null) == JOptionPane.YES_OPTION) {
+				flag_display_multiplicity_related = true;
+			} else {
+				flag_display_multiplicity_related = false;
+			}
+		} else {
+			flag_display_multiplicity_related = true;
+		}
+
 		UMLGUI target_gui = new UMLGUI();
 		lastOpened = target_gui;
 		Diagram d = target_gui.diagram;
 
 		d.setAutoDrawing(false);
-		findRelated(structure, structure, d);
+		findRelated(structure, d, flag_display_multiplicity_related);
 		d.setAutoDrawing(true);
 
 		d.ensureStructureIsVisible(structure);
 
+		// disable some functionalities in the new window
 		target_gui.setActionEnabled("clear", false);
-		target_gui.setActionEnabled("related", false);
 		target_gui.setActionEnabled("load", false);
 		target_gui.setActionEnabled("new", false);
 
@@ -453,8 +566,18 @@ public class UMLGUI extends JFrame implements ActionListener, ContainerListener 
 		target_gui.setVisible(true);
 	}
 
-	private void findRelated(Structure root_structure, Structure structure,
-			Diagram target_diagram) {
+	/**
+	 * Finds related structures for the requested structure. Recurse itself also
+	 * 
+	 * @param structure
+	 *            the structure to find relations
+	 * @param target_diagram
+	 *            the diagram to add found structures to
+	 * @param flag_display_multiplicity_related
+	 *            should look for multiplicity relations or not
+	 */
+	private void findRelated(Structure structure, Diagram target_diagram,
+			boolean flag_display_multiplicity_related) {
 		if (!target_diagram.add(structure)) {
 			// the diagram refused the adding request
 			// so we should stop recursing here
@@ -466,17 +589,16 @@ public class UMLGUI extends JFrame implements ActionListener, ContainerListener 
 			Structure other_structure = structures[i];
 			if (other_structure.checkIsChildOf(structure)
 					|| structure.checkIsChildOf(other_structure)) {
-				findRelated(root_structure, other_structure, target_diagram);
+				findRelated(other_structure, target_diagram, false);
 			} else {
-				if (root_structure == structure) {
-					// do this only at level of the finding process
+				if (flag_display_multiplicity_related) {
 					Structure[] children = other_structure.getChildren();
 					for (int j = 0; j < children.length; j++) {
 						Structure[] types = children[j].getTypeAsStructure();
 						for (int k = 0; k < types.length; k++) {
-							if (types[k] == root_structure) {
-								findRelated(root_structure, other_structure,
-										target_diagram);
+							if (types[k] == structure) {
+								findRelated(other_structure, target_diagram,
+										false);
 							}
 						}
 					}
@@ -520,7 +642,7 @@ public class UMLGUI extends JFrame implements ActionListener, ContainerListener 
 							title, JOptionPane.ERROR_MESSAGE);
 				}
 			} catch (Exception e) {
-				if (UMLGUI.debuging) {
+				if (UMLGUI.debugging) {
 					e.printStackTrace();
 				}
 				JOptionPane.showMessageDialog(this, e.getMessage(), title,
@@ -583,13 +705,13 @@ public class UMLGUI extends JFrame implements ActionListener, ContainerListener 
 	 * Processes the source generating functionality.<br/>
 	 * At first, display a directory chooser allowing select the destination
 	 * directory for generating. And then, obviously, create a
-	 * {@linkplain CodeGenerator code generator} to generate to the specified
+	 * {@linkplain CodeGenerator code generator} to export to the specified
 	 * directory
 	 * 
 	 * @param title
 	 *            the title of the action
 	 */
-	private void doGenerate(String title) {
+	private void doExport(String title) {
 		JFileChooser fc = new JFileChooser(".");
 		fc.setDialogTitle(title);
 		fc.setApproveButtonText("Export Here");
@@ -601,7 +723,7 @@ public class UMLGUI extends JFrame implements ActionListener, ContainerListener 
 				CodeGenerator cg = new CodeGenerator(diagram);
 				int files = cg.generate(fc.getSelectedFile().getAbsolutePath());
 				JOptionPane.showMessageDialog(this, String.format(
-						"Successfully generated %d file(s)", files), title,
+						"Successfully exported %d file(s)", files), title,
 						JOptionPane.INFORMATION_MESSAGE);
 			} catch (Exception e) {
 				JOptionPane.showMessageDialog(this, e.getMessage(), title,
@@ -610,6 +732,12 @@ public class UMLGUI extends JFrame implements ActionListener, ContainerListener 
 		}
 	}
 
+	/**
+	 * Displays the {@link InfoForm} for the requested structure
+	 * 
+	 * @param structure
+	 *            the requested structure
+	 */
 	private void doInfo(Structure structure) {
 		if (lastOpened != null && lastOpened.isVisible()) {
 			// we don't allow multiple information form to be
@@ -660,6 +788,12 @@ public class UMLGUI extends JFrame implements ActionListener, ContainerListener 
 		});
 	}
 
+	/**
+	 * Display a policy error
+	 * 
+	 * @param title
+	 *            the title for the message box
+	 */
 	private void showPolicyError(String title) {
 		JOptionPane
 				.showMessageDialog(
@@ -668,6 +802,14 @@ public class UMLGUI extends JFrame implements ActionListener, ContainerListener 
 						title, JOptionPane.ERROR_MESSAGE);
 	}
 
+	/**
+	 * Sets up hooks to display {@link InfoForm} when use click the component.
+	 * It also process children components of the original component to make
+	 * sure everything will work well
+	 * 
+	 * @param c
+	 *            the component
+	 */
 	private void setupInfoForms(Component c) {
 		if (c instanceof Container) {
 			Container container = (Container) c;
@@ -679,15 +821,12 @@ public class UMLGUI extends JFrame implements ActionListener, ContainerListener 
 		}
 
 		if (c instanceof DiagramStructureGroup) {
-			DiagramStructureGroup panel = (DiagramStructureGroup) c;
-			DiagramStructureName label = (DiagramStructureName) panel.getHead();
-
-			label.addMouseListener(new MouseAdapter() {
+			c.addMouseListener(new MouseAdapter() {
 				@Override
 				public void mouseClicked(MouseEvent e) {
-					DiagramStructureName label = (DiagramStructureName) e
+					DiagramStructureGroup c = (DiagramStructureGroup) e
 							.getSource();
-					doInfo(label.getStructure());
+					doInfo(c.getStructure());
 				}
 
 				@Override

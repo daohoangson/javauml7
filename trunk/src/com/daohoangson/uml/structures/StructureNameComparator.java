@@ -3,16 +3,20 @@ package com.daohoangson.uml.structures;
 import java.util.Comparator;
 
 /**
- * Comparator to sort structures. The structures are arranged by structure name
- * from upper lever down: Interface > Class > Property > Method > Argument
+ * Comparator to sort structures by their names
  * 
  * @author Dao Hoang Son
- * 
- * @see Structure#getChildren()
+ * @version 1.0
  */
 public class StructureNameComparator implements Comparator<Structure> {
 	private int direction;
 
+	/**
+	 * Constructor. Accept the comparing direction
+	 * 
+	 * @param direction
+	 *            the direction, it should be either 1 or -1
+	 */
 	public StructureNameComparator(int direction) {
 		this.direction = direction;
 	}

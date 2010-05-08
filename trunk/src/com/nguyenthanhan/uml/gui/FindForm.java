@@ -1,7 +1,8 @@
 package com.nguyenthanhan.uml.gui;
 
 import java.awt.Dimension;
-import java.awt.FlowLayout;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
 import java.awt.Window;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
@@ -56,9 +57,6 @@ public class FindForm extends ConvenientForm implements DocumentListener {
 		sp.setPreferredSize(new Dimension(200, 75));
 		left.add(sp);
 
-		setLayout(new FlowLayout());
-		add(left);
-
 		JButton btn = new JButton(title);
 		btn.addMouseListener(new MouseAdapter() {
 			@Override
@@ -66,7 +64,12 @@ public class FindForm extends ConvenientForm implements DocumentListener {
 				submit();
 			}
 		});
-		add(btn);
+
+		setLayout(new GridBagLayout());
+		add(left);
+		GridBagConstraints c = new GridBagConstraints();
+		c.fill = GridBagConstraints.VERTICAL;
+		add(btn, c);
 
 		pack();
 		setLocationRelativeTo(null);

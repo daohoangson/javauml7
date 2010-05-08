@@ -1,7 +1,34 @@
 package com.daohoangson.uml.parser;
 
+/**
+ * A grammar of Java language. This grammar makes use of several different type
+ * of automata
+ * 
+ * @author Dao Hoang Son
+ * @version 1.0
+ * 
+ */
 class GrammarOfJava extends Grammar {
 
+	/**
+	 * Setup a long list of automata. Includes
+	 * <ul>
+	 * <li>Modifiers</li>
+	 * <li>Keywords</li>
+	 * <li>Symbols, operators</li>
+	 * </ul>
+	 * 
+	 * @see AutomataOfAnnotation
+	 * @see AutomataOfArrayAccess
+	 * @see AutomataOfCharValue
+	 * @see AutomataOfName
+	 * @see AutomataOfNumberValue
+	 * @see AutomataOfPackageName
+	 * @see AutomataOfSpace
+	 * @see AutomataOfStatic
+	 * @see AutomataOfStringValue
+	 * @see AutomataOfType
+	 */
 	@Override
 	protected void config() {
 		add(new AutomataOfStatic(Token.VISIBILITY, new String[] { "public",

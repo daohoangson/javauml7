@@ -30,7 +30,7 @@ public class Argument extends Structure {
 	
 	@Override
 	public boolean checkIsAlike(Structure that) {
-		if (debuging) {
+		if (debugging) {
 			System.err.println("Comparing: " + this + " vs. " + that);
 		}
 		

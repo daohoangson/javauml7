@@ -16,7 +16,7 @@ public class TestGUI {
 
 		for (int i = 0; i < args.length; i++) {
 			if (args[i].equals("--debug")) {
-				UMLGUI.debuging = true;
+				UMLGUI.debugging = true;
 			} else if (args[i].equals("--load")) {
 				if (i < args.length - 1) {
 					preload = args[i + 1];

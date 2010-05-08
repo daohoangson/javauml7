@@ -11,8 +11,7 @@ import com.daohoangson.uml.structures.Structure;
  * @version 1.0
  * 
  * @see <a
- *      href="http://en.wikipedia.org/wiki/Class_diagram#Relationships">Wikipedia
- *      page</a>
+ *      href="http://en.wikipedia.org/wiki/Class_diagram#Relationships">Wikipedia</a>
  */
 class MultiplicityRelationship extends Relationship {
 	/**

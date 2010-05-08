@@ -25,16 +25,22 @@ import com.tranvietson.uml.structures.StructureListener;
 public abstract class Structure implements StructureListener {
 	/**
 	 * Status of the structure
+	 * 
+	 * @see #getActive()
 	 */
 	private boolean active = true;
 	/**
 	 * Name of the structure
+	 * 
+	 * @see #getName()
 	 */
 	private String name = null;
 	/**
 	 * Type of the structure. Some structures do not have a type
 	 * 
 	 * @see #config()
+	 * @see #getType()
+	 * @see #getTypeAsStructure()
 	 */
 	private String type = null;
 	/**
@@ -55,72 +61,105 @@ public abstract class Structure implements StructureListener {
 	final static private int VISIBILITY_PRIVATE = 2;
 	/**
 	 * The visibility of the structure.
+	 * 
+	 * @see #getVisibility()
 	 */
 	private int visibility = Structure.VISIBILITY_DEFAULT;
 	/**
 	 * The scope of the structure.
+	 * 
+	 * @see #getScope()
 	 */
 	private boolean is_static = false;
 	/**
 	 * List of objects which listen to our event.
+	 * 
+	 * @see #addStructureListener(StructureListener)
+	 * @see #removeStructureListener(StructureListener)
 	 */
 	private Vector<StructureListener> listeners;
 	/**
 	 * The container.
+	 * 
+	 * @see #add(Structure)
+	 * @see #remove(Structure)
+	 * @see #getContainer()
 	 */
 	private Structure container = null;
 	/**
 	 * Hold list of all parents of the structure.
+	 * 
+	 * @see #add(Structure)
+	 * @see #remove(Structure)
+	 * @see #getParents()
+	 * @see #getParentsCount()
 	 */
 	private List<Structure> parents = new LinkedList<Structure>();
 	/**
 	 * Hold list of all children of the structure.
+	 * 
+	 * @see #add(Structure)
+	 * @see #remove(Structure)
+	 * @see #getChildren()
+	 * @see #getChildrenCount()
 	 */
 	private List<Structure> children = new LinkedList<Structure>();
 	/**
 	 * Additional information
+	 * 
+	 * @see #setInfo(String, String)
+	 * @see #getInfo(String)
 	 */
 	private Hashtable<String, String> info = new Hashtable<String, String>();
 
 	/**
 	 * Specifies if the structure needs unique name globally
 	 * 
-	 * @see #setName(String)
+	 * @see #checkIsUniqueGlobally()
 	 */
 	protected boolean cfg_unique_globally = false;
 	/**
-	 * The structure uses a type or not. Should be changed in the
-	 * {@link #config()} method
+	 * The structure uses a type or not.
+	 * 
+	 * @see #checkUseType()
 	 */
 	protected boolean cfg_use_type = false;
 	/**
 	 * Specifies which visibility is available for this type of structure
+	 * 
+	 * @see #checkUseVisibility()
 	 */
 	protected boolean cfg_use_visibility = false;
 	/**
 	 * Specifies if the structure accepts static scope
+	 * 
+	 * @see #checkUseScope()
 	 */
 	protected boolean cfg_use_scope = false;
 	/**
 	 * Specifies if the structure accepts container. Each structure can only
-	 * accept 1 container! Default value is empty string which means doesn't
-	 * accept container. A non-null structure name means accept a container with
-	 * the specified structure name.
+	 * have 1 container! Default value is an empty array which means doesn't
+	 * accept container. A non-zero array of structure names means accept a
+	 * container with one of the specified structure names.
 	 */
 	protected String[] cfg_container_structures = {};
 	/**
-	 * Specifies if the structure accepts parents. Each structure can accept
-	 * many container! Default value is empty string which means doesn't accept
-	 * parents. A non-null structure name means accept parents with the
-	 * specified structure name.
+	 * Specifies if the structure accepts parents. Each structure can have many
+	 * parents! Default value is an empty array which means doesn't accept
+	 * parents. A non-zero array of structure name means accept parents with one
+	 * of the specified structure names.
 	 */
 	protected String[] cfg_parent_structures = {};
 	/**
-	 * Specifies if the structure accepts children.
+	 * Specifies if the structure accepts children. Each structure can have many
+	 * children! Default value is an empty array which mean doesn't accept
+	 * children. A non-zero array of structure name means accept parents with
+	 * one of the specified structure names.
 	 */
 	protected String[] cfg_child_structures = {};
 	/**
-	 * Specifies if the structure wants to hide visibility
+	 * Specifies if the structure wants to hide visibility from
+	 * {@link #toString()}
 	 */
 	protected boolean cfg_hide_visibility = false;
 	/**
@@ -155,6 +194,9 @@ public abstract class Structure implements StructureListener {
 	static private Hashtable<String, Structure> names = new Hashtable<String, Structure>();
 	/**
 	 * Hold list of all adding structures' names on queue
+	 * 
+	 * @see #addParentName(String)
+	 * @see #addParentNameProceed()
 	 */
 	static private List<StructureAdding> adding_queue = new LinkedList<StructureAdding>();
 	/**
@@ -164,19 +206,24 @@ public abstract class Structure implements StructureListener {
 	/**
 	 * Determines if we are in debug mode.
 	 */
-	static public boolean debuging = false;
+	static public boolean debugging = false;
 
 	/**
 	 * Specifics structure configuration. Accepts type or not. Determine allowed
-	 * modifiers. Register the structure name.
+	 * modifiers. Register the structure name. Subclasses must override this
+	 * method
 	 * 
 	 * @see #cfg_unique_globally
 	 * @see #cfg_use_type
 	 * @see #cfg_use_visibility
 	 * @see #cfg_use_scope
-	 * @see #cfg_container_structure
-	 * @see #cfg_parent_structure
+	 * @see #cfg_container_structures
+	 * @see #cfg_parent_structures
 	 * @see #cfg_child_structures
+	 * @see #cfg_hide_visibility
+	 * @see #cfg_hide_children
+	 * @see #cfg_regex_name
+	 * @see #cfg_regex_type
 	 */
 	abstract protected void config();
 
@@ -192,15 +239,6 @@ public abstract class Structure implements StructureListener {
 			Structure.global_listener.structureChanged(new StructureEvent(this,
 					StructureEvent.ACTIVE));
 		}
-	}
-
-	/**
-	 * Checks for the active status of the structure.
-	 * 
-	 * @return true if the structure is active
-	 */
-	public boolean getActive() {
-		return active;
 	}
 
 	/**
@@ -229,10 +267,12 @@ public abstract class Structure implements StructureListener {
 				// use Regular Expression to check for valid characters
 				this.name = name;
 				addParentNameProceed();
-				if (Structure.debuging) {
+				if (Structure.debugging) {
 					System.err
 							.println(getStructureName() + ".setName: " + name);
 				}
+
+				fireChanged(StructureEvent.NAME);
 				return true;
 			}
 		}
@@ -242,7 +282,7 @@ public abstract class Structure implements StructureListener {
 
 	/**
 	 * Checks if the type is valid and set it. Currently support both normal
-	 * type (String, Integer) and specified (LinkedList&lt;String&gt;)
+	 * type (String, Integer) and generalized (LinkedList&lt;String&gt;)
 	 * 
 	 * @param type
 	 * @throws StructureException
@@ -256,10 +296,12 @@ public abstract class Structure implements StructureListener {
 			if (validateType(type, false)) {
 				// use Regular Expression to check for valid characters
 				this.type = type;
-				if (Structure.debuging) {
+				if (Structure.debugging) {
 					System.err
 							.println(getStructureName() + ".setType: " + type);
 				}
+
+				fireChanged(StructureEvent.TYPE);
 				return true;
 			}
 		}
@@ -273,8 +315,8 @@ public abstract class Structure implements StructureListener {
 	 * @param type
 	 *            the string needed validating
 	 * @param split
-	 *            tells the method to allow spliting type or not (use full in
-	 *            generalized)
+	 *            tells the method to allow splitting type or not (use full in
+	 *            generalized string)
 	 * @return true if the string is valid
 	 */
 	private boolean validateType(String type, boolean split) {
@@ -282,7 +324,7 @@ public abstract class Structure implements StructureListener {
 			return true;
 		}
 
-		if (Structure.debuging) {
+		if (Structure.debugging) {
 			System.err.println(getStructureName() + ".validateType: " + type
 					+ " (" + split + ")");
 		}
@@ -334,7 +376,7 @@ public abstract class Structure implements StructureListener {
 				if (visibilities[i].equals(modifier)) {
 					if (visibility == Structure.VISIBILITY_DEFAULT) {
 						visibility = visibilities_int[i];
-						if (Structure.debuging) {
+						if (Structure.debugging) {
 							System.err.println(getStructureName()
 									+ ".setModifier (visibility): " + modifier);
 						}
@@ -353,19 +395,31 @@ public abstract class Structure implements StructureListener {
 				if (is_static == false) {
 					is_static = true;
 				}
-				if (Structure.debuging) {
+				if (Structure.debugging) {
 					System.err.println(getStructureName()
 							+ ".setModifier (scope): is_static = " + is_static);
 				}
+
+				fireChanged(StructureEvent.MODIFIER);
 				return true;
 			}
 		}
 
-		if (Structure.debuging) {
+		if (Structure.debugging) {
 			System.err.println("Unsupported modifier: " + modifier);
 		}
 
 		return false;
+	}
+
+	/**
+	 * Sets an additional piece of information
+	 * 
+	 * @param key
+	 * @param value
+	 */
+	public void setInfo(String key, String value) {
+		info.put(key, value);
 	}
 
 	@Override
@@ -373,6 +427,15 @@ public abstract class Structure implements StructureListener {
 		return toString("", "");
 	}
 
+	/**
+	 * Builds the string representing this structure
+	 * 
+	 * @param prefix
+	 *            the prefix for the string
+	 * @param suffix
+	 *            the suffix for the string
+	 * @return built string
+	 */
 	public String toString(String prefix, String suffix) {
 		String str = "";
 		if (cfg_use_visibility && !cfg_hide_visibility) {
@@ -410,10 +473,6 @@ public abstract class Structure implements StructureListener {
 		return (getStructureName() + "." + getName()).hashCode();
 	}
 
-	public void setInfo(String key, String value) {
-		info.put(key, value);
-	}
-
 	/**
 	 * Checks if the structure name must be unique globally
 	 * 
@@ -427,10 +486,30 @@ public abstract class Structure implements StructureListener {
 	 * Checks if the structure accepts type or not. Use full to build the
 	 * interface
 	 * 
-	 * @return
+	 * @return true if it is
 	 */
 	public boolean checkUseType() {
 		return cfg_use_type;
+	}
+
+	/**
+	 * Checks if the structure accepts visibility or not. Use full to build the
+	 * interface
+	 * 
+	 * @return true if it is
+	 */
+	public boolean checkUseVisibility() {
+		return cfg_use_visibility;
+	}
+
+	/**
+	 * Checks if the structure accepts scope or not. Use full to build the
+	 * interface
+	 * 
+	 * @return true if it is
+	 */
+	public boolean checkUseScope() {
+		return cfg_use_scope;
 	}
 
 	/**
@@ -523,8 +602,18 @@ public abstract class Structure implements StructureListener {
 	}
 
 	/**
+	 * Checks for the active status of the structure.
 	 * 
-	 * @return name of the structure object
+	 * @return true if the structure is active
+	 */
+	public boolean getActive() {
+		return active;
+	}
+
+	/**
+	 * Gets the name of the structure
+	 * 
+	 * @return name of the structure
 	 */
 	public String getName() {
 		return name;
@@ -542,6 +631,7 @@ public abstract class Structure implements StructureListener {
 	}
 
 	/**
+	 * Gets the type of the structure
 	 * 
 	 * @return type of the structure
 	 */
@@ -596,7 +686,8 @@ public abstract class Structure implements StructureListener {
 	/**
 	 * Gets a string represent structure's visibility
 	 * 
-	 * @return
+	 * @return the visibility (public|protected|private) or a zero-length string
+	 *         (no null value)
 	 */
 	public String getVisibility() {
 		switch (visibility) {
@@ -614,7 +705,7 @@ public abstract class Structure implements StructureListener {
 	/**
 	 * Gets a string represent structure's scope
 	 * 
-	 * @return
+	 * @return the scope or a zero-length string (no null value)
 	 */
 	public String getScope() {
 		if (is_static) {
@@ -624,6 +715,12 @@ public abstract class Structure implements StructureListener {
 		}
 	}
 
+	/**
+	 * Gets an additional information
+	 * 
+	 * @param key
+	 * @return the information or at least, a zero-length string (no null value)
+	 */
 	public String getInfo(String key) {
 		String value = info.get(key);
 		if (value == null) {
@@ -643,10 +740,10 @@ public abstract class Structure implements StructureListener {
 	}
 
 	/**
-	 * Returns an array containing all parents of the current structure. It is
-	 * sorted: class > interface > property > method > argument
+	 * Gets all parents of the current structure.
 	 * 
-	 * @return
+	 * @return an array of structures. It is sorted: class > interface >
+	 *         property > method > argument
 	 */
 	public Structure[] getParents() {
 		Structure[] parents_array = parents.toArray(new Structure[0]);
@@ -656,19 +753,21 @@ public abstract class Structure implements StructureListener {
 	}
 
 	/**
-	 * Gets number of parents of this tructure.
+	 * Gets number of parents of this structure.
 	 * 
-	 * @return
+	 * @return number of parents
+	 * 
+	 * @see #getParents()
 	 */
 	public int getParentsCount() {
 		return parents.size();
 	}
 
 	/**
-	 * Returns an array containing all children of the current structure. It is
-	 * sorted: class > interface > property > method > argument
+	 * Gets all children of the current structure
 	 * 
-	 * @return the array
+	 * @return an array of structures. It is sorted: class > interface >
+	 *         property > method > argument
 	 */
 	public Structure[] getChildren() {
 		Structure[] children_array = children.toArray(new Structure[0]);
@@ -680,7 +779,9 @@ public abstract class Structure implements StructureListener {
 	/**
 	 * Gets number of children of this structure.
 	 * 
-	 * @return
+	 * @return number of children
+	 * 
+	 * @see #getChildren()
 	 */
 	public int getChildrenCount() {
 		return children.size();
@@ -753,11 +854,12 @@ public abstract class Structure implements StructureListener {
 	}
 
 	/**
-	 * Puts a structure name into queue to add later. Useful if the parent or
-	 * child isn't existed at the time of adding. Remember to put unique
-	 * globally names only!
+	 * Puts a structure name into queue to add as parent later. Useful if the
+	 * parent structure isn't existed at the time of adding. Remember to put
+	 * unique globally names only or it will never be added!
 	 * 
 	 * @param structure_name
+	 *            the parent structure's name
 	 * @throws StructureException
 	 */
 	public void addParentName(String structure_name) throws StructureException {
@@ -770,6 +872,12 @@ public abstract class Structure implements StructureListener {
 		}
 	}
 
+	/**
+	 * Checks and add all pending adding requests which associate with current
+	 * structure's name
+	 * 
+	 * @throws StructureException
+	 */
 	private void addParentNameProceed() throws StructureException {
 		if (Structure.adding_queue.size() > 0) {
 			Iterator<StructureAdding> itr = Structure.adding_queue.iterator();
@@ -862,7 +970,7 @@ public abstract class Structure implements StructureListener {
 	 * Adds an object to this structure listeners list
 	 * 
 	 * @param listener
-	 *            the object who listens to this
+	 *            the object who needs to listen to this
 	 */
 	synchronized public void addStructureListener(StructureListener listener) {
 		if (listeners == null) {
@@ -873,6 +981,12 @@ public abstract class Structure implements StructureListener {
 		}
 	}
 
+	/**
+	 * Removes an object from this structure listeners list
+	 * 
+	 * @param listener
+	 *            the object who is listening to this
+	 */
 	synchronized public void removeStructureListener(StructureListener listener) {
 		if (listeners != null) {
 			listeners.remove(listener);
@@ -881,6 +995,12 @@ public abstract class Structure implements StructureListener {
 
 	/**
 	 * Triggers the changed event
+	 * 
+	 * @param type
+	 *            the tyep of the event. Possible value is defined in
+	 *            {@link StructureEvent}: <code>UNDEFINED</code>,
+	 *            <code>NAME</code>, <code>TYPE</code>, <code>MODIFIER</code>,
+	 *            <code>CHILDREN</code>,<code>ACTIVE</code>
 	 */
 	@SuppressWarnings("unchecked")
 	protected void fireChanged(int type) {
@@ -900,18 +1020,22 @@ public abstract class Structure implements StructureListener {
 	}
 
 	/**
-	 * Fires the changed event of this structure itself!
+	 * Fires the changed event of this structure itself with a type of children
+	 * changes
 	 */
 	public void structureChanged(StructureEvent e) {
 		fireChanged(StructureEvent.CHILDREN);
 	}
 
 	/**
-	 * Checks if there is a String in an array. Uses equals() method
+	 * Checks if there is a String in an array. Uses equals() method. This is a
+	 * helper method
 	 * 
 	 * @param str
+	 *            the requested string
 	 * @param array
-	 * @return
+	 *            the array to check against
+	 * @return true if the string is found
 	 */
 	private static boolean foundStringInArray(String str, String[] array) {
 		for (int i = 0, n = array.length; i < n; i++) {
@@ -923,6 +1047,15 @@ public abstract class Structure implements StructureListener {
 		return false;
 	}
 
+	/**
+	 * Gets structures with some specified structure names
+	 * 
+	 * @param structures
+	 *            the array of structures needs filtering
+	 * @param structureNames
+	 *            the array of structure name
+	 * @return an array of structures with structure names matched
+	 */
 	public static Structure[] filterStructureArray(Structure[] structures,
 			String[] structureNames) {
 		List<Structure> result = new LinkedList<Structure>();

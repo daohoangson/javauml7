@@ -57,8 +57,26 @@ public class Diagram extends JPanel implements StructureListener,
 	 * will get updated in {@link #build(int)}
 	 */
 	private Hashtable<Structure, Component> built = null;
+	/**
+	 * A list of bounds for built components. It will be null at the beginning
+	 * of each painting request and it will be updated by
+	 * {@link #getBoundsCache()}
+	 * 
+	 * @see #paint(Graphics)
+	 */
 	private Hashtable<Structure, Rectangle> boundsCache = null;
+	/**
+	 * An array of bounds extracted from {@link #boundsCache}. We store it in
+	 * array form to improve the performance (actually, I'm not really sure
+	 * about the performance)
+	 */
 	private Rectangle[] boundsCacheArray = null;
+	/**
+	 * Hold the on focus structure. It will be treated differently (if this is
+	 * set)
+	 * 
+	 * @see #paint(Graphics)
+	 */
 	private Structure onFocusStructure = null;
 	/**
 	 * An array of all dependencies among structures. Get updated in
@@ -77,13 +95,21 @@ public class Diagram extends JPanel implements StructureListener,
 	 * @see DiagramImageObserver
 	 */
 	private ImageObserver observer = null;
+	/**
+	 * Hold the rectangle awaiting to be saved
+	 * 
+	 * @see #startClipping(ImageObserver)
+	 * @see #mouseDragged(MouseEvent)
+	 */
 	private Rectangle image_rect = null;
 	/**
 	 * Determines if we are in debug mode.
 	 */
-	static public boolean debuging = false;
+	static public boolean debugging = false;
 	/**
-	 * Should the diagram be drawn if the structures are changed
+	 * Should the diagram be drawn if the structures are changed or not.
+	 * 
+	 * @see #structureChanged(StructureEvent)
 	 */
 	private boolean flag_auto_draw = true;
 	/**
@@ -110,6 +136,14 @@ public class Diagram extends JPanel implements StructureListener,
 		addMouseMotionListener(this);
 	}
 
+	/**
+	 * Sets the on focus structure
+	 * 
+	 * @param structure
+	 *            the structure that need focusing
+	 * 
+	 * @see #onFocusStructure
+	 */
 	public void setFocus(Structure structure) {
 		onFocusStructure = structure;
 		draw();
@@ -118,7 +152,7 @@ public class Diagram extends JPanel implements StructureListener,
 	/**
 	 * Get the scroll-able component. Use this for a better user experience.
 	 * Anyway, this is optional. You can always
-	 * {@linkplain JComponent#add(Component)} directly this object.
+	 * {@linkplain JComponent#add(Component) add} directly this object.
 	 * 
 	 * @return a JScrollPane object of the diagram
 	 */
@@ -128,6 +162,12 @@ public class Diagram extends JPanel implements StructureListener,
 		return sp;
 	}
 
+	/**
+	 * Tries its best to bring the requested structure into the viewport
+	 * 
+	 * @param structure
+	 *            the structure needs to be viewed
+	 */
 	public void ensureStructureIsVisible(Structure structure) {
 		Rectangle rect = getBoundsFor(structure);
 		scrollRectToVisible(rect);
@@ -143,8 +183,8 @@ public class Diagram extends JPanel implements StructureListener,
 	}
 
 	/**
-	 * Calculate the bound of the component. The result is relative to the
-	 * Diagram itself (bypass all parents if any)
+	 * Calculates the bound of the component. The result is relative to the
+	 * diagram itself (bypass all parents if any)
 	 * 
 	 * @param c
 	 *            the component. Should be in the components tree
@@ -170,12 +210,19 @@ public class Diagram extends JPanel implements StructureListener,
 		return bounce;
 	}
 
+	/**
+	 * Builds cache of bounds for built components. This should be cached
+	 * because bounds calculation involves a lot of things.
+	 * 
+	 * @see #getBoundsFor(Component)
+	 * @see #boundsCache
+	 */
 	private void getBoundsCache() {
 		if (built == null) {
 			return;
 		}
 
-		if (Diagram.debuging) {
+		if (Diagram.debugging) {
 			System.err.println("Generating boundsCache...");
 		}
 
@@ -193,6 +240,13 @@ public class Diagram extends JPanel implements StructureListener,
 		boundsCacheArray = null; // reset the array instance
 	}
 
+	/**
+	 * Gets the bounds for a structure. Makes use of the {@link #boundsCache}
+	 * 
+	 * @param structure
+	 *            the one needs bound
+	 * @return the bounds or null if it's can not be calculated
+	 */
 	public Rectangle getBoundsFor(Structure structure) {
 		if (boundsCache == null) {
 			// cache is empty
@@ -207,9 +261,15 @@ public class Diagram extends JPanel implements StructureListener,
 		}
 	}
 
+	/**
+	 * Gets bounds for all built structures. Makes use of the
+	 * {@link #boundsCache}
+	 * 
+	 * @return an array of bounds
+	 */
 	public Rectangle[] getBoundsForAll() {
 		if (boundsCache == null) {
-			if (Diagram.debuging) {
+			if (Diagram.debugging) {
 				System.err.println("Missed the cache!");
 			}
 			getBoundsCache();
@@ -265,9 +325,14 @@ public class Diagram extends JPanel implements StructureListener,
 	}
 
 	/**
-	 * Add a new structure to the diagram.
+	 * Add a new structure to the diagram. This method only adds globally unique
+	 * structure
 	 * 
 	 * @param structure
+	 *            the one to be added
+	 * @return true if it can be added
+	 * 
+	 * @see Structure#checkIsUniqueGlobally()
 	 */
 	public boolean add(Structure structure) {
 		if (structure.checkIsUniqueGlobally()) {
@@ -285,15 +350,30 @@ public class Diagram extends JPanel implements StructureListener,
 		return false;
 	}
 
-	public void remove(Structure structure) {
+	/**
+	 * Removes a structure from the diagram.
+	 * 
+	 * @param structure
+	 *            the one needs removing
+	 * @return true if the removal is completed
+	 */
+	public boolean remove(Structure structure) {
 		if (structures.contains(structure)) {
 			structures.remove(structure);
 			structure.removeStructureListener(this);
 			structureChanged(new StructureEvent(structure,
 					StructureEvent.ACTIVE));
+
+			return true;
 		}
+
+		return false;
 	}
 
+	/**
+	 * Clears the diagram. Removes all structures added. Actually, this methods
+	 * will call {@link Structure#dispose()} to dispose it completely.
+	 */
 	public void clear() {
 		setAutoDrawing(false);
 		Iterator<Structure> itr = new LinkedList<Structure>(structures)
@@ -303,7 +383,7 @@ public class Diagram extends JPanel implements StructureListener,
 				itr.next().dispose();
 			} catch (StructureException e) {
 				// simply ignore
-				if (Diagram.debuging) {
+				if (Diagram.debugging) {
 					e.printStackTrace();
 				}
 			}
@@ -314,8 +394,15 @@ public class Diagram extends JPanel implements StructureListener,
 	}
 
 	/**
-	 * Does custom painting procedures. Draws relationships (only this, at this
-	 * moment).
+	 * Does custom painting procedures.
+	 * <ul>
+	 * <li>Draws relationships</li>
+	 * <li>Redirect painting to image instead of on screen component. Notify the
+	 * observer to save the image if any</li>
+	 * </ul>
+	 * 
+	 * @see #saveImage(ImageObserver)
+	 * @see #startClipping(ImageObserver)
 	 */
 	@Override
 	public void paint(Graphics g) {
@@ -357,7 +444,7 @@ public class Diagram extends JPanel implements StructureListener,
 						image_rect.width, image_rect.height, image_rect.x,
 						image_rect.y, image_rect.x + image_rect.width,
 						image_rect.y + image_rect.height, null);
-				if (Diagram.debuging) {
+				if (Diagram.debugging) {
 					System.err.println("Copying clipping area: " + result);
 				}
 
@@ -387,6 +474,14 @@ public class Diagram extends JPanel implements StructureListener,
 		}
 	}
 
+	/**
+	 * Turns the auto-drawing on change feature on or off
+	 * 
+	 * @param b
+	 *            true to enable, false to disable
+	 * 
+	 * @see #flag_auto_draw
+	 */
 	public void setAutoDrawing(boolean b) {
 		if (b && !flag_auto_draw) {
 			draw();
@@ -449,7 +544,7 @@ public class Diagram extends JPanel implements StructureListener,
 			i++;
 		}
 
-		if (Diagram.debuging) {
+		if (Diagram.debugging) {
 			System.err.print("Dependencies: ");
 			for (int k = 0; k < n; k++) {
 				System.err.print("[");
@@ -559,7 +654,7 @@ public class Diagram extends JPanel implements StructureListener,
 	 *            the structure
 	 * @return the built component
 	 */
-	Component build(Structure s) {
+	private Component build(Structure s) {
 		JComponent c;
 
 		JLabel label = new DiagramStructureName(s);
@@ -588,7 +683,7 @@ public class Diagram extends JPanel implements StructureListener,
 	 *            the array of children's components
 	 * @return the wrapper component
 	 */
-	JComponent wrap(Component c, Component[] dc) {
+	private JComponent wrap(Component c, Component[] dc) {
 		JPanel dependent_container = new JPanel();
 		dependent_container.setLayout(new FlowLayoutTopAligned(
 				cfg_gap_horizontal, cfg_gap_vertical, false));

@@ -43,8 +43,9 @@ class DiagramStructureName extends JLabel implements DragGestureListener,
 	private Color cfg_drag_color = Color.blue;
 
 	/**
-	 * Constructor. Accepts a structure. Create the label using
-	 * <code>JLabel</code> constructor
+	 * Constructor. Accepts a structure. Creates the label using
+	 * <code>JLabel</code> constructor. Also prepares itself ready to be
+	 * dragged.
 	 * 
 	 * @param structure
 	 */
