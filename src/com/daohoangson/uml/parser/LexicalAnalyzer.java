@@ -4,33 +4,52 @@ import java.text.ParseException;
 import java.util.Enumeration;
 
 /**
- * The lexical analyzer which parse java syntax into the correct {@link Token}
+ * The lexical analyzer which parse java syntax into correct {@link Token
+ * tokens}
  * 
  * @author Dao Hoang Son
  * @version 1.0
- * 
  */
 public class LexicalAnalyzer implements Enumeration<Token> {
+	/**
+	 * The string that needs parsing
+	 */
 	private String source;
+	/**
+	 * The grammar
+	 */
 	private Grammar grammar;
+	/**
+	 * The current offset
+	 */
 	private int offset = 0;
+	/**
+	 * The last processed token. It's used in {@link #pushback()}
+	 */
 	private Token lastToken = null;
 	/**
 	 * Determines if we are in debug mode
 	 */
-	static public boolean debuging = false;
+	static public boolean debugging = false;
 
 	/**
-	 * Constructor. Accepts a String prepared to be parsed
+	 * Constructor
 	 * 
 	 * @param source
-	 *            the source content
+	 *            the string to be parsed
+	 * @param grammar
+	 *            the grammar which is used to parse the string
 	 */
 	public LexicalAnalyzer(String source, Grammar grammar) {
 		this.source = source;
 		this.grammar = grammar;
 	}
 
+	/**
+	 * Gets the current offset
+	 * 
+	 * @return the current offset
+	 */
 	public int getOffset() {
 		return offset;
 	}
@@ -52,7 +71,7 @@ public class LexicalAnalyzer implements Enumeration<Token> {
 	 * 
 	 * @param types
 	 *            type filtering. Only automata that matches these types will
-	 *            get processed
+	 *            get processed. Using a zero-length array will parse everything
 	 * @return
 	 */
 	public Token nextElement(int[] types) {
@@ -71,21 +90,28 @@ public class LexicalAnalyzer implements Enumeration<Token> {
 		case Token.KEYWORD_IGNORED:
 		case Token.SPACE:
 		case Token.ANNOTATION:
-			if (LexicalAnalyzer.debuging) {
+			if (LexicalAnalyzer.debugging) {
 				System.err.println("Auto Skipped: "
 						+ lastToken.content.length() + " character(s)");
 			}
 			return nextElement(types);
 		default:
-			if (LexicalAnalyzer.debuging) {
+			if (LexicalAnalyzer.debugging) {
 				System.err.println(lastToken);
 			}
 			return lastToken;
 		}
 	}
 
+	/**
+	 * Pushes back the last found token into the string. Simply speaking,
+	 * decrease the offset a value of the last token length
+	 * 
+	 * @throws ParseException
+	 *             if there is no {@link #lastToken} left
+	 */
 	public void pushback() throws ParseException {
-		if (LexicalAnalyzer.debuging) {
+		if (LexicalAnalyzer.debugging) {
 			System.err.println("pushback(): " + lastToken);
 		}
 
@@ -98,6 +124,13 @@ public class LexicalAnalyzer implements Enumeration<Token> {
 	}
 }
 
+/**
+ * A token with a correct type as an int value (makes it easy to process later)
+ * 
+ * @author Dao Hoang Son
+ * @version 1.0
+ * 
+ */
 class Token {
 	final static int ERROR = -1;
 	final static int SPACE = 0;
@@ -122,14 +155,29 @@ class Token {
 	final static int IMPORT = 503;
 	final static int PACKAGENAME = 504;
 
+	/**
+	 * Left parenthesis
+	 */
 	final static int LPAR = 1001;
+	/**
+	 * Right parenthesis
+	 */
 	final static int RPAR = 1002;
+	/**
+	 * Left brace
+	 */
 	final static int LBRACE = 1003;
+	/**
+	 * Right brace
+	 */
 	final static int RBRACE = 1004;
 	final static int COMMA = 1005;
 	final static int COLON = 1006;
 	final static int ASSIGN = 1007;
 	final static int OPERATOR = 1100;
+	/**
+	 * An array of operators
+	 */
 	final static String[] operators = { "+", "-", "*", "/", "%", "==", "!",
 			"!=", ">", "<", ">=", "<=", "&&", "||", ".", "?", ":", "[]" };
 

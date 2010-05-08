@@ -4,8 +4,8 @@ import java.util.LinkedList;
 import java.util.List;
 
 /**
- * The case class for automata. Provide basic related operations for automata.
- * This is an abstract class so sub classes are needed all the time
+ * The case class for an automata. Provide basic related operations for
+ * automata. This is an abstract class so sub classes are needed all the time
  * 
  * @author Dao Hoang Son
  * @version 1.0

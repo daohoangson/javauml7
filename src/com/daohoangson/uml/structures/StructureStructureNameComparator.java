@@ -7,6 +7,7 @@ import java.util.Comparator;
  * from upper lever down: Interface > Class > Property > Method > Argument
  * 
  * @author Dao Hoang Son
+ * @version 1.0
  * 
  * @see Structure#getChildren()
  */

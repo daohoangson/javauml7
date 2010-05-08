@@ -15,6 +15,7 @@ import javax.swing.filechooser.FileFilter;
  * on disk.
  * 
  * @author Dao Hoang Son
+ * @version 1.0
  * 
  */
 public class DiagramImageObserver implements ImageObserver {

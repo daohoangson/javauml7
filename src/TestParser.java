@@ -22,14 +22,14 @@ public class TestParser {
 
 		// Parser.debuging = true;
 		// Structure.debuging = true;
-		Relationship.debuging = true;
+		Relationship.debugging = true;
 		parser = new Parser(d);
 
 		if (args.length > 0) {
 			for (int i = 0; i < args.length; i++) {
 				if (args[i].equals("--debug")) {
-					Structure.debuging = true;
-					Diagram.debuging = true;
+					Structure.debugging = true;
+					Diagram.debugging = true;
 					TestParser.debuging = true;
 					System.out.println("Enabled DEBUG modes");
 					break;

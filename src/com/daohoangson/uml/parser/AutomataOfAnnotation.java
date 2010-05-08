@@ -5,6 +5,7 @@ package com.daohoangson.uml.parser;
  * RegEx equivalent: <code>@[a-zA-Z]*(\(.*\))?</code>
  * 
  * @author Dao Hoang Son
+ * @version 1.0
  * 
  * @see GrammarOfJava
  * 

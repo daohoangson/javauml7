@@ -99,7 +99,7 @@ public class Method extends Structure {
 
 	@Override
 	public boolean checkIsAlike(Structure that) {
-		if (Structure.debuging) {
+		if (Structure.debugging) {
 			System.err.println("Comparing: " + this + " vs. " + that);
 		}
 

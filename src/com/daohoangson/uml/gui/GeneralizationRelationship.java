@@ -8,11 +8,10 @@ import com.daohoangson.uml.structures.Structure;
  * Relationship class for Generalization Relationships
  * 
  * @author Dao Hoang Son
- * @version 1.0
+ * @version 1.1
  * 
  * @see <a
- *      href="http://en.wikipedia.org/wiki/Class_diagram#Relationships">Wikipedia
- *      page</a>
+ *      href="http://en.wikipedia.org/wiki/Class_diagram#Relationships">Wikipedia</a>
  */
 class GeneralizationRelationship extends Relationship {
 	/**

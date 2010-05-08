@@ -23,7 +23,7 @@ import com.tranvietson.uml.structures.StructureException;
  * Grouping for several {@linkplain Structure structure}s
  * 
  * @author Dao Hoang Son
- * @version 1.0
+ * @version 1.2
  * 
  */
 class DiagramStructureGroup extends JPanel implements DropTargetListener {
@@ -57,9 +57,27 @@ class DiagramStructureGroup extends JPanel implements DropTargetListener {
 	 * The width of border for structure's component
 	 */
 	private int cfg_border_width = 5;
+	/**
+	 * The incremental block size for the component. The component actual size
+	 * will always be a number of times of this block size
+	 * 
+	 * @see #getPreferredSize()
+	 */
 	private Dimension block_size;
 
-	DiagramStructureGroup(Structure structure, Component head,
+	/**
+	 * Constructor (the one and only)
+	 * 
+	 * @param structure
+	 *            the primary one
+	 * @param head
+	 *            the heading component
+	 * @param block_size
+	 *            the block size
+	 * 
+	 * @see #block_size
+	 */
+	public DiagramStructureGroup(Structure structure, Component head,
 			Dimension block_size) {
 		super();
 
@@ -81,6 +99,24 @@ class DiagramStructureGroup extends JPanel implements DropTargetListener {
 		return "DnDPanel of " + head;
 	}
 
+	/**
+	 * Gets the structure in associate with this component
+	 * 
+	 * @return the structure
+	 */
+	Structure getStructure() {
+		return structure;
+	}
+
+	/**
+	 * Gets the structure name of the structure
+	 * 
+	 * @return
+	 */
+	String getStructureName() {
+		return structure.getStructureName();
+	}
+
 	@Override
 	public Dimension getPreferredSize() {
 		Dimension d = super.getPreferredSize();
@@ -99,10 +135,6 @@ class DiagramStructureGroup extends JPanel implements DropTargetListener {
 	@Override
 	public Dimension getMaximumSize() {
 		return getPreferredSize();
-	}
-
-	Component getHead() {
-		return head;
 	}
 
 	@Override
@@ -133,6 +165,12 @@ class DiagramStructureGroup extends JPanel implements DropTargetListener {
 		setBorder(fg);
 	}
 
+	/**
+	 * A shortcut to make the border for this component
+	 * 
+	 * @param color
+	 *            the border's color
+	 */
 	private void setBorder(Color color) {
 		setBorder(BorderFactory.createCompoundBorder(BorderFactory
 				.createLineBorder(color), BorderFactory.createEmptyBorder(
@@ -169,6 +207,12 @@ class DiagramStructureGroup extends JPanel implements DropTargetListener {
 		// TODO Auto-generated method stub
 	}
 
+	/**
+	 * Accepts the drop action. Removes the structure from its container and add
+	 * to the corresponding structure of this component
+	 * 
+	 * @param dtde
+	 */
 	@Override
 	public void drop(DropTargetDropEvent dtde) {
 		setForeground(original_color);

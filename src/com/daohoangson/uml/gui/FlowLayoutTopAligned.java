@@ -6,8 +6,8 @@ import java.awt.Dimension;
 import java.awt.FlowLayout;
 
 /**
- * A custom manager. Everything it does is arranging all components in 1 row,
- * top align. Simple enough!
+ * A custom layout manager. Everything it does is arranging all components in 1
+ * row, top align. Simple enough!
  * 
  * @author Dao Hoang Son
  * 

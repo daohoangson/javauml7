@@ -70,7 +70,7 @@ public class TestForms {
 //			
 //		};
 		
-		Structure.debuging = true;
+		Structure.debugging = true;
 		//new ClassForm(d);
 		//new PropertyForm(C);
 		//new InterfaceForm(d);
