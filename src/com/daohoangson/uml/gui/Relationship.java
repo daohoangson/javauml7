@@ -216,6 +216,11 @@ abstract public class Relationship {
 	}
 
 	private void drawLineSmart(Graphics g, int x1, int y1, int x2, int y2) {
+		if (x1 == x2 && y1 == y2) {
+			// oops, some kind of pseudo line?
+			return;
+		}
+
 		Rectangle[] onTheWay = Relationship.onTheWay(diagram.getBoundsForAll(),
 				x1, y1, x2, y2);
 
@@ -249,6 +254,7 @@ abstract public class Relationship {
 				}
 
 				if (use3legs) {
+					System.err.println("Vertical 3 legs: " + rect);
 					// normal case
 					__drawLine(g, x, p1y, x, p2y);
 					__drawLine(g, x, p2y, px, p2y);
@@ -282,10 +288,6 @@ abstract public class Relationship {
 					// this rectangle is at one of the end points
 					// use 2 leg drawing now
 					use3legs = false;
-				}
-
-				if (Relationship.debuging) {
-					System.err.println("Horizontal line: 3 legs = " + use3legs);
 				}
 
 				if (use3legs) {
@@ -362,13 +364,12 @@ abstract public class Relationship {
 	}
 
 	static private boolean isOverlap(int x1, int x2, int range1, int range2) {
-		int border = 3;
 		if (range1 < range2) {
-			range1 += border;
-			range2 -= border;
+			range1++;
+			range2--;
 		} else {
-			range1 -= border;
-			range2 += border;
+			range1--;
+			range2++;
 		}
 
 		return Relationship.isBetween(x1, range1, range2)

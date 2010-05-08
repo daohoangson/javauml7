@@ -1,7 +1,7 @@
 package com.nguyenthanhan.uml.gui;
 
 import java.awt.Desktop;
-import java.awt.Frame;
+import java.awt.Window;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.net.URI;
@@ -19,7 +19,7 @@ import javax.swing.event.HyperlinkEvent.EventType;
 public class AboutForm extends ConvenientForm implements HyperlinkListener {
 	private static final long serialVersionUID = 7722581420480179614L;
 
-	public AboutForm(Frame owner) {
+	public AboutForm(Window owner) {
 		super(owner, "About", ModalityType.APPLICATION_MODAL);
 
 		String uri = "http://code.google.com/p/javauml7/";

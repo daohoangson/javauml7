@@ -7,6 +7,7 @@ import java.io.File;
 import java.io.IOException;
 
 import javax.imageio.ImageIO;
+import javax.swing.filechooser.FileFilter;
 
 /**
  * The observer designed specifically to use with
@@ -46,6 +47,22 @@ public class DiagramImageObserver implements ImageObserver {
 		}
 
 		return false;
+	}
+
+}
+
+class DiagramImageFilter extends FileFilter {
+
+	@Override
+	public boolean accept(File f) {
+		String path = f.getAbsolutePath();
+		String ext = path.substring(path.length() - 4).toLowerCase();
+		return ext.equals(".jpg") || ext.equals(".png");
+	}
+
+	@Override
+	public String getDescription() {
+		return "Supported Image Formats (.JPG, .PNG)";
 	}
 
 }

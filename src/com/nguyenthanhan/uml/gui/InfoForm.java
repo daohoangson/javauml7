@@ -1,15 +1,13 @@
 package com.nguyenthanhan.uml.gui;
 
-import java.awt.Frame;
+import java.awt.Window;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
-import javax.swing.BorderFactory;
-import javax.swing.BoxLayout;
+import javax.swing.Box;
 import javax.swing.JCheckBox;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
-import javax.swing.JPanel;
 
 import com.daohoangson.uml.structures.Structure;
 import com.tranvietson.uml.structures.StructureException;
@@ -20,22 +18,21 @@ public class InfoForm extends ConvenientForm implements ActionListener {
 	private Structure container = null;
 	private Structure[] parents = null;
 	private Structure[] children = null;
+	private Box actionsBox;
 
-	public InfoForm(Frame owner, Structure structure) {
+	public InfoForm(Window owner, Structure structure) {
 		super(owner, structure.getName(), ModalityType.MODELESS);
 
 		this.structure = structure;
 
-		JPanel panel = new JPanel();
-		int width = 10;
-		panel.setBorder(BorderFactory.createEmptyBorder(width, width, width,
-				width));
-		panel.setLayout(new BoxLayout(panel, BoxLayout.PAGE_AXIS));
+		Box primaryBox = Box.createHorizontalBox();
 
-		panel.add(new JLabel("Type: " + structure.getStructureName()));
-		panel.add(new JLabel("Name: " + structure.getName()));
+		Box infoBox = Box.createVerticalBox();
+
+		infoBox.add(new JLabel("Type: " + structure.getStructureName()));
+		infoBox.add(new JLabel("Name: " + structure.getName()));
 		if (structure.getContainer() != null || structure.getParentsCount() > 0) {
-			panel.add(new JLabel("Parents"));
+			infoBox.add(new JLabel("Parents"));
 
 			container = structure.getContainer();
 			if (container != null) {
@@ -43,7 +40,7 @@ public class InfoForm extends ConvenientForm implements ActionListener {
 						null, true);
 				container_cb.setActionCommand("container");
 				container_cb.addActionListener(this);
-				panel.add(container_cb);
+				infoBox.add(container_cb);
 			}
 
 			parents = structure.getParents();
@@ -52,11 +49,11 @@ public class InfoForm extends ConvenientForm implements ActionListener {
 						null, true);
 				parent_cb.setActionCommand("parent." + i);
 				parent_cb.addActionListener(this);
-				panel.add(parent_cb);
+				infoBox.add(parent_cb);
 			}
 		}
 		if (structure.getChildrenCount() > 0) {
-			panel.add(new JLabel("Children"));
+			infoBox.add(new JLabel("Children"));
 
 			children = structure.getChildren();
 			for (int i = 0; i < children.length; i++) {
@@ -64,10 +61,16 @@ public class InfoForm extends ConvenientForm implements ActionListener {
 						null, true);
 				child_cb.setActionCommand("child." + i);
 				child_cb.addActionListener(this);
-				panel.add(child_cb);
+				infoBox.add(child_cb);
 			}
 		}
-		add(panel);
+
+		actionsBox = Box.createVerticalBox();
+
+		primaryBox.add(infoBox);
+		primaryBox.add(actionsBox);
+
+		add(primaryBox);
 
 		pack();
 		setLocationRelativeTo(null);
@@ -76,6 +79,10 @@ public class InfoForm extends ConvenientForm implements ActionListener {
 
 	public Structure getStructure() {
 		return structure;
+	}
+
+	public Box getBox() {
+		return actionsBox;
 	}
 
 	@Override
