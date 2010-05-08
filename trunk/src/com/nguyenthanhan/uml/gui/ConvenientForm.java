@@ -2,7 +2,7 @@ package com.nguyenthanhan.uml.gui;
 
 import java.awt.Component;
 import java.awt.Container;
-import java.awt.Frame;
+import java.awt.Window;
 import java.awt.event.ContainerEvent;
 import java.awt.event.ContainerListener;
 import java.awt.event.KeyEvent;
@@ -14,7 +14,7 @@ public abstract class ConvenientForm extends JDialog implements
 		ContainerListener, KeyListener {
 	private static final long serialVersionUID = -1726732388115683951L;
 
-	public ConvenientForm(Frame owner, String title, ModalityType modalityType) {
+	public ConvenientForm(Window owner, String title, ModalityType modalityType) {
 		super(owner, title, modalityType);
 		setResizable(false);
 

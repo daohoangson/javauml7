@@ -84,6 +84,7 @@ public class Parser {
 		if (Parser.debuging) {
 			System.err.println("Parsing " + file.getAbsolutePath());
 		}
+
 		if (file.isDirectory()) {
 			File[] files = file.listFiles();
 			for (int i = 0; i < files.length; i++) {

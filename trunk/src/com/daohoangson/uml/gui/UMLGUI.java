@@ -2,6 +2,7 @@ package com.daohoangson.uml.gui;
 
 import java.awt.Component;
 import java.awt.Container;
+import java.awt.Window;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ContainerEvent;
@@ -12,9 +13,13 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import java.io.File;
+import java.net.URL;
 
 import javax.swing.AbstractButton;
+import javax.swing.Box;
+import javax.swing.Icon;
+import javax.swing.ImageIcon;
+import javax.swing.JButton;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JMenu;
@@ -22,7 +27,7 @@ import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.KeyStroke;
-import javax.swing.filechooser.FileFilter;
+import javax.swing.WindowConstants;
 
 import com.daohoangson.uml.parser.Parser;
 import com.daohoangson.uml.structures.Structure;
@@ -36,6 +41,7 @@ import com.nguyenthanhan.uml.gui.ListForm;
 import com.nguyenthanhan.uml.gui.MethodForm;
 import com.nguyenthanhan.uml.gui.PropertyForm;
 import com.tranvietson.uml.codegen.CodeGenerator;
+import com.tranvietson.uml.structures.StructureException;
 
 /**
  * The primary Graphical User Interface which includes all other components. It
@@ -67,7 +73,7 @@ public class UMLGUI extends JFrame implements ActionListener, ContainerListener 
 	 * The diagram which holds all the structure and build primary display area
 	 */
 	public Diagram diagram;
-	private InfoForm lastOpened = null;
+	private Window lastOpened = null;
 
 	/**
 	 * Constructor. Sets up everything up. Including a menu bar and the diagram.
@@ -77,7 +83,9 @@ public class UMLGUI extends JFrame implements ActionListener, ContainerListener 
 		JMenuBar menuBar = new JMenuBar();
 
 		JMenu menuFile = new JMenu("File");
+		menuFile.setActionCommand("file");
 		menuFile.setMnemonic(KeyEvent.VK_F);
+		setIcon(menuFile, "file", null);
 		menuBar.add(menuFile);
 
 		JMenuItem mfi;
@@ -86,6 +94,7 @@ public class UMLGUI extends JFrame implements ActionListener, ContainerListener 
 		mfi.setActionCommand("clear");
 		mfi.addActionListener(this);
 		mfi.setMnemonic(KeyEvent.VK_R);
+		setIcon(mfi, "clear", null);
 		menuFile.add(mfi);
 
 		mfi = new JMenuItem("Quick Find");
@@ -94,6 +103,14 @@ public class UMLGUI extends JFrame implements ActionListener, ContainerListener 
 		mfi.setMnemonic(KeyEvent.VK_F);
 		mfi.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_F,
 				InputEvent.CTRL_DOWN_MASK));
+		setIcon(mfi, "find", null);
+		menuFile.add(mfi);
+
+		mfi = new JMenuItem("Show Related Structures");
+		mfi.setActionCommand("related");
+		mfi.addActionListener(this);
+		mfi.setMnemonic(KeyEvent.VK_L);
+		setIcon(mfi, "related", null);
 		menuFile.add(mfi);
 
 		menuFile.addSeparator();
@@ -104,6 +121,7 @@ public class UMLGUI extends JFrame implements ActionListener, ContainerListener 
 		mfi.setMnemonic(KeyEvent.VK_O);
 		mfi.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_O,
 				InputEvent.CTRL_DOWN_MASK));
+		setIcon(mfi, "load", null);
 		menuFile.add(mfi);
 
 		mfi = new JMenuItem("Save as Image");
@@ -112,6 +130,14 @@ public class UMLGUI extends JFrame implements ActionListener, ContainerListener 
 		mfi.setMnemonic(KeyEvent.VK_S);
 		mfi.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_S,
 				InputEvent.CTRL_DOWN_MASK));
+		setIcon(mfi, "image", null);
+		menuFile.add(mfi);
+
+		mfi = new JMenuItem("Clipping");
+		mfi.setActionCommand("clipping");
+		mfi.addActionListener(this);
+		mfi.setMnemonic(KeyEvent.VK_C);
+		setIcon(mfi, "clipping", null);
 		menuFile.add(mfi);
 
 		mfi = new JMenuItem("Export Source File(s)");
@@ -120,20 +146,23 @@ public class UMLGUI extends JFrame implements ActionListener, ContainerListener 
 		mfi.setMnemonic(KeyEvent.VK_E);
 		mfi.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_E,
 				InputEvent.CTRL_DOWN_MASK));
+		setIcon(mfi, "export", null);
 		menuFile.add(mfi);
 
 		menuFile.addSeparator();
 
-		mfi = new JMenuItem("Exit");
+		// this is "Exit" originally but sometimes it doesn't make sense to
+		// exit in a sub window so I changed it to "Close"
+		mfi = new JMenuItem("Close");
 		mfi.setActionCommand("exit");
 		mfi.addActionListener(this);
-		mfi.setMnemonic(KeyEvent.VK_X);
-		mfi.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_X,
-				InputEvent.CTRL_DOWN_MASK));
+		setIcon(mfi, "exit", null);
 		menuFile.add(mfi);
 
 		JMenu menuNew = new JMenu("New");
+		menuNew.setActionCommand("new");
 		menuNew.setMnemonic(KeyEvent.VK_N);
+		setIcon(menuNew, "new", null);
 		menuBar.add(menuNew);
 
 		String[] structures = new String[] { "Class", "Interface", "Property",
@@ -145,11 +174,14 @@ public class UMLGUI extends JFrame implements ActionListener, ContainerListener 
 			mi.setMnemonic((int) structures[i].charAt(0));
 			mi.setAccelerator(KeyStroke.getKeyStroke(structures[i].charAt(0),
 					InputEvent.CTRL_DOWN_MASK + InputEvent.SHIFT_DOWN_MASK));
+			setIcon(mi, "new_" + structures[i].toLowerCase(), null);
 			menuNew.add(mi);
 		}
 
 		JMenu menuHelp = new JMenu("Help");
+		menuHelp.setActionCommand("help");
 		menuHelp.setMnemonic(KeyEvent.VK_H);
+		setIcon(menuHelp, "help", null);
 		menuBar.add(menuHelp);
 
 		JMenuItem mhi;
@@ -158,6 +190,7 @@ public class UMLGUI extends JFrame implements ActionListener, ContainerListener 
 		mhi.setActionCommand("about");
 		mhi.addActionListener(this);
 		mhi.setMnemonic(KeyEvent.VK_A);
+		setIcon(mhi, "about", null);
 		menuHelp.add(mhi);
 
 		setJMenuBar(menuBar);
@@ -168,12 +201,74 @@ public class UMLGUI extends JFrame implements ActionListener, ContainerListener 
 
 		pack();
 		setTitle("UML");
-		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		try {
+			setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		} catch (SecurityException se) {
+			// just ignore
+			// there are cases when we can't do this simple close operation
+			// in an Applet for example?
+		}
 
 		if (UMLGUI.debuging) {
 			Structure.debuging = UMLGUI.debuging;
 			Diagram.debuging = UMLGUI.debuging;
 			Parser.debuging = UMLGUI.debuging;
+		}
+	}
+
+	public boolean setActionEnabled(String action, boolean enabled) {
+		return findAndSetActionEnabled(getJMenuBar().getComponents(), action,
+				enabled);
+	}
+
+	private boolean findAndSetActionEnabled(Component[] components,
+			String action, boolean enabled) {
+		for (int i = 0; i < components.length; i++) {
+			if (components[i] instanceof AbstractButton) {
+				AbstractButton button = (AbstractButton) components[i];
+				if (button.getActionCommand().equals(action)) {
+					button.setEnabled(enabled);
+
+					return true;
+				} else if (button instanceof JMenu) {
+					JMenu menu = (JMenu) button;
+					if (findAndSetActionEnabled(menu.getMenuComponents(),
+							action, enabled)) {
+						return true;
+					}
+				}
+			}
+		}
+
+		return false;
+	}
+
+	private void setIcon(AbstractButton component, String icon_path,
+			String pressedIcon_path) {
+		Icon icon = getIcon(icon_path);
+		if (icon != null) {
+			component.setIcon(icon);
+		}
+
+		Icon pressedIcon = getIcon(pressedIcon_path);
+		if (pressedIcon != null) {
+			component.setPressedIcon(pressedIcon);
+		}
+	}
+
+	private Icon getIcon(String path) {
+		if (path == null) {
+			return null;
+		}
+		path = "icon/" + path + ".gif";
+		URL iconURL = UMLGUI.class.getResource(path);
+		if (iconURL != null) {
+			return new ImageIcon(iconURL);
+		} else {
+			if (UMLGUI.debuging) {
+				System.err.println("Icon not found: " + path);
+			}
+			return null;
 		}
 	}
 
@@ -183,9 +278,13 @@ public class UMLGUI extends JFrame implements ActionListener, ContainerListener 
 	 * <ul>
 	 * <li>clear: Confirm and clear the entire diagram</li>
 	 * <li>find: Display the quick find dialog</li>
+	 * <li>related: Display related structures by calling
+	 * {@link #doRelated(String)}</li>
 	 * <li>load: Do the load procedure by calling {@link #doLoad(String)}</li>
 	 * <li>image: Do the save image procedure by calling
 	 * {@link #doImage(String)}</li>
+	 * <li>clipping: Do the clipping procedure by calling
+	 * {@link #doClipping(String)}</li>
 	 * <li>generate: Do the generate source procedure by calling
 	 * {@link #doGenerate(String)}</li>
 	 * <li>exit: Simply dispose the JFrame</li>
@@ -207,7 +306,15 @@ public class UMLGUI extends JFrame implements ActionListener, ContainerListener 
 	 * </ul>
 	 * </li>
 	 * <li>about: Display author information</li>
+	 * <li>InfoForm actions
+	 * <ul>
+	 * <li>info.related: Display related structures</li>
+	 * <li>info.remove: Remove the structure</li>
 	 * </ul>
+	 * </li>
+	 * </ul>
+	 * This method even catches all Security Exception if they are thrown out.
+	 * This behavior is expected in limited policy environments (in an Applet?)
 	 */
 	@Override
 	public void actionPerformed(ActionEvent e) {
@@ -228,12 +335,32 @@ public class UMLGUI extends JFrame implements ActionListener, ContainerListener 
 			if (structure != null) {
 				diagram.ensureStructureIsVisible(structure);
 			}
+		} else if (action.equals("related")) {
+			doRelated(s.getText(), null);
 		} else if (action.equals("load")) {
-			doLoad(s.getText());
+			try {
+				doLoad(s.getText());
+			} catch (SecurityException se) {
+				showPolicyError(s.getText());
+			}
 		} else if (action.equals("image")) {
-			doImage(s.getText());
+			try {
+				doImage(s.getText());
+			} catch (SecurityException se) {
+				showPolicyError(s.getText());
+			}
+		} else if (action.equals("clipping")) {
+			try {
+				doClipping(s.getText());
+			} catch (SecurityException se) {
+				showPolicyError(s.getText());
+			}
 		} else if (action.equals("generate")) {
-			doGenerate(s.getText());
+			try {
+				doGenerate(s.getText());
+			} catch (SecurityException se) {
+				showPolicyError(s.getText());
+			}
 		} else if (action.equals("exit")) {
 			dispose();
 		} else if (action.equals("new")) {
@@ -270,6 +397,91 @@ public class UMLGUI extends JFrame implements ActionListener, ContainerListener 
 			}
 		} else if (action.equals("about")) {
 			new AboutForm(this);
+		} else if (action.startsWith("info.")) {
+			String real_action = action.substring(5);
+			Structure structure = ((InfoForm) lastOpened).getStructure();
+			if (real_action.equals("related")) {
+				lastOpened.dispose();
+				doRelated(s.getText(), structure);
+			} else if (real_action.equals("remove")) {
+				try {
+					structure.dispose();
+					lastOpened.dispose();
+				} catch (StructureException exception) {
+					JOptionPane.showMessageDialog(this, "Unable to remove "
+							+ structure + "\n" + exception.getMessage(),
+							"Structure Error", JOptionPane.ERROR_MESSAGE);
+				}
+			}
+		}
+	}
+
+	private void doRelated(String title, Structure structure) {
+		if (lastOpened != null && lastOpened.isVisible()) {
+			lastOpened.requestFocus();
+			return;
+		}
+
+		if (structure == null) {
+			// try to find what user wants
+			structure = FindForm.find(this, title, diagram.getStructures());
+		}
+
+		if (structure == null) {
+			// nothing is selected, simply do nothing
+			return;
+		}
+
+		UMLGUI target_gui = new UMLGUI();
+		lastOpened = target_gui;
+		Diagram d = target_gui.diagram;
+
+		d.setAutoDrawing(false);
+		findRelated(structure, structure, d);
+		d.setAutoDrawing(true);
+
+		d.ensureStructureIsVisible(structure);
+
+		target_gui.setActionEnabled("clear", false);
+		target_gui.setActionEnabled("related", false);
+		target_gui.setActionEnabled("load", false);
+		target_gui.setActionEnabled("new", false);
+
+		target_gui.setTitle(title + " - " + structure.getName());
+		target_gui.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
+		target_gui.setLocationRelativeTo(null);
+		target_gui.setVisible(true);
+	}
+
+	private void findRelated(Structure root_structure, Structure structure,
+			Diagram target_diagram) {
+		if (!target_diagram.add(structure)) {
+			// the diagram refused the adding request
+			// so we should stop recursing here
+			return;
+		}
+
+		Structure[] structures = diagram.getStructures();
+		for (int i = 0; i < structures.length; i++) {
+			Structure other_structure = structures[i];
+			if (other_structure.checkIsChildOf(structure)
+					|| structure.checkIsChildOf(other_structure)) {
+				findRelated(root_structure, other_structure, target_diagram);
+			} else {
+				if (root_structure == structure) {
+					// do this only at level of the finding process
+					Structure[] children = other_structure.getChildren();
+					for (int j = 0; j < children.length; j++) {
+						Structure[] types = children[j].getTypeAsStructure();
+						for (int k = 0; k < types.length; k++) {
+							if (types[k] == root_structure) {
+								findRelated(root_structure, other_structure,
+										target_diagram);
+							}
+						}
+					}
+				}
+			}
 		}
 	}
 
@@ -286,7 +498,6 @@ public class UMLGUI extends JFrame implements ActionListener, ContainerListener 
 	 * @see Diagram#cfg_draw_on_change
 	 */
 	private void doLoad(String title) {
-		boolean drawn = false;
 		JFileChooser fc = new JFileChooser(".");
 		fc.setDialogTitle(title);
 		fc.setApproveButtonText("Load Source");
@@ -295,13 +506,12 @@ public class UMLGUI extends JFrame implements ActionListener, ContainerListener 
 		fc.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
 		if (fc.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
 			try {
-				diagram.cfg_draw_on_change = false;
+				diagram.setAutoDrawing(false);
 				Parser parser = new Parser(diagram);
 				int parsed = parser.parse(fc.getSelectedFile());
 
 				if (parsed > 0) {
-					diagram.draw();
-					drawn = true;
+					diagram.setAutoDrawing(true);
 					JOptionPane.showMessageDialog(this, String.format(
 							"Loaded %d file(s)!", parsed), title,
 							JOptionPane.INFORMATION_MESSAGE);
@@ -317,13 +527,9 @@ public class UMLGUI extends JFrame implements ActionListener, ContainerListener 
 						JOptionPane.ERROR_MESSAGE);
 			}
 
-			if (!drawn) {
-				// we need this because sometime the parser
-				// will through an exception and prevent
-				// the original draw request inside the try scope
-				diagram.draw();
-			}
-			diagram.cfg_draw_on_change = true;
+			// just to make sure because sometimes the try catch statement will
+			// fail and we need the diagram to be drawn
+			diagram.setAutoDrawing(true);
 		}
 	}
 
@@ -341,24 +547,34 @@ public class UMLGUI extends JFrame implements ActionListener, ContainerListener 
 	private void doImage(String title) {
 		JFileChooser fc = new JFileChooser(".");
 		fc.setDialogTitle(title);
-		fc.setFileFilter(new FileFilter() {
-
-			@Override
-			public boolean accept(File f) {
-				String path = f.getAbsolutePath();
-				String ext = path.substring(path.length() - 4).toLowerCase();
-				return ext.equals(".jpg") || ext.equals(".png");
-			}
-
-			@Override
-			public String getDescription() {
-				return "Supported Image Formats (.JPG, .PNG)";
-			}
-
-		});
+		fc.setFileFilter(new DiagramImageFilter());
 
 		if (fc.showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
 			diagram.saveImage(new DiagramImageObserver(fc.getSelectedFile()
+					.getAbsolutePath()));
+		}
+	}
+
+	/**
+	 * Processes the clipping request.<br/>
+	 * Simply makes use of the method of the diagram.
+	 * 
+	 * @param title
+	 *            the title of the action
+	 * 
+	 * @see Diagram#startClipping(java.awt.image.ImageObserver)
+	 * @see DiagramImageObserver
+	 */
+	private void doClipping(String title) {
+		JFileChooser fc = new JFileChooser(".");
+		fc.setDialogTitle(title);
+		fc.setFileFilter(new DiagramImageFilter());
+
+		if (fc.showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
+			JOptionPane.showMessageDialog(this,
+					"OK, select the area you want to take screen shot now...",
+					title, JOptionPane.INFORMATION_MESSAGE);
+			diagram.startClipping(new DiagramImageObserver(fc.getSelectedFile()
 					.getAbsolutePath()));
 		}
 	}
@@ -394,6 +610,64 @@ public class UMLGUI extends JFrame implements ActionListener, ContainerListener 
 		}
 	}
 
+	private void doInfo(Structure structure) {
+		if (lastOpened != null && lastOpened.isVisible()) {
+			// we don't allow multiple information form to be
+			// displayed
+			lastOpened.requestFocus();
+			return;
+		}
+
+		lastOpened = new InfoForm(this, structure);
+
+		JButton btn;
+		Box box = ((InfoForm) lastOpened).getBox();
+
+		btn = new JButton("Related Structures");
+		btn.setAlignmentX((float) 0.5);
+		btn.setActionCommand("info.related");
+		btn.addActionListener(this);
+		box.add(btn);
+
+		box.add(Box.createVerticalStrut(10));
+
+		btn = new JButton("Remove this");
+		btn.setAlignmentX((float) 0.5);
+		btn.setActionCommand("info.remove");
+		btn.addActionListener(this);
+		box.add(btn);
+
+		box.validate();
+		lastOpened.pack();
+		lastOpened.setLocationRelativeTo(null);
+		lastOpened.validate();
+
+		diagram.setFocus(structure);
+		lastOpened.addWindowListener(new WindowAdapter() {
+			@Override
+			public void windowClosing(WindowEvent e) {
+				// remove the focus of diagram
+				// TODO: Too complicated. Any other ways?
+				diagram.setFocus(null);
+			}
+
+			@Override
+			public void windowClosed(WindowEvent e) {
+				// remove the focus of diagram
+				// TODO: This is also too complicated :(
+				diagram.setFocus(null);
+			}
+		});
+	}
+
+	private void showPolicyError(String title) {
+		JOptionPane
+				.showMessageDialog(
+						this,
+						"Sorry, your system doesn't allow us to perform this action.\nPlease try another version of the application to use all of the (amazing) features",
+						title, JOptionPane.ERROR_MESSAGE);
+	}
+
 	private void setupInfoForms(Component c) {
 		if (c instanceof Container) {
 			Container container = (Container) c;
@@ -407,33 +681,13 @@ public class UMLGUI extends JFrame implements ActionListener, ContainerListener 
 		if (c instanceof DiagramStructureGroup) {
 			DiagramStructureGroup panel = (DiagramStructureGroup) c;
 			DiagramStructureName label = (DiagramStructureName) panel.getHead();
-			final UMLGUI owner = this;
+
 			label.addMouseListener(new MouseAdapter() {
 				@Override
 				public void mouseClicked(MouseEvent e) {
-					if (lastOpened != null && lastOpened.isVisible()) {
-						// we don't allow multiple information form to be
-						// displayed
-						lastOpened.requestFocus();
-					} else {
-						DiagramStructureName label = (DiagramStructureName) e
-								.getSource();
-						lastOpened = new InfoForm(owner, label.getStructure());
-						diagram.setFocus(label.getStructure());
-						lastOpened.addWindowListener(new WindowAdapter() {
-							@Override
-							public void windowClosing(WindowEvent e) {
-								// TODO: Too complicated. Any other ways?
-								diagram.setFocus(null);
-							}
-
-							@Override
-							public void windowClosed(WindowEvent e) {
-								// TODO: This is also too complicated :(
-								diagram.setFocus(null);
-							}
-						});
-					}
+					DiagramStructureName label = (DiagramStructureName) e
+							.getSource();
+					doInfo(label.getStructure());
 				}
 
 				@Override

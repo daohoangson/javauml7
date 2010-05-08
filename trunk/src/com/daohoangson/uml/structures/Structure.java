@@ -24,6 +24,10 @@ import com.tranvietson.uml.structures.StructureListener;
  */
 public abstract class Structure implements StructureListener {
 	/**
+	 * Status of the structure
+	 */
+	private boolean active = true;
+	/**
 	 * Name of the structure
 	 */
 	private String name = null;
@@ -185,9 +189,18 @@ public abstract class Structure implements StructureListener {
 		// new structure is created
 		// call the listener if any
 		if (Structure.global_listener != null) {
-			Structure.global_listener
-					.structureChanged(new StructureEvent(this));
+			Structure.global_listener.structureChanged(new StructureEvent(this,
+					StructureEvent.ACTIVE));
 		}
+	}
+
+	/**
+	 * Checks for the active status of the structure.
+	 * 
+	 * @return true if the structure is active
+	 */
+	public boolean getActive() {
+		return active;
 	}
 
 	/**
@@ -550,7 +563,7 @@ public abstract class Structure implements StructureListener {
 	 * 
 	 * @return array of target structures if any
 	 */
-	public Structure[] getTypeAsStructure(String type) {
+	private Structure[] getTypeAsStructure(String type) {
 		List<Structure> types = new LinkedList<Structure>();
 
 		if (type != null) {
@@ -637,7 +650,7 @@ public abstract class Structure implements StructureListener {
 	 */
 	public Structure[] getParents() {
 		Structure[] parents_array = parents.toArray(new Structure[0]);
-		Comparator<Structure> byStructureName = new StructureNameComparator();
+		Comparator<Structure> byStructureName = new StructureStructureNameComparator();
 		Arrays.sort(parents_array, byStructureName);
 		return parents_array;
 	}
@@ -659,7 +672,7 @@ public abstract class Structure implements StructureListener {
 	 */
 	public Structure[] getChildren() {
 		Structure[] children_array = children.toArray(new Structure[0]);
-		Comparator<Structure> byStructureName = new StructureNameComparator();
+		Comparator<Structure> byStructureName = new StructureStructureNameComparator();
 		Arrays.sort(children_array, byStructureName);
 		return children_array;
 	}
@@ -674,7 +687,8 @@ public abstract class Structure implements StructureListener {
 	}
 
 	/**
-	 * Adds another structure as a child.
+	 * Adds another structure as a child. Parents always listen for changes from
+	 * children
 	 * 
 	 * @param structure
 	 * @throws StructureException
@@ -730,7 +744,7 @@ public abstract class Structure implements StructureListener {
 		}
 
 		if (added) {
-			fireChanged();
+			fireChanged(StructureEvent.CHILDREN);
 			return true;
 		} else {
 			throw new StructureException(this + " can NOT accept " + that
@@ -770,7 +784,7 @@ public abstract class Structure implements StructureListener {
 	}
 
 	/**
-	 * Removes a child.
+	 * Removes a child. Also stop listening to that child
 	 * 
 	 * @param structure
 	 * @throws StructureException
@@ -804,12 +818,44 @@ public abstract class Structure implements StructureListener {
 		}
 
 		if (removed) {
-			fireChanged();
+			fireChanged(StructureEvent.CHILDREN);
 			return true;
 		} else {
 			throw new StructureException(this + " doesn't have " + that
 					+ " as a child");
 		}
+	}
+
+	/**
+	 * Disposes this structure. Removes any container/parents. Dispose any
+	 * children. Removes from {@link #names} also. Simply speaking, completely
+	 * remove this structure, just like it has never existed.
+	 * 
+	 * @throws StructureException
+	 */
+	synchronized public void dispose() throws StructureException {
+		if (container != null) {
+			container.remove(this);
+		}
+
+		Iterator<Structure> itr_parents = parents.iterator();
+		while (itr_parents.hasNext()) {
+			itr_parents.next().remove(this);
+		}
+
+		// Iterator<Structure> itr_children = children.iterator();
+		// while (itr_children.hasNext()) {
+		// itr_children.next().dispose();
+		// }
+
+		if (Structure.names.containsValue(this)) {
+			Structure.names.remove(getName());
+		}
+
+		// mark as inactive
+		active = false;
+
+		fireChanged(StructureEvent.ACTIVE);
 	}
 
 	/**
@@ -837,9 +883,9 @@ public abstract class Structure implements StructureListener {
 	 * Triggers the changed event
 	 */
 	@SuppressWarnings("unchecked")
-	protected void fireChanged() {
+	protected void fireChanged(int type) {
 		if (listeners != null && listeners.size() > 0) {
-			StructureEvent e = new StructureEvent(this);
+			StructureEvent e = new StructureEvent(this, type);
 
 			Vector<StructureListener> targets;
 			synchronized (this) {
@@ -857,7 +903,7 @@ public abstract class Structure implements StructureListener {
 	 * Fires the changed event of this structure itself!
 	 */
 	public void structureChanged(StructureEvent e) {
-		fireChanged();
+		fireChanged(StructureEvent.CHILDREN);
 	}
 
 	/**
@@ -887,48 +933,6 @@ public abstract class Structure implements StructureListener {
 			}
 		}
 		return result.toArray(new Structure[0]);
-	}
-}
-
-/**
- * Comparator to sort structures. The structures are arranged by structure name
- * from upper lever down: Interface > Class > Property > Method > Argument
- * 
- * @author Dao Hoang Son
- * 
- * @see Structure#getChildren()
- */
-class StructureNameComparator implements Comparator<Structure> {
-
-	@Override
-	public int compare(Structure s1, Structure s2) {
-		int i1 = getPriority(s1);
-		int i2 = getPriority(s2);
-
-		if (i1 == i2) {
-			return 0;
-		} else if (i1 > i2) {
-			return -1;
-		} else {
-			return 1;
-		}
-	}
-
-	int getPriority(Structure s) {
-		String name = s.getStructureName();
-		if (name.equals("Interface")) {
-			return 10;
-		} else if (name.equals("Class")) {
-			return 9;
-		} else if (name.equals("Property")) {
-			return 7;
-		} else if (name.equals("Method")) {
-			return 5;
-		} else if (name.equals("Argument")) {
-			return 3;
-		}
-
-		return 1;
 	}
 }
 

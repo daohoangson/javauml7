@@ -1,6 +1,6 @@
 package com.nguyenthanhan.uml.gui;
 
-import java.awt.Frame;
+import java.awt.Window;
 
 import com.daohoangson.uml.structures.Structure;
 import com.tranvietson.uml.structures.Argument;
@@ -9,19 +9,24 @@ import com.tranvietson.uml.structures.StructureException;
 public class ArgumentForm extends StructureForm {
 	private static final long serialVersionUID = 1887392761961369237L;
 	private Structure container;
-	
-	public ArgumentForm(Frame owner, Structure container) {
+
+	public ArgumentForm(Window owner, Structure container) {
 		super(owner, "Adding Argument for " + container, true, false, false);
-		
+
 		this.container = container;
 		setVisible(true);
 	}
-	
+
 	@Override
 	public void __submit() throws StructureException {
-		Argument newArgument = new Argument(txt_name.getText(), txt_type.getText());
-		if (visibility.length() > 0) newArgument.setModifier(visibility);
-		if (scope != null) newArgument.setModifier(scope);
+		Argument newArgument = new Argument(txt_name.getText(), txt_type
+				.getText());
+		if (visibility.length() > 0) {
+			newArgument.setModifier(visibility);
+		}
+		if (scope != null) {
+			newArgument.setModifier(scope);
+		}
 
 		container.add(newArgument);
 	}

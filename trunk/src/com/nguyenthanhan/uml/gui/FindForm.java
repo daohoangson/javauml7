@@ -2,10 +2,11 @@ package com.nguyenthanhan.uml.gui;
 
 import java.awt.Dimension;
 import java.awt.FlowLayout;
-import java.awt.Frame;
+import java.awt.Window;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.util.Arrays;
 import java.util.Vector;
 
 import javax.swing.Box;
@@ -22,6 +23,7 @@ import javax.swing.text.BadLocationException;
 import javax.swing.text.Document;
 
 import com.daohoangson.uml.structures.Structure;
+import com.daohoangson.uml.structures.StructureNameComparator;
 
 public class FindForm extends ConvenientForm implements DocumentListener {
 	private static final long serialVersionUID = -3188858518165054652L;
@@ -32,8 +34,10 @@ public class FindForm extends ConvenientForm implements DocumentListener {
 	private JTextField txtfld;
 	private boolean actioned = false;
 
-	public FindForm(Frame owner, String title, Structure[] structures) {
+	public FindForm(Window owner, String title, Structure[] structures) {
 		super(owner, title, ModalityType.APPLICATION_MODAL);
+
+		Arrays.sort(structures, new StructureNameComparator());
 		this.structures = structures;
 
 		Box left = Box.createVerticalBox();
@@ -74,7 +78,7 @@ public class FindForm extends ConvenientForm implements DocumentListener {
 		dispose();
 	}
 
-	static public Structure find(Frame owner, String title,
+	static public Structure find(Window owner, String title,
 			Structure[] structures) {
 		FindForm.found = null;
 
@@ -153,14 +157,12 @@ public class FindForm extends ConvenientForm implements DocumentListener {
 					if (i < n - 1) {
 						list.setSelectedIndex(i + 1);
 						list.ensureIndexIsVisible(i + 1);
-						System.err.println(i + 1);
 					}
 					break;
 				case KeyEvent.VK_UP:
 					if (n > 0 && i > 0) {
 						list.setSelectedIndex(i - 1);
 						list.ensureIndexIsVisible(i - 1);
-						System.err.println(i - 1);
 					}
 					break;
 				}

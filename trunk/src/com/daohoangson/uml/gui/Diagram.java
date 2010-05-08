@@ -1,12 +1,14 @@
 package com.daohoangson.uml.gui;
 
+import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Image;
+import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.event.MouseEvent;
-import java.awt.event.MouseMotionAdapter;
+import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
 import java.awt.image.BufferedImage;
 import java.awt.image.ImageObserver;
@@ -25,6 +27,7 @@ import javax.swing.JScrollPane;
 
 import com.daohoangson.uml.structures.Structure;
 import com.tranvietson.uml.structures.StructureEvent;
+import com.tranvietson.uml.structures.StructureException;
 import com.tranvietson.uml.structures.StructureListener;
 
 /**
@@ -36,7 +39,8 @@ import com.tranvietson.uml.structures.StructureListener;
  * @version 1.3
  * 
  */
-public class Diagram extends JPanel implements StructureListener {
+public class Diagram extends JPanel implements StructureListener,
+		MouseMotionListener, MouseListener {
 	private static final long serialVersionUID = -3147843723002469900L;
 	/**
 	 * A list of all global structures.
@@ -73,6 +77,7 @@ public class Diagram extends JPanel implements StructureListener {
 	 * @see DiagramImageObserver
 	 */
 	private ImageObserver observer = null;
+	private Rectangle image_rect = null;
 	/**
 	 * Determines if we are in debug mode.
 	 */
@@ -80,7 +85,7 @@ public class Diagram extends JPanel implements StructureListener {
 	/**
 	 * Should the diagram be drawn if the structures are changed
 	 */
-	public boolean cfg_draw_on_change = true;
+	private boolean flag_auto_draw = true;
 	/**
 	 * The gap between 2 components vertically
 	 */
@@ -100,11 +105,14 @@ public class Diagram extends JPanel implements StructureListener {
 				cfg_gap_vertical, true));
 		setPreferredSize(new Dimension(700, 400));
 		setAlignmentY(Component.TOP_ALIGNMENT);
+
+		addMouseListener(this);
+		addMouseMotionListener(this);
 	}
 
 	public void setFocus(Structure structure) {
 		onFocusStructure = structure;
-		prepare();
+		draw();
 	}
 
 	/**
@@ -116,17 +124,6 @@ public class Diagram extends JPanel implements StructureListener {
 	 */
 	public Component getScrollable() {
 		JScrollPane sp = new JScrollPane(this);
-
-		// TODO: Need a better way to move around
-		setAutoscrolls(true);
-		MouseMotionListener doScrollRectToVisible = new MouseMotionAdapter() {
-			@Override
-			public void mouseDragged(MouseEvent e) {
-				Rectangle r = new Rectangle(e.getX(), e.getY(), 1, 1);
-				((Diagram) e.getSource()).scrollRectToVisible(r);
-			}
-		};
-		addMouseMotionListener(doScrollRectToVisible);
 
 		return sp;
 	}
@@ -174,6 +171,10 @@ public class Diagram extends JPanel implements StructureListener {
 	}
 
 	private void getBoundsCache() {
+		if (built == null) {
+			return;
+		}
+
 		if (Diagram.debuging) {
 			System.err.println("Generating boundsCache...");
 		}
@@ -199,7 +200,11 @@ public class Diagram extends JPanel implements StructureListener {
 			getBoundsCache();
 		}
 
-		return boundsCache.get(structure);
+		if (boundsCache != null) {
+			return boundsCache.get(structure);
+		} else {
+			return null;
+		}
 	}
 
 	public Rectangle[] getBoundsForAll() {
@@ -238,9 +243,25 @@ public class Diagram extends JPanel implements StructureListener {
 		this.observer = observer;
 		int width = getSize().width;
 		int height = getSize().height;
-		image = new BufferedImage(width, height, BufferedImage.TYPE_3BYTE_BGR);
 
-		repaint(0, 0, width, height);
+		image = new BufferedImage(width, height, BufferedImage.TYPE_3BYTE_BGR);
+		repaint();
+	}
+
+	/**
+	 * Takes a part of the diagram and generates image.<br/>
+	 * It's quite similar to the saving image procedure but this clipping
+	 * process allow user to select a specific area instead of saving the whole
+	 * diagram
+	 * 
+	 * @param observer
+	 *            the observer which get notified when image is built
+	 * 
+	 * @see {@link #saveImage(ImageObserver)}
+	 */
+	public void startClipping(ImageObserver observer) {
+		this.observer = observer;
+		image_rect = new Rectangle();
 	}
 
 	/**
@@ -248,29 +269,48 @@ public class Diagram extends JPanel implements StructureListener {
 	 * 
 	 * @param structure
 	 */
-	public void add(Structure structure) {
+	public boolean add(Structure structure) {
 		if (structure.checkIsUniqueGlobally()) {
-			structures.add(structure);
-			structure.addStructureListener(this);
-			structureChanged(new StructureEvent(structure));
+			if (!structures.contains(structure)) {
+				structures.add(structure);
+				structure.addStructureListener(this);
+				structureChanged(new StructureEvent(structure,
+						StructureEvent.ACTIVE));
+				return true;
+			} else {
+				return false;
+			}
 		}
+
+		return false;
 	}
 
 	public void remove(Structure structure) {
 		if (structures.contains(structure)) {
 			structures.remove(structure);
 			structure.removeStructureListener(this);
-			structureChanged(new StructureEvent(structure));
+			structureChanged(new StructureEvent(structure,
+					StructureEvent.ACTIVE));
 		}
 	}
 
 	public void clear() {
-		Iterator<Structure> itr = structures.iterator();
+		setAutoDrawing(false);
+		Iterator<Structure> itr = new LinkedList<Structure>(structures)
+				.iterator();
 		while (itr.hasNext()) {
-			itr.next().removeStructureListener(this);
+			try {
+				itr.next().dispose();
+			} catch (StructureException e) {
+				// simply ignore
+				if (Diagram.debuging) {
+					e.printStackTrace();
+				}
+			}
 		}
 		structures.clear();
-		prepare();
+		setAutoDrawing(true);
+		draw();
 	}
 
 	/**
@@ -280,6 +320,8 @@ public class Diagram extends JPanel implements StructureListener {
 	@Override
 	public void paint(Graphics g) {
 		if (image != null) {
+			// wow, saving image. Paint to the image instead of the
+			// standard graphic itself
 			g = image.getGraphics();
 		}
 
@@ -301,11 +343,32 @@ public class Diagram extends JPanel implements StructureListener {
 		}
 
 		if (image != null) {
+			// we are in a saving image request
 			Image painted = image;
+
+			if (image_rect != null) {
+				// this is a clipping request instead of full capturing
+				// we will first create new image (with the proper size)
+				// then copy the requested area to the image
+				// before pushing it to the observer
+				painted = new BufferedImage(image_rect.width,
+						image_rect.height, BufferedImage.TYPE_3BYTE_BGR);
+				boolean result = painted.getGraphics().drawImage(image, 0, 0,
+						image_rect.width, image_rect.height, image_rect.x,
+						image_rect.y, image_rect.x + image_rect.width,
+						image_rect.y + image_rect.height, null);
+				if (Diagram.debuging) {
+					System.err.println("Copying clipping area: " + result);
+				}
+
+				image_rect = null;
+			}
+
 			image = null;
 
 			synchronized (observer) {
 				if (observer != null) {
+					// notify the observer so it can do the job
 					observer.imageUpdate(painted, ImageObserver.ALLBITS, 0, 0,
 							0, 0);
 					observer = null;
@@ -313,7 +376,22 @@ public class Diagram extends JPanel implements StructureListener {
 			}
 
 			repaint();
+		} else if (image_rect != null) {
+			// we are in the middle of clipping selecting process
+			// draw the clipping area
+			Color original = g.getColor();
+			g.setColor(Color.RED);
+			g.drawRect(image_rect.x, image_rect.y, image_rect.width,
+					image_rect.height);
+			g.setColor(original);
 		}
+	}
+
+	public void setAutoDrawing(boolean b) {
+		if (b && !flag_auto_draw) {
+			draw();
+		}
+		flag_auto_draw = b;
 	}
 
 	/**
@@ -321,25 +399,86 @@ public class Diagram extends JPanel implements StructureListener {
 	 * order of dependencies.
 	 */
 	public void draw() {
+		int n = structures.size();
+
+		// update dependencies
+		dependencies = new boolean[n][n];
+		synchronized (relationships) {
+			relationships.clear();
+		}
+
+		Iterator<Structure> itr = structures.iterator();
+		int i = 0;
+		while (itr.hasNext()) {
+			Structure s = itr.next();
+
+			// look for Realization Relationships
+			Structure[] parents = s.getParents();
+			for (int j = 0, k = parents.length; j < k; j++) {
+				int iparent = structures.indexOf(parents[j]);
+				if (iparent != -1) {
+					dependencies[i][iparent] = true;
+				}
+
+				relationships.add(new RealizationRelationship(this, s,
+						parents[j]));
+			}
+
+			// look for Generalization Relationships
+			Structure container = s.getContainer();
+			if (container != null) {
+				int icontainer = structures.indexOf(container);
+				if (icontainer != -1) {
+					dependencies[i][icontainer] = true;
+				}
+
+				relationships.add(new GeneralizationRelationship(this, s,
+						container));
+			}
+
+			// look for 0..many Relationships
+			Structure[] children = s.getChildren();
+			for (int j = 0, k = children.length; j < k; j++) {
+				Structure[] types = children[j].getTypeAsStructure();
+				for (int l = 0, m = types.length; l < m; l++) {
+					relationships.add(new MultiplicityRelationship(this, s,
+							types[l]));
+				}
+			}
+
+			i++;
+		}
+
+		if (Diagram.debuging) {
+			System.err.print("Dependencies: ");
+			for (int k = 0; k < n; k++) {
+				System.err.print("[");
+				for (int j = 0; j < n; j++) {
+					System.err.print(dependencies[k][j] ? 1 : 0);
+				}
+				System.err.print("]");
+			}
+			System.err.println();
+		}
+
 		removeAll();
 
-		int n = structures.size();
 		built = new Hashtable<Structure, Component>();
 		int width = 0;
 		int height = 0;
 		int built_count = 0;
 
 		for (int dependency_limit = 0; dependency_limit < n; dependency_limit++) {
-			for (int i = 0; i < n; i++) {
+			for (int j = 0; j < n; j++) {
 				int dependency_count = 0;
 				for (int c = 0; c < n; c++) {
-					if (dependencies[i][c]) {
+					if (dependencies[j][c]) {
 						dependency_count++;
 					}
 				}
 
 				if (dependency_count == dependency_limit) {
-					Component c = build(i);
+					Component c = build(j);
 					if (c != null) {
 						add(c);
 
@@ -470,80 +609,78 @@ public class Diagram extends JPanel implements StructureListener {
 		return container;
 	}
 
-	/**
-	 * Looks for relationships among our structures use the appropriate
-	 * {@linkplain Relationship} and make them ready to be drawn later
-	 */
-	private void prepare() {
-		int n = structures.size();
-
-		// update dependencies
-		dependencies = new boolean[n][n];
-		synchronized (relationships) {
-			relationships.clear();
+	@Override
+	public void structureChanged(StructureEvent e) {
+		switch (e.getType()) {
+		case StructureEvent.ACTIVE:
+			Structure structure = (Structure) e.getSource();
+			if (!structure.getActive()) {
+				remove(structure);
+			}
+			break;
 		}
 
-		Iterator<Structure> itr = structures.iterator();
-		int i = 0;
-		while (itr.hasNext()) {
-			Structure s = itr.next();
-
-			// look for Realization Relationships
-			Structure[] parents = s.getParents();
-			for (int j = 0, k = parents.length; j < k; j++) {
-				int iparent = structures.indexOf(parents[j]);
-				if (iparent != -1) {
-					dependencies[i][iparent] = true;
-				}
-
-				relationships.add(new RealizationRelationship(this, s,
-						parents[j]));
-			}
-
-			// look for Generalization Relationships
-			Structure container = s.getContainer();
-			if (container != null) {
-				int icontainer = structures.indexOf(container);
-				if (icontainer != -1) {
-					dependencies[i][icontainer] = true;
-				}
-
-				relationships.add(new GeneralizationRelationship(this, s,
-						container));
-			}
-
-			// look for 0..many Relationships
-			Structure[] children = s.getChildren();
-			for (int j = 0, k = children.length; j < k; j++) {
-				Structure[] types = children[j].getTypeAsStructure();
-				for (int l = 0, m = types.length; l < m; l++) {
-					relationships.add(new MultiplicityRelationship(this, s,
-							types[l]));
-				}
-			}
-
-			i++;
-		}
-
-		if (Diagram.debuging) {
-			System.err.print("Dependencies: ");
-			for (int k = 0; k < n; k++) {
-				System.err.print("[");
-				for (int j = 0; j < n; j++) {
-					System.err.print(dependencies[k][j] ? 1 : 0);
-				}
-				System.err.print("]");
-			}
-			System.err.println();
-		}
-
-		if (cfg_draw_on_change) {
+		if (flag_auto_draw) {
 			draw();
 		}
 	}
 
 	@Override
-	public void structureChanged(StructureEvent e) {
-		prepare();
+	public void mouseDragged(MouseEvent e) {
+		if (image_rect != null) {
+			// the mouse is being dragged around
+			// update the clipping area
+			if (image_rect.getLocation().equals(new Point())) {
+				image_rect.setLocation(e.getPoint());
+			} else {
+				int x1 = image_rect.getLocation().x;
+				int y1 = image_rect.getLocation().y;
+				int x2 = e.getPoint().x;
+				int y2 = e.getPoint().y;
+				image_rect.setBounds(Math.min(x1, x2), Math.min(y1, y2), Math
+						.abs(x2 - x1), Math.abs((y2 - y1)));
+			}
+			// and display the clipping area now
+			repaint();
+		}
+	}
+
+	@Override
+	public void mouseMoved(MouseEvent e) {
+		// TODO Auto-generated method stub
+
+	}
+
+	@Override
+	public void mouseClicked(MouseEvent e) {
+		// TODO Auto-generated method stub
+
+	}
+
+	@Override
+	public void mouseEntered(MouseEvent e) {
+		// TODO Auto-generated method stub
+
+	}
+
+	@Override
+	public void mouseExited(MouseEvent e) {
+		// TODO Auto-generated method stub
+
+	}
+
+	@Override
+	public void mousePressed(MouseEvent e) {
+		// TODO Auto-generated method stub
+
+	}
+
+	@Override
+	public void mouseReleased(MouseEvent e) {
+		if (image_rect != null) {
+			// mouse released and we are in the middle of clipping process
+			// send a saving image request now
+			saveImage(observer);
+		}
 	}
 }

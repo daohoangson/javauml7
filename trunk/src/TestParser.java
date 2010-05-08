@@ -2,9 +2,9 @@ import java.io.File;
 import java.io.IOException;
 import java.text.ParseException;
 
-import javax.swing.JFrame;
-
 import com.daohoangson.uml.gui.Diagram;
+import com.daohoangson.uml.gui.Relationship;
+import com.daohoangson.uml.gui.UMLGUI;
 import com.daohoangson.uml.parser.Parser;
 import com.daohoangson.uml.structures.Structure;
 import com.tranvietson.uml.structures.StructureException;
@@ -16,16 +16,13 @@ public class TestParser {
 
 	public TestParser(String[] args) throws StructureException, ParseException,
 			IOException {
-		d = new Diagram();
-		JFrame f = new JFrame();
-		f.add(d.getScrollable());
-		f.pack();
-		f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		f.setVisible(true);
+		UMLGUI gui = new UMLGUI();
+		gui.setVisible(true);
+		d = gui.diagram;
 
-		Parser.debuging = true;
-		Structure.debuging = true;
-		// Relationship.debuging = true;
+		// Parser.debuging = true;
+		// Structure.debuging = true;
+		Relationship.debuging = true;
 		parser = new Parser(d);
 
 		if (args.length > 0) {
@@ -51,6 +48,6 @@ public class TestParser {
 	public static void main(String[] args) throws StructureException,
 			ParseException, IOException {
 		// new TestParser(args);
-		new TestParser(new String[] { "E:/SonDH/workspace/Expression/src" });
+		new TestParser(new String[] { "src" });
 	}
 }
