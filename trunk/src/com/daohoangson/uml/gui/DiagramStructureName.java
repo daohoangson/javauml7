@@ -60,7 +60,7 @@ class DiagramStructureName extends JLabel implements DragGestureListener,
 		dragSource.createDefaultDragGestureRecognizer(this,
 				DnDConstants.ACTION_COPY_OR_MOVE, this);
 
-		if (structure.checkHasChildren()) {
+		if (structure.checkCanHaveChildren()) {
 			setFont(getFont().deriveFont(Font.BOLD, 12));
 		} else {
 			setFont(getFont().deriveFont(Font.PLAIN, 10));

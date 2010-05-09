@@ -11,9 +11,13 @@ import java.awt.dnd.DropTargetDragEvent;
 import java.awt.dnd.DropTargetDropEvent;
 import java.awt.dnd.DropTargetEvent;
 import java.awt.dnd.DropTargetListener;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
+import java.io.IOException;
 
 import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 
 import com.daohoangson.uml.structures.Structure;
@@ -26,7 +30,8 @@ import com.tranvietson.uml.structures.StructureException;
  * @version 1.2
  * 
  */
-class DiagramStructureGroup extends JPanel implements DropTargetListener {
+class DiagramStructureGroup extends JPanel implements DropTargetListener,
+		MouseListener {
 	private static final long serialVersionUID = -6330448983826031865L;
 	/**
 	 * The corresponding structure of the panel
@@ -153,6 +158,8 @@ class DiagramStructureGroup extends JPanel implements DropTargetListener {
 			// oops
 		}
 
+		comp.addMouseListener(this);
+
 		return super.add(comp);
 	}
 
@@ -222,23 +229,34 @@ class DiagramStructureGroup extends JPanel implements DropTargetListener {
 					.getTransferData(TransferableStructure.df);
 
 			if (structure.getContainer() != this.structure) {
-				if (structure.getContainer() != null
-						&& structure.getContainer().getStructureName().equals(
-								this.structure.getStructureName())) {
-					structure.getContainer().remove(structure);
+				int action = dtde.getDropAction();
+
+				switch (action) {
+				case DnDConstants.ACTION_COPY:
+					Structure copied = structure.copy();
+					this.structure.add(copied);
+					break;
+				case DnDConstants.ACTION_MOVE:
+					// moving structure
+					if (structure.getContainer() != null
+							&& structure.getContainer().getStructureName()
+									.equals(this.structure.getStructureName())) {
+						structure.getContainer().remove(structure);
+					}
+
+					this.structure.add(structure);
+
+					dtde.acceptDrop(DnDConstants.ACTION_MOVE);
+					return;
 				}
-
-				this.structure.add(structure);
-
-				dtde.acceptDrop(DnDConstants.ACTION_MOVE);
-				return;
 			}
 		} catch (UnsupportedFlavorException e) {
 			System.err.println("Ewwww. This is not well tasted!");
+		} catch (IOException e) {
+			// ignore
 		} catch (StructureException e) {
-			System.err.println(e);
-		} catch (Exception e) {
-			// skip all other exceptions
+			JOptionPane.showMessageDialog(this, "Action can not be completed\n"
+					+ e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
 		}
 
 		dtde.rejectDrop();
@@ -246,6 +264,42 @@ class DiagramStructureGroup extends JPanel implements DropTargetListener {
 
 	@Override
 	public void dropActionChanged(DropTargetDragEvent dtde) {
+		// TODO Auto-generated method stub
+
+	}
+
+	/**
+	 * Catches mouse events from children components and notify its own
+	 * listeners (and make the event looks like it was triggered by this
+	 * component)
+	 */
+	@Override
+	public void mouseClicked(MouseEvent e) {
+		// update the source of the event to this component
+		e.setSource(this);
+		super.processMouseEvent(e);
+	}
+
+	@Override
+	public void mouseEntered(MouseEvent e) {
+		// TODO Auto-generated method stub
+
+	}
+
+	@Override
+	public void mouseExited(MouseEvent e) {
+		// TODO Auto-generated method stub
+
+	}
+
+	@Override
+	public void mousePressed(MouseEvent e) {
+		// TODO Auto-generated method stub
+
+	}
+
+	@Override
+	public void mouseReleased(MouseEvent e) {
 		// TODO Auto-generated method stub
 
 	}
