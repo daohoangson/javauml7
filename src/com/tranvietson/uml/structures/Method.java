@@ -25,6 +25,10 @@ public class Method extends Structure {
 		cfg_hide_children = true;
 	}
 
+	public Method() {
+		super();
+	}
+
 	/**
 	 * Constructor with method name and type
 	 * 

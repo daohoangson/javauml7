@@ -659,7 +659,7 @@ public class Diagram extends JPanel implements StructureListener,
 
 		JLabel label = new DiagramStructureName(s);
 
-		if (s.checkHasChildren()) {
+		if (s.checkCanHaveChildren()) {
 			c = new DiagramStructureGroup(s, label, new Dimension(
 					cfg_gap_vertical / 5, cfg_gap_horizontal / 5));
 

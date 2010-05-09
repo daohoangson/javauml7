@@ -366,6 +366,11 @@ public abstract class Structure implements StructureListener {
 	public boolean setModifier(String modifier) throws StructureException {
 		modifier = modifier.toLowerCase();
 
+		// a friendly check to prevent stupid error
+		if (modifier.length() == 0) {
+			return false;
+		}
+
 		// checks for access modifiers
 		if (cfg_use_visibility) {
 			String visibilities[] = { "public", "protected", "private" };
@@ -517,7 +522,7 @@ public abstract class Structure implements StructureListener {
 	 * 
 	 * @return true if yes
 	 */
-	public boolean checkHasChildren() {
+	public boolean checkCanHaveChildren() {
 		return cfg_child_structures.length > 0 && !cfg_hide_children;
 	}
 
@@ -526,7 +531,7 @@ public abstract class Structure implements StructureListener {
 	 * 
 	 * @return true if yes
 	 */
-	public boolean checkHasParents() {
+	public boolean checkCanHaveParents() {
 		return cfg_container_structures.length > 0
 				|| cfg_parent_structures.length > 0;
 	}
@@ -964,6 +969,64 @@ public abstract class Structure implements StructureListener {
 		active = false;
 
 		fireChanged(StructureEvent.ACTIVE);
+	}
+
+	/**
+	 * Create a new structure which is an exact copy of current structure.
+	 * Includes all children
+	 * 
+	 * @return the copied structure
+	 * @throws StructureException
+	 *             if there is error in copying. Common errors are:
+	 *             <ul>
+	 *             <li>Trying to copy globally unique structures</li>
+	 *             <li>Trying to copy constructors</li>
+	 *             </ul>
+	 */
+	public Structure copy() throws StructureException {
+		try {
+			Structure copied = this.getClass().newInstance();
+			if (cfg_unique_globally) {
+				throw new StructureException("Sorry, you can't copy "
+						+ getStructureName() + " like " + this);
+			}
+			// everything has name
+			copied.setName(getName());
+			if (copied.checkUseType()) {
+				if (!checkUseType()) {
+					// constructor?
+					throw new StructureException("Copying " + this
+							+ " is prohibited!");
+				}
+				copied.setType(getType());
+			}
+			if (copied.checkUseVisibility()) {
+				copied.setModifier(getVisibility());
+			}
+			if (copied.checkUseScope()) {
+				copied.setModifier(getScope());
+			}
+			if (copied.checkCanHaveChildren()) {
+				Structure[] children = getChildren();
+				for (int i = 0; i < children.length; i++) {
+					Structure child_copied = children[i].copy();
+					copied.add(child_copied);
+				}
+			}
+
+			return copied;
+		} catch (InstantiationException e) {
+			// ignore
+			if (Structure.debugging) {
+				e.printStackTrace();
+			}
+		} catch (IllegalAccessException e) {
+			if (Structure.debugging) {
+				e.printStackTrace();
+			}
+		}
+
+		throw new StructureException("Sorry, you can't copy " + this);
 	}
 
 	/**
