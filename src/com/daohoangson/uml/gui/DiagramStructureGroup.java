@@ -14,6 +14,8 @@ import java.awt.dnd.DropTargetListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.io.IOException;
+import java.util.LinkedList;
+import java.util.List;
 
 import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
@@ -69,6 +71,7 @@ class DiagramStructureGroup extends JPanel implements DropTargetListener,
 	 * @see #getPreferredSize()
 	 */
 	private Dimension block_size;
+	private List<Component> dependent_components = new LinkedList<Component>();
 
 	/**
 	 * Constructor (the one and only)

@@ -18,8 +18,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map.Entry;
 
-import javax.swing.Box;
-import javax.swing.BoxLayout;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -120,6 +118,8 @@ public class Diagram extends JPanel implements StructureListener,
 	 * The gap between 2 components horizontally
 	 */
 	private int cfg_gap_horizontal = 50;
+	private Component pressedComponent = null;
+	private Point pressedLocation = null;
 
 	/**
 	 * Constructor. Setup some useful configurations.
@@ -127,10 +127,11 @@ public class Diagram extends JPanel implements StructureListener,
 	public Diagram() {
 		super();
 
-		setLayout(new FlowLayoutTopAligned(cfg_gap_horizontal,
-				cfg_gap_vertical, true));
+		// setLayout(new FlowLayoutTopAligned(cfg_gap_horizontal,
+		// cfg_gap_vertical, true));
+		setLayout(null);
 		setPreferredSize(new Dimension(700, 400));
-		setAlignmentY(Component.TOP_ALIGNMENT);
+		// setAlignmentY(Component.TOP_ALIGNMENT);
 
 		addMouseListener(this);
 		addMouseMotionListener(this);
@@ -322,6 +323,13 @@ public class Diagram extends JPanel implements StructureListener,
 	public void startClipping(ImageObserver observer) {
 		this.observer = observer;
 		image_rect = new Rectangle();
+	}
+
+	@Override
+	public Component add(Component comp) {
+		comp.addMouseListener(this);
+		comp.addMouseMotionListener(this);
+		return super.add(comp);
 	}
 
 	/**
@@ -559,9 +567,7 @@ public class Diagram extends JPanel implements StructureListener,
 		removeAll();
 
 		built = new Hashtable<Structure, Component>();
-		int width = 0;
-		int height = 0;
-		int built_count = 0;
+		Dimension diagram_size = new Dimension();
 
 		for (int dependency_limit = 0; dependency_limit < n; dependency_limit++) {
 			for (int j = 0; j < n; j++) {
@@ -573,46 +579,47 @@ public class Diagram extends JPanel implements StructureListener,
 				}
 
 				if (dependency_count == dependency_limit) {
-					Component c = build(j);
-					if (c != null) {
-						add(c);
-
-						Dimension d = c.getPreferredSize();
-						width += d.width;
-						height = Math.max(height, d.height);
-						built_count++;
+					DiagramComponentWithRectangle cws = build(
+							diagram_size.width + cfg_gap_horizontal,
+							0 + cfg_gap_vertical, structures.get(j));
+					if (cws != null) {
+						diagram_size.width += cws.getSize().width + 2
+								* cfg_gap_horizontal;
+						diagram_size.height = Math.max(diagram_size.height, cws
+								.getSize().height
+								+ 2 * cfg_gap_vertical);
 					}
 				}
 			}
 		}
 
-		if (built_count > 0) {
-			width += built_count * cfg_gap_horizontal;
-			width += 2 * cfg_gap_horizontal;
-			height += 2 * cfg_gap_vertical;
-		}
-		setPreferredSize(new Dimension(width, height));
-		setSize(getPreferredSize());
+		setPreferredSize(diagram_size);
+		setSize(diagram_size);
 
 		validate();
 		repaint();
 	}
 
 	/**
-	 * Checks and builds a structure from its' id
+	 * Builds component for a structure
 	 * 
-	 * @param i
-	 *            the id of the structure in {@link #structures}
+	 * @param s
+	 *            the structure
 	 * @return the built component
 	 */
-	private Component build(int i) {
-		Component container = null;
-		Structure structure = structures.get(i);
+	private DiagramComponentWithRectangle build(int x, int y,
+			Structure structure) {
+		Component component = null;
+		Dimension size = new Dimension();
+		Dimension dependent_size = new Dimension();
+		int i = structures.indexOf(structure);
 
 		if (built.get(structure) == null) {
-			Component component = build(structure);
+			// this structure hasn't been built
+			// build it now
+			component = buildComponentFor(structure);
 			built.put(structure, component);
-			List<Component> dependent_components = new LinkedList<Component>();
+			size = component.getPreferredSize();
 
 			int n = structures.size();
 
@@ -627,81 +634,57 @@ public class Diagram extends JPanel implements StructureListener,
 						}
 
 						if (dependency_count == dependency_limit) {
-							Component dependent_component = build(j);
-							if (dependent_component != null) {
-								dependent_components.add(dependent_component);
+							DiagramComponentWithRectangle cws = build(x
+									+ dependent_size.width, y + size.height
+									+ cfg_gap_vertical, structures.get(j));
+							if (cws != null) {
+								dependent_size.width += cws.getSize().width
+										+ cfg_gap_horizontal;
+
+								dependent_size.height = Math
+										.max(dependent_size.height, cws
+												.getSize().height
+												+ cfg_gap_vertical);
 							}
 						}
 					}
 				}
 			}
-
-			if (dependent_components.size() > 0) {
-				container = wrap(component, dependent_components
-						.toArray(new Component[0]));
-			} else {
-				container = component;
-			}
 		}
 
-		return container;
+		if (component != null) {
+			size.width = Math.max(size.width, dependent_size.width);
+			size.height = size.height + dependent_size.height;
+
+			add(component);
+			component.setSize(component.getPreferredSize());
+			x = x + (size.width - component.getWidth()) / 2;
+			component.setLocation(x, y);
+
+			return new DiagramComponentWithRectangle(component, size);
+		} else {
+			return null;
+		}
 	}
 
-	/**
-	 * Builds component for a structure
-	 * 
-	 * @param s
-	 *            the structure
-	 * @return the built component
-	 */
-	private Component build(Structure s) {
+	private Component buildComponentFor(Structure structure) {
 		JComponent c;
 
-		JLabel label = new DiagramStructureName(s);
+		JLabel label = new DiagramStructureName(structure);
 
-		if (s.checkCanHaveChildren()) {
-			c = new DiagramStructureGroup(s, label, new Dimension(
+		if (structure.checkCanHaveChildren()) {
+			c = new DiagramStructureGroup(structure, label, new Dimension(
 					cfg_gap_vertical / 5, cfg_gap_horizontal / 5));
 
-			Structure children[] = s.getChildren();
+			Structure children[] = structure.getChildren();
 			for (int i = 0; i < children.length; i++) {
-				c.add(build(children[i]));
+				c.add(buildComponentFor(children[i]));
 			}
 		} else {
 			c = label;
 		}
 
 		return c;
-	}
-
-	/**
-	 * Wraps structure component with its' children's components
-	 * 
-	 * @param c
-	 *            the structure component
-	 * @param dc
-	 *            the array of children's components
-	 * @return the wrapper component
-	 */
-	private JComponent wrap(Component c, Component[] dc) {
-		JPanel dependent_container = new JPanel();
-		dependent_container.setLayout(new FlowLayoutTopAligned(
-				cfg_gap_horizontal, cfg_gap_vertical, false));
-		for (int i = 0; i < dc.length; i++) {
-			dependent_container.add(dc[i]);
-		}
-		dependent_container.setPreferredSize(FlowLayoutTopAligned
-				.calculateRequiredSize(dependent_container, false,
-						cfg_gap_horizontal, cfg_gap_vertical));
-		dependent_container.setSize(dependent_container.getPreferredSize());
-
-		JPanel container = new JPanel();
-		container.setLayout(new BoxLayout(container, BoxLayout.Y_AXIS));
-		container.add(c);
-		container.add(Box.createRigidArea(new Dimension(0, cfg_gap_vertical)));
-		container.add(dependent_container);
-
-		return container;
 	}
 
 	@Override
@@ -722,21 +705,34 @@ public class Diagram extends JPanel implements StructureListener,
 
 	@Override
 	public void mouseDragged(MouseEvent e) {
-		if (image_rect != null) {
-			// the mouse is being dragged around
-			// update the clipping area
-			if (image_rect.getLocation().equals(new Point())) {
-				image_rect.setLocation(e.getPoint());
-			} else {
-				int x1 = image_rect.getLocation().x;
-				int y1 = image_rect.getLocation().y;
-				int x2 = e.getPoint().x;
-				int y2 = e.getPoint().y;
-				image_rect.setBounds(Math.min(x1, x2), Math.min(y1, y2), Math
-						.abs(x2 - x1), Math.abs((y2 - y1)));
+		if (e.getSource() == this) {
+			if (image_rect != null) {
+				// the mouse is being dragged around
+				// update the clipping area
+				if (image_rect.getLocation().equals(new Point())) {
+					image_rect.setLocation(e.getPoint());
+				} else {
+					int x1 = image_rect.getLocation().x;
+					int y1 = image_rect.getLocation().y;
+					int x2 = e.getPoint().x;
+					int y2 = e.getPoint().y;
+					image_rect.setBounds(Math.min(x1, x2), Math.min(y1, y2),
+							Math.abs(x2 - x1), Math.abs((y2 - y1)));
+				}
+				// and display the clipping area now
+				repaint();
 			}
-			// and display the clipping area now
-			repaint();
+		} else {
+			if (pressedComponent != null) {
+				Point oldP = pressedLocation;
+				Point newP = e.getLocationOnScreen();
+				Point oldL = pressedComponent.getLocation();
+				Point newL = new Point(oldL.x + newP.x - oldP.x, oldL.y
+						+ newP.y - oldP.y);
+				pressedComponent.setLocation(newL);
+				pressedLocation = newP;
+				repaint();
+			}
 		}
 	}
 
@@ -766,16 +762,47 @@ public class Diagram extends JPanel implements StructureListener,
 
 	@Override
 	public void mousePressed(MouseEvent e) {
-		// TODO Auto-generated method stub
+		if (e.getSource() != this) {
+			if (e.getButton() == MouseEvent.BUTTON1) {
+				Object s = e.getSource();
+				if (s instanceof DiagramStructureGroup) {
+					pressedComponent = (Component) s;
+					pressedLocation = e.getLocationOnScreen();
 
+					System.err.println(pressedComponent);
+				}
+			}
+		}
 	}
 
 	@Override
 	public void mouseReleased(MouseEvent e) {
-		if (image_rect != null) {
-			// mouse released and we are in the middle of clipping process
-			// send a saving image request now
-			saveImage(observer);
+		if (e.getSource() == this) {
+			if (image_rect != null) {
+				// mouse released and we are in the middle of clipping process
+				// send a saving image request now
+				saveImage(observer);
+			}
+		} else {
+			pressedComponent = null;
 		}
+	}
+}
+
+class DiagramComponentWithRectangle {
+	private Component c;
+	private Dimension size;
+
+	DiagramComponentWithRectangle(Component c, Dimension size) {
+		this.c = c;
+		this.size = size;
+	}
+
+	Component getComponent() {
+		return c;
+	}
+
+	Dimension getSize() {
+		return size;
 	}
 }

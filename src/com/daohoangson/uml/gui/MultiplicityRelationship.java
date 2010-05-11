@@ -13,7 +13,7 @@ import com.daohoangson.uml.structures.Structure;
  * @see <a
  *      href="http://en.wikipedia.org/wiki/Class_diagram#Relationships">Wikipedia</a>
  */
-class MultiplicityRelationship extends Relationship {
+public class MultiplicityRelationship extends Relationship {
 	/**
 	 * The length of the diamond shape
 	 */
@@ -28,20 +28,21 @@ class MultiplicityRelationship extends Relationship {
 	private double cfg_diamond_side_length = cfg_diamond_length / 2
 			* Math.cos(cfg_diamond_side_angle);
 
-	MultiplicityRelationship(Diagram diagram, Structure from, Structure to) {
+	public MultiplicityRelationship(Diagram diagram, Structure from,
+			Structure to) {
 		super(diagram, from, to);
 	}
 
 	@Override
-	void draw(Graphics g) {
-		drawConnectionLine(g, 0, cfg_diamond_length);
+	public void draw(Graphics g) {
+		drawConnectingPath(g, 0, cfg_diamond_length);
 	}
 
 	/**
 	 * Draws diamond shape
 	 */
 	@Override
-	protected void __drawConnectionLine(Graphics g, PointSet ps) {
+	protected void drawEndPoints(Graphics g, PointSet ps) {
 		int x0 = ps.x4;
 		int y0 = ps.y4;
 		double delta = ps.delta2; // the delta angle between the line and

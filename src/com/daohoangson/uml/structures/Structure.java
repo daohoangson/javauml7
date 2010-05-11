@@ -650,35 +650,56 @@ public abstract class Structure implements StructureListener {
 	 * @return array of target structures if any
 	 */
 	public Structure[] getTypeAsStructure() {
-		return getTypeAsStructure(type);
+		return getTypeAsStructure(type, false);
 	}
 
 	/**
 	 * Checks to see if the type of the structure contains other structure
 	 * 
-	 * @return array of target structures if any
+	 * @param type
+	 *            the type string that need exporting
+	 * @param split
+	 *            tells the method to allow splitting type or not (use full in
+	 *            generalized string). You may want to take a look at
+	 *            {@link #validateType(String, boolean)}
+	 * @return
 	 */
-	private Structure[] getTypeAsStructure(String type) {
+	private Structure[] getTypeAsStructure(String type, boolean split) {
 		List<Structure> types = new LinkedList<Structure>();
 
 		if (type != null) {
-			String[] types_array = new String[] { type };
+			String[] types_array;
+			if (split) {
+				types_array = type.split(",");
+			} else {
+				types_array = new String[] { type };
+			}
 
 			// use Regular Expression to parse type string
 			Pattern p = Pattern.compile("^" + cfg_regex_type + "$");
 			for (int i = 0; i < types_array.length; i++) {
-				Matcher m = p.matcher(types_array[i]);
+				Matcher m = p.matcher(types_array[i].trim());
 				if (m.matches()) {
 					String typename = m.group(1);
-					if (Structure.names.containsKey(typename)) {
-						types.add(Structure.names.get(typename));
+					Structure structure_found = Structure.lookUp(typename);
+					if (structure_found != null) {
+						types.add(structure_found);
 					}
 
 					String generalized = m.group(3);
 					if (generalized != null) {
-						Structure[] generalized_types = getTypeAsStructure(generalized);
+						Structure[] generalized_types = getTypeAsStructure(
+								generalized, true);
+						if (Structure.debugging) {
+							System.err.println("Generalized string found: "
+									+ generalized);
+						}
 						for (int j = 0; j < generalized_types.length; j++) {
-							types.add(generalized_types[i]);
+							types.add(generalized_types[j]);
+							if (Structure.debugging) {
+								System.err.println("Generalized type found: "
+										+ generalized_types[j]);
+							}
 						}
 					}
 				}

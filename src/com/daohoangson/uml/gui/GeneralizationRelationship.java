@@ -13,7 +13,7 @@ import com.daohoangson.uml.structures.Structure;
  * @see <a
  *      href="http://en.wikipedia.org/wiki/Class_diagram#Relationships">Wikipedia</a>
  */
-class GeneralizationRelationship extends Relationship {
+public class GeneralizationRelationship extends Relationship {
 	/**
 	 * The length of the arrow
 	 */
@@ -28,20 +28,21 @@ class GeneralizationRelationship extends Relationship {
 	private double cfg_arrow_side_length = cfg_arrow_length
 			* Math.cos(cfg_arrow_side_angle);
 
-	GeneralizationRelationship(Diagram diagram, Structure from, Structure to) {
+	public GeneralizationRelationship(Diagram diagram, Structure from,
+			Structure to) {
 		super(diagram, from, to);
 	}
 
 	@Override
-	void draw(Graphics g) {
-		drawConnectionLine(g, 0, cfg_arrow_length);
+	public void draw(Graphics g) {
+		drawConnectingPath(g, 0, cfg_arrow_length);
 	}
 
 	/**
 	 * Draws the arrow
 	 */
 	@Override
-	protected void __drawConnectionLine(Graphics g, PointSet ps) {
+	protected void drawEndPoints(Graphics g, PointSet ps) {
 		int x0 = ps.x4;
 		int y0 = ps.y4;
 		double delta = ps.delta2;

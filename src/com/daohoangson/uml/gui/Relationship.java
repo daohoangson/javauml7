@@ -53,7 +53,7 @@ abstract public class Relationship {
 	 * @param to
 	 *            the destination structure
 	 */
-	Relationship(Diagram diagram, Structure from, Structure to) {
+	public Relationship(Diagram diagram, Structure from, Structure to) {
 		this.diagram = diagram;
 		this.from = from;
 		this.to = to;
@@ -64,7 +64,7 @@ abstract public class Relationship {
 	 * 
 	 * @return
 	 */
-	Structure getFrom() {
+	public Structure getFrom() {
 		return from;
 	}
 
@@ -73,12 +73,36 @@ abstract public class Relationship {
 	 * 
 	 * @return
 	 */
-	Structure getTo() {
+	public Structure getTo() {
 		return to;
 	}
 
 	/**
-	 * Selects and draws the main connection line(s)
+	 * Customized primary drawing method for each relationships. Must be
+	 * overridden in subclasses and should call
+	 * {@link #drawConnectingPath(Graphics, double, double)} with appropriate
+	 * arguments
+	 * 
+	 * @param g
+	 *            the target <code>Graphics</code> to be drawn
+	 */
+	abstract public void draw(Graphics g);
+
+	/**
+	 * Customized drawing method for each relationship. Must be overridden in
+	 * subclasses.
+	 * 
+	 * @param g
+	 *            the target graphics (the same passed in
+	 *            {@link #draw(Graphics)}
+	 * @param ps
+	 *            the {@link PointSet} object holding drawing data
+	 */
+	abstract protected void drawEndPoints(Graphics g, PointSet ps);
+
+	/**
+	 * Selects and draws the main connection line(s). Finally, draw end points
+	 * by calling subclass's {@link #drawEndPoints(Graphics, PointSet)}
 	 * 
 	 * @param g
 	 *            the target graphics
@@ -87,7 +111,7 @@ abstract public class Relationship {
 	 * @param end_length
 	 *            the length should be left at the end
 	 */
-	protected void drawConnectionLine(Graphics g, double start_length,
+	protected void drawConnectingPath(Graphics g, double start_length,
 			double end_length) {
 		if (Relationship.debugging) {
 			System.err.println("Drawing from " + getFrom() + " to " + getTo());
@@ -180,7 +204,7 @@ abstract public class Relationship {
 			}
 		}
 
-		__drawConnectionLine(g, ps);
+		drawEndPoints(g, ps);
 		g.setColor(original_color);
 	}
 
@@ -300,16 +324,15 @@ abstract public class Relationship {
 				}
 
 				if (use3legs) {
-					System.err.println("Vertical 3 legs: " + rect);
 					// normal case
-					__drawLine(g, x, p1y, x, p2y);
-					__drawLine(g, x, p2y, px, p2y);
-					__drawLine(g, px, p2y, px, p3y);
-					__drawLine(g, px, p3y, x, p3y);
+					drawLinePlain(g, x, p1y, x, p2y);
+					drawLinePlain(g, x, p2y, px, p2y);
+					drawLinePlain(g, px, p2y, px, p3y);
+					drawLinePlain(g, px, p3y, x, p3y);
 					y = p3y; // update the current position
 				} else {
 					// 2 legs only
-					__drawLine(g, x, y, x, p3y);
+					drawLinePlain(g, x, y, x, p3y);
 					y = p3y; // update the current position
 				}
 			} else {
@@ -338,22 +361,22 @@ abstract public class Relationship {
 
 				if (use3legs) {
 					// normal case
-					__drawLine(g, p1x, y, p2x, y);
-					__drawLine(g, p2x, y, p2x, py);
-					__drawLine(g, p2x, py, p3x, py);
-					__drawLine(g, p3x, py, p3x, y);
+					drawLinePlain(g, p1x, y, p2x, y);
+					drawLinePlain(g, p2x, y, p2x, py);
+					drawLinePlain(g, p2x, py, p3x, py);
+					drawLinePlain(g, p3x, py, p3x, y);
 					x = p3x; // update the current position
 				} else {
 					// 2 legs only
 					// TODO
-					__drawLine(g, x, y, p3x, y);
+					drawLinePlain(g, x, y, p3x, y);
 					x = p3x; // update the current position
 				}
 			}
 		}
 
 		if (x != x2 || y != y2) {
-			__drawLine(g, x, y, x2, y2);
+			drawLinePlain(g, x, y, x2, y2);
 		}
 	}
 
@@ -373,7 +396,7 @@ abstract public class Relationship {
 	 * 
 	 * @see #cfg_dash_length
 	 */
-	private void __drawLine(Graphics g, int x1, int y1, int x2, int y2) {
+	private void drawLinePlain(Graphics g, int x1, int y1, int x2, int y2) {
 		if (cfg_dash_length == 0) {
 			g.drawLine(x1, y1, x2, y2);
 		} else {
@@ -415,6 +438,72 @@ abstract public class Relationship {
 				space = !space;
 			}
 		}
+	}
+
+	/**
+	 * Draws the path between 2 points
+	 * 
+	 * @param g
+	 *            the <code>Graphics</code> object to be drawn
+	 * @param x1
+	 *            the x coordinate of the first point
+	 * @param y1
+	 *            the y coordinate of the first point
+	 * @param x2
+	 *            the x coordinate of the second point
+	 * @param y2
+	 *            the y coordinate of the second point
+	 * @param start_length
+	 *            the length to be left at the start
+	 * @param end_length
+	 *            the length to be left at the end
+	 * @param mode
+	 *            the mode for path. Possible values are
+	 *            <ul>
+	 *            <li>30: 3 lines. Go half the height before turning</li>
+	 *            <li>31: 3 lines. Go half the width before turning</li>
+	 *            <li>20: 2 lines. Keep the x coordinate as long as possible</li>
+	 *            <li>21: 2 lines. Keep the y coordinate as long as possible</li>
+	 *            </ul>
+	 * @return a {@link PointSet} containing left lines and the delta angles
+	 */
+	private PointSet drawPath(Graphics g, int x1, int y1, int x2, int y2,
+			double start_length, double end_length, int mode) {
+		int tmp_x1, tmp_y1, tmp_x2, tmp_y2;
+		switch (mode) {
+		case 30:
+			tmp_x1 = x1;
+			tmp_y1 = (y1 + y2) / 2;
+			tmp_x2 = x2;
+			tmp_y2 = tmp_y1;
+			break;
+		case 31:
+			tmp_x1 = (x1 + x2) / 2;
+			tmp_y1 = y1;
+			tmp_x2 = tmp_x1;
+			tmp_y2 = y2;
+			break;
+		case 20:
+			tmp_x1 = x1;
+			tmp_y1 = y2;
+			tmp_x2 = tmp_x1;
+			tmp_y2 = tmp_y1;
+			break;
+		case 21:
+		default:
+			tmp_x1 = x2;
+			tmp_y1 = y1;
+			tmp_x2 = tmp_x1;
+			tmp_y2 = tmp_y1;
+			break;
+		}
+
+		PointSet p1 = drawLine(g, x1, y1, tmp_x1, tmp_y1, start_length, 0);
+		drawLine(g, tmp_x1, tmp_y1, tmp_x2, tmp_y2, 0, 0);
+		PointSet p2 = drawLine(g, tmp_x2, tmp_y2, x2, y2, 0, end_length);
+
+		return new PointSet(x1, y1, p1.x2, p1.y2, p1.delta1, p2.x3, p2.y3, x2,
+				y2, p2.delta2);
 	}
 
 	/**
@@ -529,95 +618,6 @@ abstract public class Relationship {
 
 		return found.toArray(new Rectangle[0]);
 	}
-
-	/**
-	 * Draws the path between 2 points
-	 * 
-	 * @param g
-	 *            the <code>Graphics</code> object to be drawn
-	 * @param x1
-	 *            the x coordinate of the first point
-	 * @param y1
-	 *            the y coordinate of the first point
-	 * @param x2
-	 *            the x coordinate of the second point
-	 * @param y2
-	 *            the y coordinate of the second point
-	 * @param start_length
-	 *            the length to be left at the start
-	 * @param end_length
-	 *            the length to be left at the end
-	 * @param mode
-	 *            the mode for path. Possible values are
-	 *            <ul>
-	 *            <li>30: 3 lines. Go half the height before turning</li>
-	 *            <li>31: 3 lines. Go half the width before turning</li>
-	 *            <li>20: 2 lines. Keep the x coordinate as long as possible</li>
-	 *            <li>21: 2 lines. Keep the y coordinate as long as possible</li>
-	 *            </ul>
-	 * @return a {@link PointSet} containing left lines and the delta angles
-	 */
-	private PointSet drawPath(Graphics g, int x1, int y1, int x2, int y2,
-			double start_length, double end_length, int mode) {
-		int tmp_x1, tmp_y1, tmp_x2, tmp_y2;
-		switch (mode) {
-		case 30:
-			tmp_x1 = x1;
-			tmp_y1 = (y1 + y2) / 2;
-			tmp_x2 = x2;
-			tmp_y2 = tmp_y1;
-			break;
-		case 31:
-			tmp_x1 = (x1 + x2) / 2;
-			tmp_y1 = y1;
-			tmp_x2 = tmp_x1;
-			tmp_y2 = y2;
-			break;
-		case 20:
-			tmp_x1 = x1;
-			tmp_y1 = y2;
-			tmp_x2 = tmp_x1;
-			tmp_y2 = tmp_y1;
-			break;
-		case 21:
-		default:
-			tmp_x1 = x2;
-			tmp_y1 = y1;
-			tmp_x2 = tmp_x1;
-			tmp_y2 = tmp_y1;
-			break;
-		}
-
-		PointSet p1 = drawLine(g, x1, y1, tmp_x1, tmp_y1, start_length, 0);
-		drawLine(g, tmp_x1, tmp_y1, tmp_x2, tmp_y2, 0, 0);
-		PointSet p2 = drawLine(g, tmp_x2, tmp_y2, x2, y2, 0, end_length);
-
-		return new PointSet(x1, y1, p1.x2, p1.y2, p1.delta1, p2.x3, p2.y3, x2,
-				y2, p2.delta2);
-	}
-
-	/**
-	 * Customized drawing method for each relationship. Must be overridden in
-	 * subclasses.
-	 * 
-	 * @param g
-	 *            the target graphics (the same passed in
-	 *            {@link #draw(Graphics)}
-	 * @param ps
-	 *            the {@link PointSet} object holding drawing data
-	 */
-	abstract protected void __drawConnectionLine(Graphics g, PointSet ps);
-
-	/**
-	 * Customized primary drawing method for each relationships. Must be
-	 * overridden in subclasses and should call
-	 * {@link #drawConnectionLine(Graphics, double, double)} with appropriate
-	 * arguments
-	 * 
-	 * @param g
-	 *            the target <code>Graphics</code> to be drawn
-	 */
-	abstract void draw(Graphics g);
 }
 
 /**
@@ -626,7 +626,7 @@ abstract public class Relationship {
  * @author Dao Hoang Son
  * @version 1.0
  * 
- * @see Relationship#drawConnectionLine(Graphics, double, double)
+ * @see Relationship#drawConnectingPath(Graphics, double, double)
  * 
  */
 class PointSet {
