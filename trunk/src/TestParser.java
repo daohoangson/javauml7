@@ -3,7 +3,6 @@ import java.io.IOException;
 import java.text.ParseException;
 
 import com.daohoangson.uml.gui.Diagram;
-import com.daohoangson.uml.gui.Relationship;
 import com.daohoangson.uml.gui.UMLGUI;
 import com.daohoangson.uml.parser.Parser;
 import com.daohoangson.uml.structures.Structure;
@@ -22,7 +21,7 @@ public class TestParser {
 
 		// Parser.debuging = true;
 		// Structure.debuging = true;
-		Relationship.debugging = true;
+		// Relationship.debugging = true;
 		parser = new Parser(d);
 
 		if (args.length > 0) {
