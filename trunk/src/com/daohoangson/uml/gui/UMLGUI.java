@@ -824,9 +824,11 @@ public class UMLGUI extends JFrame implements ActionListener, ContainerListener 
 			c.addMouseListener(new MouseAdapter() {
 				@Override
 				public void mouseClicked(MouseEvent e) {
-					DiagramStructureGroup c = (DiagramStructureGroup) e
-							.getSource();
-					doInfo(c.getStructure());
+					if (e.getClickCount() == 2) {
+						DiagramStructureGroup c = (DiagramStructureGroup) e
+								.getSource();
+						doInfo(c.getStructure());
+					}
 				}
 
 				@Override

@@ -259,18 +259,15 @@ abstract public class Relationship {
 		x4 = (int) Math.ceil(x2 - end_length * Math.sin(delta));
 		y4 = (int) Math.ceil(y2 + end_length * Math.cos(delta));
 
-		drawLineSmart(g, x3, y3, x4, y4);
+		PointSet ps = drawLineSmart(g, x3, y3, x4, y4);
 
-		if (Relationship.debugging) {
-			System.err.println("Drawing from " + x3 + "," + y3 + " to " + x4
-					+ "," + y4 + ". Delta = " + delta);
-		}
-
-		return new PointSet(x1, y1, x3, y3, delta, x4, y4, x2, y2, delta);
+		return new PointSet(x1, y1, ps.x1, ps.y1, delta, ps.x2, ps.y2, x2, y2,
+				delta);
 	}
 
 	/**
-	 * Draws a straight line betwen 2 points but avoid all components on the way
+	 * Draws a straight line between 2 points but avoid all components on the
+	 * way
 	 * 
 	 * @param g
 	 *            the <code>Graphics</code> object to be drawn
@@ -285,17 +282,19 @@ abstract public class Relationship {
 	 * 
 	 * @see #onTheWay(Rectangle[], int, int, int, int)
 	 */
-	private void drawLineSmart(Graphics g, int x1, int y1, int x2, int y2) {
+	private PointSet drawLineSmart(Graphics g, int x1, int y1, int x2, int y2) {
 		if (x1 == x2 && y1 == y2) {
 			// oops, some kind of pseudo line?
-			return;
+			return new PointSet(x1, y1, x2, y2, -1);
 		}
 
 		Rectangle[] onTheWay = Relationship.onTheWay(diagram.getBoundsForAll(),
 				x1, y1, x2, y2);
 
-		int x = x1;
-		int y = y1;
+		int x0 = x1;
+		int y0 = y1;
+		int x = x0;
+		int y = y0;
 
 		for (int i = 0; i < onTheWay.length; i++) {
 			Rectangle rect = onTheWay[i];
@@ -304,7 +303,7 @@ abstract public class Relationship {
 				// vertical line
 				int p1y, p2y, p3y;
 				int px = rect.x - cfg_distance;
-				boolean use3legs = true;
+
 				if (y1 < y2) {
 					// coming from above
 					p1y = y;
@@ -316,30 +315,39 @@ abstract public class Relationship {
 					p2y = rect.y + rect.height + cfg_distance;
 					p3y = rect.y - cfg_distance;
 				}
-				if (Relationship.isBetween(p3y, y1, y2)) {
-					// oops
-					// this rectangle is at one of the end points
-					// use 2 leg drawing now
-					use3legs = false;
+
+				if (Math.abs(rect.x - cfg_distance - x) < Math.abs(rect.x
+						+ rect.width + cfg_distance - x)) {
+					// it's nearer to the left
+					px = rect.x - cfg_distance;
+				} else {
+					// it's nearer to the right
+					px = rect.x + rect.width + cfg_distance;
 				}
 
-				if (use3legs) {
-					// normal case
+				if (!Relationship.isBetween(p2y, y1, y2)) {
+					// out of the line (at the start point)
+					// ignore the current path
+					y0 = p3y;
+					y = p3y;
+				} else if (!Relationship.isBetween(p3y, y1, y2)) {
+					// out of the line (at the end point)
+					// draw line to the farthest point then exit
+					drawLinePlain(g, x, p1y, x, p2y);
+					y = p2y;
+					return new PointSet(x0, y0, x, y, -1);
+				} else {
+					// draw the path
 					drawLinePlain(g, x, p1y, x, p2y);
 					drawLinePlain(g, x, p2y, px, p2y);
 					drawLinePlain(g, px, p2y, px, p3y);
 					drawLinePlain(g, px, p3y, x, p3y);
 					y = p3y; // update the current position
-				} else {
-					// 2 legs only
-					drawLinePlain(g, x, y, x, p3y);
-					y = p3y; // update the current position
 				}
 			} else {
 				// horizontal line
-				int p1x, p2x, p3x;
-				int py = rect.y - cfg_distance;
-				boolean use3legs = true;
+				int p1x, p2x, p3x, py;
+
 				if (x1 < x2) {
 					// coming from the left
 					p1x = x;
@@ -352,24 +360,32 @@ abstract public class Relationship {
 					p3x = rect.x - cfg_distance;
 				}
 
-				if (!Relationship.isBetween(p3x, x1, x2)) {
-					// oops
-					// this rectangle is at one of the end points
-					// use 2 leg drawing now
-					use3legs = false;
+				if (Math.abs(rect.y - cfg_distance - y) < Math.abs(rect.y
+						+ rect.height + cfg_distance - y)) {
+					// it's nearer to the top
+					py = rect.y - cfg_distance;
+				} else {
+					// it's nearer to the bottom
+					py = rect.y + rect.height + cfg_distance;
 				}
 
-				if (use3legs) {
-					// normal case
+				if (!Relationship.isBetween(p2x, x1, x2)) {
+					// out of the line (at the start point)
+					// ignore the current path
+					x0 = p3x;
+					x = p3x;
+				} else if (!Relationship.isBetween(p3x, x1, x2)) {
+					// out of the line (at the end point)
+					// draw line to the farthest point then exit
+					drawLinePlain(g, p1x, y, p2x, y);
+					x = p2x;
+					return new PointSet(x0, y0, x, y, -1);
+				} else {
+					// draw the path
 					drawLinePlain(g, p1x, y, p2x, y);
 					drawLinePlain(g, p2x, y, p2x, py);
 					drawLinePlain(g, p2x, py, p3x, py);
 					drawLinePlain(g, p3x, py, p3x, y);
-					x = p3x; // update the current position
-				} else {
-					// 2 legs only
-					// TODO
-					drawLinePlain(g, x, y, p3x, y);
 					x = p3x; // update the current position
 				}
 			}
@@ -377,7 +393,11 @@ abstract public class Relationship {
 
 		if (x != x2 || y != y2) {
 			drawLinePlain(g, x, y, x2, y2);
+			x = x2;
+			y = y2;
 		}
+
+		return new PointSet(x0, y0, x, y, -1);
 	}
 
 	/**
@@ -499,8 +519,17 @@ abstract public class Relationship {
 		}
 
 		PointSet p1 = drawLine(g, x1, y1, tmp_x1, tmp_y1, start_length, 0);
-		drawLine(g, tmp_x1, tmp_y1, tmp_x2, tmp_y2, 0, 0);
+		PointSet p3 = drawLine(g, tmp_x1, tmp_y1, tmp_x2, tmp_y2, 0, 0);
 		PointSet p2 = drawLine(g, tmp_x2, tmp_y2, x2, y2, 0, end_length);
+
+		if (p1.x3 != tmp_x1 || p1.y3 != tmp_y1) {
+			// missed the turning point 1
+			drawPath(g, p1.x3, p1.y3, p3.x2, p3.y2, 0, 0, 20 + 1 - mode % 2);
+		}
+		if (p3.x3 != tmp_x2 || p3.y3 != tmp_y2) {
+			// missed the turning point 2
+			drawPath(g, p3.x3, p3.y3, p2.x2, p2.y2, 0, 0, 20 + mode % 2);
+		}
 
 		return new PointSet(x1, y1, p1.x2, p1.y2, p1.delta1, p2.x3, p2.y3, x2,
 				y2, p2.delta2);
