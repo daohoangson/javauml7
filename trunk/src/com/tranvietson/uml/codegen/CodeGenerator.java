@@ -68,32 +68,39 @@ public class CodeGenerator {
 				// }
 				// bw.write(lineSeparator);
 				// }
-
+				
+				// Write Visibility if exists
 				if (structure.getVisibility().length() > 0) {
 					bw.write(structure.getVisibility() + " "); // visibility
 				}
-
+				
+				// If it's a class
 				if (structure.getStructureName().equals("Class")) {
 					// class declaration
-					bw.write("class " + structure.getName()); // class name
+					bw.write("class " + structure.getName()); // Write class name
+					
+					// Check if class extends another one called Container
 					if (structure.getContainer() != null) {
+						// Write relationship if any
 						bw.write(" extends "
-								+ structure.getContainer().getName()); // ancestor
+								+ structure.getContainer().getName()); 
 					}
+					
+					// Check if class implements interfaces called Parents
 					if (structure.getParentsCount() > 0) {
 						Structure[] interfaces = structure.getParents();
+						// Write relationship if any
 						bw.write(" implements ");
 						for (int j = 0; j < interfaces.length; j++) {
-							if (j > 0) {
+							if (j > 0) {	// Need "," between implements	
 								bw.write(", ");
 							}
-							bw.write(interfaces[j].getName()); // interfaces
+							bw.write(interfaces[j].getName()); // Write Parents' name
 						}
 					}
 				} else {
-					// interface declaration
-					bw.write("interface " + structure.getName()); // interface
-					// name
+					// Interface declaration
+					bw.write("interface " + structure.getName()); // Interface name
 					if (structure.getContainer() != null) {
 						bw.write(" extends "
 								+ structure.getContainer().getName()); // ancestor
@@ -104,25 +111,25 @@ public class CodeGenerator {
 
 				for (int j = 0; j < children.length; j++) {
 					Structure child = children[j];
-
+					
+					// Check if child is a Method
 					if (child.getStructureName().equals("Method")) {
 						bw.write(lineSeparator); // separating methods
 					}
 
 					bw.write("\t"); // indent
 					if (child.getScope().length() > 0) {
-						bw.write(child.getScope() + " "); // scope
+						bw.write(child.getScope() + " "); // Write scope
 					}
 					if (child.getVisibility().length() > 0) {
-						bw.write(child.getVisibility() + " "); // visibility
+						bw.write(child.getVisibility() + " "); // Write visibility
 					}
-					if (child.getType() != null) {
-						bw.write(child.getType() + " "); // type (can be null
-						// with
-						// constructors)
+					if (child.getType() != null) { // Type can be null
+						bw.write(child.getType() + " ");
 					}
-					bw.write(child.getName());
-
+					bw.write(child.getName()); // Write name
+					
+					// Check if child is a Property
 					if (child.getStructureName().equals("Property")) {
 						bw.write(";" + lineSeparator);
 					} else {
@@ -130,15 +137,19 @@ public class CodeGenerator {
 
 						Structure[] arguments = child.getChildren();
 						for (int k = 0; k < arguments.length; k++) {
-							if (k > 0) {
+							if (k > 0) {	// Need "," between arguments
 								bw.write(", ");
 							}
+							
+							// Write arguments of Method
 							bw.write(arguments[k].getType() + " "
 									+ arguments[k].getName());
 						}
 
-						bw.write(") {" + lineSeparator);
-						if (child.getType() == null) {
+						bw.write(") {" + lineSeparator); // ready for content
+						
+						// Constructor is a null-type method
+						if (child.getType() == null) { 
 							bw
 									.write("\t\t// TODO Auto-generated constructor stub"
 											+ lineSeparator);
