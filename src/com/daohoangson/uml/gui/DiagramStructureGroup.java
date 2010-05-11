@@ -4,6 +4,7 @@ import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.Graphics;
+import java.awt.Point;
 import java.awt.datatransfer.UnsupportedFlavorException;
 import java.awt.dnd.DnDConstants;
 import java.awt.dnd.DropTarget;
@@ -14,6 +15,7 @@ import java.awt.dnd.DropTargetListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.io.IOException;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -71,7 +73,9 @@ class DiagramStructureGroup extends JPanel implements DropTargetListener,
 	 * @see #getPreferredSize()
 	 */
 	private Dimension block_size;
-	private List<Component> dependent_components = new LinkedList<Component>();
+	private List<DiagramStructureGroup> dependent_components = new LinkedList<DiagramStructureGroup>();
+	private int dependent_components_width = 0;
+	private Point pseudoLocation;
 
 	/**
 	 * Constructor (the one and only)
@@ -128,42 +132,86 @@ class DiagramStructureGroup extends JPanel implements DropTargetListener,
 	@Override
 	public Dimension getPreferredSize() {
 		Dimension d = super.getPreferredSize();
+		int width = 0;
+		int height = 0;
 
-		d.width = (int) (Math.ceil((double) d.width / block_size.width) * block_size.width);
-		d.height = (int) (Math.ceil((double) d.height / block_size.height) * block_size.height);
+		// resize to make sure children is visible
+		setSize(d);
 
-		return d;
+		Iterator<DiagramStructureGroup> itr = dependent_components.iterator();
+		while (itr.hasNext()) {
+			Dimension dcd = itr.next().getPreferredSize();
+			width += dcd.width;
+			height = Math.max(height, dcd.height);
+		}
+
+		if (width > 0 || height > 0) {
+			// there is something
+			width += (dependent_components.size() - 1) * block_size.width;
+			height += block_size.height;
+		}
+
+		dependent_components_width = width; // cache the width of dependent
+		// components
+		width = Math.max(d.width, width);
+		height += d.height;
+
+		return new Dimension(width, height);
 	}
 
 	@Override
-	public Dimension getMinimumSize() {
-		return getPreferredSize();
+	public void setLocation(int x, int y) {
+		pseudoLocation = new Point(x, y);
+		Dimension ps = getPreferredSize();
+		Dimension s = getSize();
+
+		super.setLocation(x + (ps.width - s.width) / 2, y);
+
+		int dcx = pseudoLocation.x + (ps.width - dependent_components_width)
+				/ 2;
+		int dcy = pseudoLocation.y + s.height + block_size.height;
+
+		Iterator<DiagramStructureGroup> itr = dependent_components.iterator();
+		while (itr.hasNext()) {
+			DiagramStructureGroup dc = itr.next();
+			Dimension dcs = dc.getPreferredSize();
+
+			dc.setLocation(dcx, dcy);
+
+			dcx += dcs.width + block_size.width;
+		}
 	}
 
-	@Override
-	public Dimension getMaximumSize() {
-		return getPreferredSize();
+	public void setLocationRelative(int dx, int dy) {
+		setLocation(pseudoLocation.x + dx, pseudoLocation.y + dy);
 	}
 
 	@Override
 	public Component add(Component comp) {
-		try {
-			DiagramStructureName label = (DiagramStructureName) comp;
-			if (property_first == null
-					&& label.getStructureName().equals("Property")) {
-				property_first = comp;
+		if (comp instanceof DiagramStructureGroup) {
+			dependent_components.add((DiagramStructureGroup) comp);
+			getParent().add(comp);
+
+			return this;
+		} else {
+			try {
+				DiagramStructureName label = (DiagramStructureName) comp;
+				if (property_first == null
+						&& label.getStructureName().equals("Property")) {
+					property_first = comp;
+				}
+				if (method_first == null
+						&& label.getStructureName().equals("Method")) {
+					method_first = comp;
+				}
+			} catch (ClassCastException e) {
+				// oops
 			}
-			if (method_first == null
-					&& label.getStructureName().equals("Method")) {
-				method_first = comp;
-			}
-		} catch (ClassCastException e) {
-			// oops
+
+			comp.addMouseListener(this);
+
+			return super.add(comp);
 		}
-
-		comp.addMouseListener(this);
-
-		return super.add(comp);
 	}
 
 	@Override
