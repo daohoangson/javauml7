@@ -31,7 +31,7 @@ public class CodeGenerator {
 	 * Generates source file the a structure
 	 * 
 	 * @param structure
-	 *            the structure that needs generating soure file
+	 *            the structure that needs generating source file
 	 * @return true if the process is complete without any errors
 	 */
 	public boolean generate(Structure structure) {
