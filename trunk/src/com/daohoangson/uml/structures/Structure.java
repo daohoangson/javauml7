@@ -72,13 +72,6 @@ public abstract class Structure implements StructureListener {
 	 */
 	private boolean is_static = false;
 	/**
-	 * List of objects which listen to our event.
-	 * 
-	 * @see #addStructureListener(StructureListener)
-	 * @see #removeStructureListener(StructureListener)
-	 */
-	private Vector<StructureListener> listeners;
-	/**
 	 * The container.
 	 * 
 	 * @see #add(Structure)
@@ -203,6 +196,13 @@ public abstract class Structure implements StructureListener {
 	 * Global listener. Will be call when new structure is created
 	 */
 	static public StructureListener global_listener = null;
+	/**
+	 * List of objects which listen to our event.
+	 * 
+	 * @see #addStructureListener(StructureListener)
+	 * @see #removeStructureListener(StructureListener)
+	 */
+	private Vector<StructureListener> listeners;
 	/**
 	 * Determines if we are in debug mode.
 	 */
@@ -429,7 +429,7 @@ public abstract class Structure implements StructureListener {
 
 	@Override
 	public String toString() {
-		return toString("", "");
+		return toString("", "", cfg_hide_visibility);
 	}
 
 	/**
@@ -439,9 +439,13 @@ public abstract class Structure implements StructureListener {
 	 *            the prefix for the string
 	 * @param suffix
 	 *            the suffix for the string
+	 * @param cfg_hide_visibility
+	 *            specifies if it should contain visibility in the resulted
+	 *            string
 	 * @return built string
 	 */
-	public String toString(String prefix, String suffix) {
+	public String toString(String prefix, String suffix,
+			boolean cfg_hide_visibility) {
 		String str = "";
 		if (cfg_use_visibility && !cfg_hide_visibility) {
 			switch (visibility) {
@@ -598,12 +602,11 @@ public abstract class Structure implements StructureListener {
 	 */
 	public String getStructureName() {
 		// extracts the name from real class name
-		// the fullname is something like ...uml.structures.X
-		// we will get the "X"
+		// the full name is something like ...uml.structures.X
+		// we will get the "X" only
 		String fullname = this.getClass().getName();
-		String[] parts = fullname.split("\\.");
-		String structure_name = parts[parts.length - 1];
-		return structure_name;
+		int lastDot = fullname.lastIndexOf('.');
+		return fullname.substring(lastDot + 1);
 	}
 
 	/**
@@ -837,7 +840,9 @@ public abstract class Structure implements StructureListener {
 								+ that.getStructureName() + " to " + that);
 					}
 					that.addStructureListener(this);
-					children.add(that);
+					synchronized (children) {
+						children.add(that);
+					}
 
 					added = true;
 				}
@@ -861,7 +866,9 @@ public abstract class Structure implements StructureListener {
 		if (Structure.foundStringInArray(getStructureName(),
 				that.cfg_parent_structures)) {
 			if (!that.checkIsChildOf(this) && !checkIsChildOf(that)) {
-				that.parents.add(this);
+				synchronized (that.parents) {
+					that.parents.add(this);
+				}
 
 				added = true;
 			} else if (added == false) {
@@ -928,10 +935,12 @@ public abstract class Structure implements StructureListener {
 
 		// checks if it's possible to remove that from this's children
 		if (cfg_child_structures.length > 0) {
-			if (children.remove(that)) {
-				that.removeStructureListener(this);
+			synchronized (children) {
+				if (children.remove(that)) {
+					that.removeStructureListener(this);
 
-				removed = true;
+					removed = true;
+				}
 			}
 		}
 
@@ -946,8 +955,10 @@ public abstract class Structure implements StructureListener {
 
 		// checks if it's possible to remove this from that's parents
 		if (that.cfg_parent_structures.length > 0) {
-			if (that.parents.remove(this)) {
-				removed = true;
+			synchronized (that.parents) {
+				if (that.parents.remove(this)) {
+					removed = true;
+				}
 			}
 		}
 
@@ -967,20 +978,24 @@ public abstract class Structure implements StructureListener {
 	 * 
 	 * @throws StructureException
 	 */
-	synchronized public void dispose() throws StructureException {
+	public void dispose() throws StructureException {
 		if (container != null) {
 			container.remove(this);
 		}
 
-		Iterator<Structure> itr_parents = parents.iterator();
+		// TODO: Need a more proper way and figure it out why synchronized
+		// doesn't work
+		Iterator<Structure> itr_parents = new LinkedList<Structure>(parents)
+				.iterator();
 		while (itr_parents.hasNext()) {
 			itr_parents.next().remove(this);
 		}
 
-		// Iterator<Structure> itr_children = children.iterator();
-		// while (itr_children.hasNext()) {
-		// itr_children.next().dispose();
-		// }
+		Iterator<Structure> itr_children = new LinkedList<Structure>(children)
+				.iterator();
+		while (itr_children.hasNext()) {
+			itr_children.next().dispose();
+		}
 
 		if (Structure.names.containsValue(this)) {
 			Structure.names.remove(getName());

@@ -19,7 +19,14 @@ public class MethodForm extends StructureForm {
 
 	@Override
 	public void __submit() throws StructureException {
-		Method newMethod = new Method(txt_name.getText(), txt_type.getText());
+		Method newMethod;
+		if (container.getName().equals(txt_name.getText())) {
+			// constructor
+			newMethod = new Method(txt_name.getText(), null);
+		} else {
+			// normal method
+			newMethod = new Method(txt_name.getText(), txt_type.getText());
+		}
 		if (visibility.length() > 0) {
 			newMethod.setModifier(visibility);
 		}

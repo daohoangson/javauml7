@@ -15,7 +15,7 @@ import com.daohoangson.uml.structures.Structure;
  * @version 1.0
  * 
  */
-class TransferableStructure implements Transferable {
+public class TransferableStructure implements Transferable {
 	/**
 	 * The structure needs transferring
 	 */
@@ -23,9 +23,10 @@ class TransferableStructure implements Transferable {
 	/**
 	 * A data flavor for structure transferring
 	 */
-	static DataFlavor df = new DataFlavor(Structure.class, "UML Structure");
+	static public DataFlavor df = new DataFlavor(Structure.class,
+			"UML Structure");
 
-	TransferableStructure(Structure structure) {
+	public TransferableStructure(Structure structure) {
 		this.structure = structure;
 	}
 

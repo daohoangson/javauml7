@@ -35,7 +35,7 @@ import com.tranvietson.uml.structures.StructureException;
  * 
  */
 class DiagramStructureGroup extends JPanel implements DropTargetListener,
-		MouseListener {
+		MouseListener, StructureBased {
 	private static final long serialVersionUID = -6330448983826031865L;
 	/**
 	 * The corresponding structure of the panel
@@ -116,7 +116,8 @@ class DiagramStructureGroup extends JPanel implements DropTargetListener,
 	 * 
 	 * @return the structure
 	 */
-	Structure getStructure() {
+	@Override
+	public Structure getStructure() {
 		return structure;
 	}
 
@@ -161,15 +162,30 @@ class DiagramStructureGroup extends JPanel implements DropTargetListener,
 
 	@Override
 	public void setLocation(int x, int y) {
+		Dimension preferredSize = getPreferredSize();
+		Dimension thisSize = getSize();
+
+		// make sure it's in parent component size
+		// if (getParent() != null) {
+		// Dimension parentSize = getParent().getSize();
+		// x = Math.max(0, Math.min(x, parentSize.width -
+		// preferredSize.width));
+		// y = Math.max(0, Math.min(y, parentSize.height -
+		// preferredSize.height));
+		// }
+
+		// grid-style positioning
+		x = (int) (5 * Math.floor((double) x / 5));
+		y = (int) (5 * Math.floor((double) y / 5));
+
+		// update our self managed location
 		pseudoLocation = new Point(x, y);
-		Dimension ps = getPreferredSize();
-		Dimension s = getSize();
 
-		super.setLocation(x + (ps.width - s.width) / 2, y);
+		super.setLocation(x + (preferredSize.width - thisSize.width) / 2, y);
 
-		int dcx = pseudoLocation.x + (ps.width - dependent_components_width)
-				/ 2;
-		int dcy = pseudoLocation.y + s.height + block_size.height;
+		int dcx = pseudoLocation.x
+				+ (preferredSize.width - dependent_components_width) / 2;
+		int dcy = pseudoLocation.y + thisSize.height + block_size.height;
 
 		Iterator<DiagramStructureGroup> itr = dependent_components.iterator();
 		while (itr.hasNext()) {
