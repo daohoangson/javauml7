@@ -87,7 +87,8 @@ public class Method extends Structure {
 	 * Returns the method string with its' arguments
 	 */
 	@Override
-	public String toString() {
+	public String toString(String prefix, String suffix,
+			boolean cfg_hide_visibility) {
 		String arguments_str = "";
 
 		Structure arguments[] = getChildren();
@@ -95,10 +96,11 @@ public class Method extends Structure {
 			if (arguments_str.length() > 0) {
 				arguments_str += ", ";
 			}
-			arguments_str += arguments[i];
+			arguments_str += arguments[i].getType();
 		}
 
-		return super.toString("", "(" + arguments_str + ")");
+		return super.toString("", "(" + arguments_str + ")",
+				cfg_hide_visibility);
 	}
 
 	@Override

@@ -3,6 +3,7 @@ package com.daohoangson.uml.gui;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Container;
+import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Image;
@@ -13,10 +14,12 @@ import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
 import java.awt.image.BufferedImage;
 import java.awt.image.ImageObserver;
+import java.util.Arrays;
 import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Vector;
 import java.util.Map.Entry;
 
 import javax.swing.JComponent;
@@ -25,6 +28,11 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 
 import com.daohoangson.uml.structures.Structure;
+import com.daohoangson.uml.structures.StructureNameComparator;
+import com.tavanduc.uml.gui.GeneralizationRelationship;
+import com.tavanduc.uml.gui.MultiplicityRelationship;
+import com.tavanduc.uml.gui.RealizationRelationship;
+import com.tavanduc.uml.gui.Relationship;
 import com.tranvietson.uml.structures.StructureEvent;
 import com.tranvietson.uml.structures.StructureException;
 import com.tranvietson.uml.structures.StructureListener;
@@ -102,6 +110,19 @@ public class Diagram extends JPanel implements StructureListener,
 	 */
 	private Rectangle image_rect = null;
 	/**
+	 * The scroll pane for the diagram
+	 * 
+	 * @see #getScrollable()
+	 */
+	private JScrollPane scrollpane = null;
+	/**
+	 * List of objects which listen to our event.
+	 * 
+	 * @see #addStructureListener(StructureListener)
+	 * @see #removeStructureListener(StructureListener)
+	 */
+	private Vector<StructureListener> listeners;
+	/**
 	 * Determines if we are in debug mode.
 	 */
 	static public boolean debugging = false;
@@ -111,6 +132,10 @@ public class Diagram extends JPanel implements StructureListener,
 	 * @see #structureChanged(StructureEvent)
 	 */
 	private boolean flag_auto_draw = true;
+	/**
+	 * Specifies we are in the middle of a dragging-moving process
+	 */
+	private Point flag_drag_moving = null;
 	/**
 	 * The gap between 2 components vertically
 	 */
@@ -129,8 +154,6 @@ public class Diagram extends JPanel implements StructureListener,
 		super();
 
 		setLayout(null); // we will align components by ourselves
-		setPreferredSize(new Dimension(700, 400));
-
 		addMouseListener(this);
 		addMouseMotionListener(this);
 	}
@@ -156,9 +179,16 @@ public class Diagram extends JPanel implements StructureListener,
 	 * @return a JScrollPane object of the diagram
 	 */
 	public Component getScrollable() {
-		JScrollPane sp = new JScrollPane(this);
+		if (scrollpane == null) {
+			scrollpane = new JScrollPane(this);
+			// the diagram is usually big
+			// we want it a little bit faster
+			int unitIncrement = 15;
+			scrollpane.getVerticalScrollBar().setUnitIncrement(unitIncrement);
+			scrollpane.getHorizontalScrollBar().setUnitIncrement(unitIncrement);
+		}
 
-		return sp;
+		return scrollpane;
 	}
 
 	/**
@@ -169,7 +199,28 @@ public class Diagram extends JPanel implements StructureListener,
 	 */
 	public void ensureStructureIsVisible(Structure structure) {
 		Rectangle rect = getBoundsFor(structure);
-		scrollRectToVisible(rect);
+		if (rect != null) {
+			Rectangle visible = getVisibleRect();
+			Point structureLocation = rect.getLocation();
+			Dimension structureSize = rect.getSize();
+			Dimension visibleSize = visible.getSize();
+			int x, y;
+			if (structureSize.width < visibleSize.width) {
+				x = structureLocation.x
+						- (visibleSize.width - structureSize.width) / 2;
+			} else {
+				x = structureLocation.x;
+			}
+			if (structureSize.height < visibleSize.height) {
+				y = structureLocation.y
+						- (visibleSize.height - structureSize.height) / 2;
+			} else {
+				y = structureLocation.y;
+			}
+			rect.setLocation(x, y);
+			rect.setSize(visible.getSize());
+			scrollRectToVisible(rect);
+		}
 	}
 
 	/**
@@ -178,7 +229,9 @@ public class Diagram extends JPanel implements StructureListener,
 	 * @return array containing structures in the diagram
 	 */
 	public Structure[] getStructures() {
-		return structures.toArray(new Structure[0]);
+		Structure[] array = structures.toArray(new Structure[0]);
+		Arrays.sort(array, new StructureNameComparator());
+		return array;
 	}
 
 	/**
@@ -226,14 +279,16 @@ public class Diagram extends JPanel implements StructureListener,
 		}
 
 		boundsCache = new Hashtable<Structure, Rectangle>();
-		Iterator<Entry<Structure, Component>> entries = built.entrySet()
-				.iterator();
-		while (entries.hasNext()) {
-			Entry<Structure, Component> entry = entries.next();
-			Structure entry_structure = entry.getKey();
-			Component entry_component = entry.getValue();
+		synchronized (built) {
+			Iterator<Entry<Structure, Component>> entries = built.entrySet()
+					.iterator();
+			while (entries.hasNext()) {
+				Entry<Structure, Component> entry = entries.next();
+				Structure entry_structure = entry.getKey();
+				Component entry_component = entry.getValue();
 
-			boundsCache.put(entry_structure, getBoundsFor(entry_component));
+				boundsCache.put(entry_structure, getBoundsFor(entry_component));
+			}
 		}
 
 		boundsCacheArray = null; // reset the array instance
@@ -343,7 +398,9 @@ public class Diagram extends JPanel implements StructureListener,
 	public boolean add(Structure structure) {
 		if (structure.checkIsUniqueGlobally()) {
 			if (!structures.contains(structure)) {
-				structures.add(structure);
+				synchronized (structures) {
+					structures.add(structure);
+				}
 				structure.addStructureListener(this);
 				structureChanged(new StructureEvent(structure,
 						StructureEvent.ACTIVE));
@@ -365,7 +422,9 @@ public class Diagram extends JPanel implements StructureListener,
 	 */
 	public boolean remove(Structure structure) {
 		if (structures.contains(structure)) {
-			structures.remove(structure);
+			synchronized (structures) {
+				structures.remove(structure);
+			}
 			structure.removeStructureListener(this);
 			structureChanged(new StructureEvent(structure,
 					StructureEvent.ACTIVE));
@@ -382,6 +441,7 @@ public class Diagram extends JPanel implements StructureListener,
 	 */
 	public void clear() {
 		setAutoDrawing(false);
+		// TODO: Need to find a better way
 		Iterator<Structure> itr = new LinkedList<Structure>(structures)
 				.iterator();
 		while (itr.hasNext()) {
@@ -422,16 +482,14 @@ public class Diagram extends JPanel implements StructureListener,
 
 		boundsCache = null; // remove the cache because it's useless now
 
-		// TODO: Figure out a cleaner way to do this without causing con-current
-		// exception. Well, this seem not to happen any more. Maybe this to-do
-		// note need removing?
-		Iterator<Relationship> itr = new LinkedList<Relationship>(relationships)
-				.iterator();
-		while (itr.hasNext()) {
-			Relationship relationship = itr.next();
-			if (onFocusStructure == null
-					|| relationship.getFrom() == onFocusStructure) {
-				relationship.draw(g);
+		synchronized (relationships) {
+			Iterator<Relationship> itr = relationships.iterator();
+			while (itr.hasNext()) {
+				Relationship relationship = itr.next();
+				if (onFocusStructure == null
+						|| relationship.getFrom() == onFocusStructure) {
+					relationship.draw(g);
+				}
 			}
 		}
 
@@ -508,46 +566,50 @@ public class Diagram extends JPanel implements StructureListener,
 			relationships.clear();
 		}
 
-		Iterator<Structure> itr = structures.iterator();
-		int i = 0;
-		while (itr.hasNext()) {
-			Structure s = itr.next();
+		synchronized (structures) {
+			synchronized (relationships) {
+				Iterator<Structure> itr = structures.iterator();
+				int i = 0;
+				while (itr.hasNext()) {
+					Structure s = itr.next();
 
-			// look for Realization Relationships
-			Structure[] parents = s.getParents();
-			for (int j = 0, k = parents.length; j < k; j++) {
-				int iparent = structures.indexOf(parents[j]);
-				if (iparent != -1) {
-					dependencies[i][iparent] = true;
+					// look for Realization Relationships
+					Structure[] parents = s.getParents();
+					for (int j = 0, k = parents.length; j < k; j++) {
+						int iparent = structures.indexOf(parents[j]);
+						if (iparent != -1) {
+							dependencies[i][iparent] = true;
+						}
+
+						relationships.add(new RealizationRelationship(this, s,
+								parents[j]));
+					}
+
+					// look for Generalization Relationships
+					Structure container = s.getContainer();
+					if (container != null) {
+						int icontainer = structures.indexOf(container);
+						if (icontainer != -1) {
+							dependencies[i][icontainer] = true;
+						}
+
+						relationships.add(new GeneralizationRelationship(this,
+								s, container));
+					}
+
+					// look for 0..many Relationships
+					Structure[] children = s.getChildren();
+					for (int j = 0, k = children.length; j < k; j++) {
+						Structure[] types = children[j].getTypeAsStructure();
+						for (int l = 0, m = types.length; l < m; l++) {
+							relationships.add(new MultiplicityRelationship(
+									this, s, types[l]));
+						}
+					}
+
+					i++;
 				}
-
-				relationships.add(new RealizationRelationship(this, s,
-						parents[j]));
 			}
-
-			// look for Generalization Relationships
-			Structure container = s.getContainer();
-			if (container != null) {
-				int icontainer = structures.indexOf(container);
-				if (icontainer != -1) {
-					dependencies[i][icontainer] = true;
-				}
-
-				relationships.add(new GeneralizationRelationship(this, s,
-						container));
-			}
-
-			// look for 0..many Relationships
-			Structure[] children = s.getChildren();
-			for (int j = 0, k = children.length; j < k; j++) {
-				Structure[] types = children[j].getTypeAsStructure();
-				for (int l = 0, m = types.length; l < m; l++) {
-					relationships.add(new MultiplicityRelationship(this, s,
-							types[l]));
-				}
-			}
-
-			i++;
 		}
 
 		if (Diagram.debugging) {
@@ -607,7 +669,9 @@ public class Diagram extends JPanel implements StructureListener,
 			Component component = buildComponentFor(structure);
 			if (component instanceof Container) {
 				container = (Container) component;
-				built.put(structure, container);
+				synchronized (built) {
+					built.put(structure, container);
+				}
 				add(container);
 
 				int n = structures.size();
@@ -657,6 +721,60 @@ public class Diagram extends JPanel implements StructureListener,
 		return c;
 	}
 
+	/**
+	 * Adds an object to this structure listeners list
+	 * 
+	 * @param listener
+	 *            the object who needs to listen to this
+	 */
+	synchronized public void addStructureListener(StructureListener listener) {
+		if (listeners == null) {
+			listeners = new Vector<StructureListener>();
+		}
+		if (!listeners.contains(listener)) {
+			listeners.add(listener);
+		}
+	}
+
+	/**
+	 * Removes an object from this structure listeners list
+	 * 
+	 * @param listener
+	 *            the object who is listening to this
+	 */
+	synchronized public void removeStructureListener(StructureListener listener) {
+		if (listeners != null) {
+			listeners.remove(listener);
+		}
+	}
+
+	/**
+	 * Triggers the changed event
+	 * 
+	 * @param type
+	 *            the tyep of the event. Possible value is defined in
+	 *            {@link StructureEvent}: <code>UNDEFINED</code>,
+	 *            <code>NAME</code>, <code>TYPE</code>, <code>MODIFIER</code>,
+	 *            <code>CHILDREN</code>,<code>ACTIVE</code>
+	 */
+	@SuppressWarnings("unchecked")
+	protected void fireChanged(Structure structure) {
+		if (listeners != null && listeners.size() > 0) {
+			StructureEvent e = new StructureEvent(structure,
+					StructureEvent.CHILDREN);
+
+			Vector<StructureListener> targets;
+			synchronized (this) {
+				targets = (Vector<StructureListener>) listeners.clone();
+			}
+
+			for (int i = 0; i < targets.size(); i++) {
+				StructureListener listener = targets.elementAt(i);
+				listener.structureChanged(e);
+			}
+		}
+	}
+
 	@Override
 	public void structureChanged(StructureEvent e) {
 		switch (e.getType()) {
@@ -671,6 +789,8 @@ public class Diagram extends JPanel implements StructureListener,
 		if (flag_auto_draw) {
 			draw();
 		}
+
+		fireChanged((Structure) e.getSource());
 	}
 
 	@Override
@@ -691,15 +811,36 @@ public class Diagram extends JPanel implements StructureListener,
 				}
 				// and display the clipping area now
 				repaint();
+			} else if (flag_drag_moving != null) {
+				// dragging-moving around
+				Point newP = e.getLocationOnScreen();
+				int dx = newP.x - flag_drag_moving.x;
+				int dy = newP.y - flag_drag_moving.y;
+				// revert to make it more... natural
+				dx *= -1;
+				dy *= -1;
+				if (scrollpane != null) {
+					scrollpane.getHorizontalScrollBar()
+							.setValue(
+									scrollpane.getHorizontalScrollBar()
+											.getValue()
+											+ dx);
+					scrollpane.getVerticalScrollBar().setValue(
+							scrollpane.getVerticalScrollBar().getValue() + dy);
+				}
+				flag_drag_moving = newP;
 			}
 		} else {
 			if (pressedComponent != null) {
 				// moving component
 				Point oldP = pressedLocation;
 				Point newP = e.getLocationOnScreen();
+				Point oldL = pressedComponent.getLocationOnScreen();
 				pressedComponent.setLocationRelative(newP.x - oldP.x, newP.y
 						- oldP.y);
-				pressedLocation = newP;
+				Point newL = pressedComponent.getLocationOnScreen();
+				pressedLocation.setLocation(oldP.x + newL.x - oldL.x, oldP.y
+						+ newL.y - oldL.y);
 				repaint();
 			}
 		}
@@ -719,19 +860,26 @@ public class Diagram extends JPanel implements StructureListener,
 
 	@Override
 	public void mouseEntered(MouseEvent e) {
-		// TODO Auto-generated method stub
-
+		if (e.getSource() == this) {
+			// something here?
+		} else {
+			setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+		}
 	}
 
 	@Override
 	public void mouseExited(MouseEvent e) {
-		// TODO Auto-generated method stub
-
+		setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
 	}
 
 	@Override
 	public void mousePressed(MouseEvent e) {
-		if (e.getSource() != this) {
+		if (e.getSource() == this) {
+			if (e.getButton() == MouseEvent.BUTTON1) {
+				flag_drag_moving = e.getLocationOnScreen();
+				setCursor(Cursor.getPredefinedCursor(Cursor.MOVE_CURSOR));
+			}
+		} else {
 			// start moving component
 			if (e.getButton() == MouseEvent.BUTTON1) {
 				Object s = e.getSource();
@@ -746,12 +894,15 @@ public class Diagram extends JPanel implements StructureListener,
 	@Override
 	public void mouseReleased(MouseEvent e) {
 		if (e.getSource() == this) {
-			// clipping selected
-			// start saving
 			if (image_rect != null) {
 				// mouse released and we are in the middle of clipping process
 				// send a saving image request now
 				saveImage(observer);
+			}
+
+			if (flag_drag_moving != null) {
+				flag_drag_moving = null;
+				setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
 			}
 		} else {
 			// moving component finished

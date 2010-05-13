@@ -8,26 +8,31 @@ public class TestSizes {
 
 	/**
 	 * @param args
-	 * @throws StructureException 
+	 * @throws StructureException
 	 */
 	public static void main(String[] args) throws StructureException {
-		Diagram diagram = new UMLGUI().diagram;
-		
-		//horizontal test
-//		for (char c = 'A'; c <= 'Z'; c++) {
-//			diagram.add(new Class(String.valueOf(c)));
-//		}
-		
-		//vertical test
+		UMLGUI gui = new UMLGUI();
+		Diagram diagram = gui.diagram;
+
+		// horizontal test
+		// for (char c = 'A'; c <= 'Z'; c++) {
+		// diagram.add(new Class(String.valueOf(c)));
+		// }
+
+		// vertical test
 		Structure previous = null;
 		for (char c = 'A'; c <= 'Z'; c++) {
 			Structure s = new Class(String.valueOf(c));
-			if (previous != null) previous.add(s);
+			if (previous != null) {
+				previous.add(s);
+			}
 			previous = s;
-			
+
 			diagram.add(s);
 		}
-//		diagram.add(new Interface("iA"));
+		// diagram.add(new Interface("iA"));
+
+		gui.setVisible(true);
 	}
 
 }

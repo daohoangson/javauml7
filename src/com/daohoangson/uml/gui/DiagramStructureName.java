@@ -23,7 +23,7 @@ import com.daohoangson.uml.structures.Structure;
  * 
  */
 class DiagramStructureName extends JLabel implements DragGestureListener,
-		DragSourceListener {
+		DragSourceListener, StructureBased {
 	private static final long serialVersionUID = -6281032125570028093L;
 	/**
 	 * The corresponding structure of the label
@@ -77,7 +77,8 @@ class DiagramStructureName extends JLabel implements DragGestureListener,
 	 * 
 	 * @return the structure
 	 */
-	Structure getStructure() {
+	@Override
+	public Structure getStructure() {
 		return structure;
 	}
 

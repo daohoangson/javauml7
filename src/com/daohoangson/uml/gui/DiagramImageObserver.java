@@ -56,6 +56,10 @@ class DiagramImageFilter extends FileFilter {
 
 	@Override
 	public boolean accept(File f) {
+		if (f.isDirectory()) {
+			return true;
+		}
+
 		String path = f.getAbsolutePath();
 		String ext = path.substring(path.length() - 4).toLowerCase();
 		return ext.equals(".jpg") || ext.equals(".png");

@@ -1,9 +1,9 @@
 import javax.swing.JFrame;
 
 import com.daohoangson.uml.gui.Diagram;
-import com.daohoangson.uml.gui.Relationship;
 import com.daohoangson.uml.gui.UMLGUI;
 import com.daohoangson.uml.structures.Structure;
+import com.tavanduc.uml.gui.Relationship;
 import com.tranvietson.uml.structures.Class;
 import com.tranvietson.uml.structures.Interface;
 import com.tranvietson.uml.structures.Property;
