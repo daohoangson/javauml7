@@ -5,172 +5,203 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 
-import com.daohoangson.uml.gui.Diagram;
 import com.daohoangson.uml.structures.Structure;
 
 public class CodeGenerator {
-	private Diagram diagram;
+	/**
+	 * The root path for generated source file(s)
+	 */
+	private String rootpath;
+	/**
+	 * Determines if we are in debug mode.
+	 */
+	static public boolean debugging = false;
 
-	public CodeGenerator(Diagram diagram) {
-		this.diagram = diagram;
+	/**
+	 * Constructor with a root path
+	 * 
+	 * @param rootpath
+	 *            the root path to use for source file(s)
+	 */
+	public CodeGenerator(String rootpath) {
+		this.rootpath = rootpath;
 	}
 
-	public int generate(String rootpath) {
-		Structure[] structures = diagram.getStructures();
+	/**
+	 * Generates source file the a structure
+	 * 
+	 * @param structure
+	 *            the structure that needs generating soure file
+	 * @return true if the process is complete without any errors
+	 */
+	public boolean generate(Structure structure) {
+		// get the path separator (system dependent)
 		String pathSeparator = File.separator;
+		// get the line separator (system dependent)
 		String lineSeparator = System.getProperty("line.separator");
-		int files = 0;
+		// get structure's children
+		Structure[] children = structure.getChildren();
 
-		for (int i = 0; i < structures.length; i++) {
-			Structure structure = structures[i];
-			Structure[] children = structure.getChildren();
-
-			try {
-				// prepare the directory tree
-				String path = rootpath;
-				String packagename = structure.getInfo("package");
-				if (packagename.length() > 0) {
-					String[] packages = packagename.split("\\.");
-					for (int j = 0; j < packages.length; j++) {
-						path += pathSeparator + packages[j];
-					}
+		try {
+			// prepare the directory tree
+			String path = rootpath;
+			String packagename = structure.getInfo("package");
+			if (packagename.length() > 0) {
+				String[] packages = packagename.split("\\.");
+				for (int j = 0; j < packages.length; j++) {
+					path += pathSeparator + packages[j];
 				}
-				new File(path).mkdirs();
+			}
+			new File(path).mkdirs();
 
-				// setup the writer
-				FileWriter fw = new FileWriter(path + pathSeparator
-						+ structure.getName() + ".java");
-				BufferedWriter bw = new BufferedWriter(fw);
+			// setup the writer
+			FileWriter fw = new FileWriter(path + pathSeparator
+					+ structure.getName() + ".java");
+			BufferedWriter bw = new BufferedWriter(fw);
 
-				// output the package
-				if (packagename.length() > 0) {
-					bw.write("package " + packagename + ";" + lineSeparator
-							+ lineSeparator);
+			// output the package
+			if (packagename.length() > 0) {
+				bw.write("package " + packagename + ";" + lineSeparator
+						+ lineSeparator);
+			}
+
+			// auto import
+			// TODO: figure it out if we need this or not
+			// List<String> imports = new LinkedList<String>();
+			// for (int j = 0; j < children.length; j++) {
+			// Structure[] types = children[j].getTypeAsStructure();
+			// for (int k = 0; k < types.length; k++) {
+			// String importpackagename = types[k].getInfo("package");
+			// if (importpackagename.length() > 0
+			// && !imports.contains(importpackagename)) {
+			// imports.add(importpackagename + "."
+			// + types[k].getName());
+			// }
+			// }
+			// }
+			// if (imports.size() > 0) {
+			// Iterator<String> itr = imports.iterator();
+			// while (itr.hasNext()) {
+			// bw.write("import " + itr.next() + ";" + lineSeparator);
+			// }
+			// bw.write(lineSeparator);
+			// }
+
+			// write visibility if it exists
+			if (structure.getVisibility().length() > 0) {
+				bw.write(structure.getVisibility() + " "); // visibility
+			}
+
+			// if it's a class
+			if (structure.getStructureName().equals("Class")) {
+				// class declaration
+				bw.write("class " + structure.getName()); // Write class name
+
+				// check if the class extends another class
+				if (structure.getContainer() != null) {
+					// write the relationship
+					bw.write(" extends " + structure.getContainer().getName());
 				}
 
-				// auto import
-				// List<String> imports = new LinkedList<String>();
-				// for (int j = 0; j < children.length; j++) {
-				// Structure[] types = children[j].getTypeAsStructure();
-				// for (int k = 0; k < types.length; k++) {
-				// String importpackagename = types[k].getInfo("package");
-				// if (importpackagename.length() > 0
-				// && !imports.contains(importpackagename)) {
-				// imports.add(importpackagename + "."
-				// + types[k].getName());
-				// }
-				// }
-				// }
-				// if (imports.size() > 0) {
-				// Iterator<String> itr = imports.iterator();
-				// while (itr.hasNext()) {
-				// bw.write("import " + itr.next() + ";" + lineSeparator);
-				// }
-				// bw.write(lineSeparator);
-				// }
-				
-				// Write Visibility if exists
-				if (structure.getVisibility().length() > 0) {
-					bw.write(structure.getVisibility() + " "); // visibility
-				}
-				
-				// If it's a class
-				if (structure.getStructureName().equals("Class")) {
-					// class declaration
-					bw.write("class " + structure.getName()); // Write class name
-					
-					// Check if class extends another one called Container
-					if (structure.getContainer() != null) {
-						// Write relationship if any
-						bw.write(" extends "
-								+ structure.getContainer().getName()); 
-					}
-					
-					// Check if class implements interfaces called Parents
-					if (structure.getParentsCount() > 0) {
-						Structure[] interfaces = structure.getParents();
-						// Write relationship if any
-						bw.write(" implements ");
-						for (int j = 0; j < interfaces.length; j++) {
-							if (j > 0) {	// Need "," between implements	
-								bw.write(", ");
-							}
-							bw.write(interfaces[j].getName()); // Write Parents' name
+				// check if the class implements interfaces
+				if (structure.getParentsCount() > 0) {
+					Structure[] interfaces = structure.getParents();
+					// write the relationship(s)
+					bw.write(" implements ");
+					for (int j = 0; j < interfaces.length; j++) {
+						if (j > 0) {
+							// need "," between interfaces
+							bw.write(", ");
 						}
+						// write the interface's name
+						bw.write(interfaces[j].getName());
 					}
+				}
+			} else {
+				// this should be an interface
+				// interface declaration
+				bw.write("interface " + structure.getName());
+
+				// check if the interface extends another interface
+				if (structure.getContainer() != null) {
+					bw.write(" extends " + structure.getContainer().getName());
+				}
+			}
+
+			// ready for children
+			bw.write(" {" + lineSeparator);
+
+			for (int j = 0; j < children.length; j++) {
+				// loop through all the children
+				Structure child = children[j];
+
+				// check if child is a Method
+				if (child.getStructureName().equals("Method")) {
+					bw.write(lineSeparator); // separating methods
+				}
+
+				bw.write("\t"); // indent
+
+				// check if the child has a scope
+				if (child.getScope().length() > 0) {
+					bw.write(child.getScope() + " ");
+				}
+				// check if it has visibility
+				if (child.getVisibility().length() > 0) {
+					bw.write(child.getVisibility() + " ");
+				}
+				// check if it has type
+				if (child.getType() != null) {
+					bw.write(child.getType() + " ");
+				}
+				bw.write(child.getName()); // write name
+
+				// check if child is a Property
+				if (child.getStructureName().equals("Property")) {
+					bw.write(";" + lineSeparator); // end of property
 				} else {
-					// Interface declaration
-					bw.write("interface " + structure.getName()); // Interface name
-					if (structure.getContainer() != null) {
-						bw.write(" extends "
-								+ structure.getContainer().getName()); // ancestor
-					}
-				}
+					// it should be a method now
+					bw.write("("); // ready for arguments
 
-				bw.write(" {" + lineSeparator); // ready for children
+					Structure[] arguments = child.getChildren();
+					for (int k = 0; k < arguments.length; k++) {
+						if (k > 0) {
+							// need "," between arguments
+							bw.write(", ");
+						}
 
-				for (int j = 0; j < children.length; j++) {
-					Structure child = children[j];
-					
-					// Check if child is a Method
-					if (child.getStructureName().equals("Method")) {
-						bw.write(lineSeparator); // separating methods
+						// write arguments of the method
+						bw.write(arguments[k].getType() + " "
+								+ arguments[k].getName());
 					}
 
-					bw.write("\t"); // indent
-					if (child.getScope().length() > 0) {
-						bw.write(child.getScope() + " "); // Write scope
-					}
-					if (child.getVisibility().length() > 0) {
-						bw.write(child.getVisibility() + " "); // Write visibility
-					}
-					if (child.getType() != null) { // Type can be null
-						bw.write(child.getType() + " ");
-					}
-					bw.write(child.getName()); // Write name
-					
-					// Check if child is a Property
-					if (child.getStructureName().equals("Property")) {
-						bw.write(";" + lineSeparator);
+					bw.write(") {" + lineSeparator); // ready for content
+
+					// constructor is a null-type method
+					if (child.getType() == null) {
+						bw.write("\t\t// TODO Auto-generated constructor stub"
+								+ lineSeparator);
 					} else {
-						bw.write("("); // ready for arguments
-
-						Structure[] arguments = child.getChildren();
-						for (int k = 0; k < arguments.length; k++) {
-							if (k > 0) {	// Need "," between arguments
-								bw.write(", ");
-							}
-							
-							// Write arguments of Method
-							bw.write(arguments[k].getType() + " "
-									+ arguments[k].getName());
-						}
-
-						bw.write(") {" + lineSeparator); // ready for content
-						
-						// Constructor is a null-type method
-						if (child.getType() == null) { 
-							bw
-									.write("\t\t// TODO Auto-generated constructor stub"
-											+ lineSeparator);
-						} else {
-							bw.write("\t\t// TODO Auto-generated method stub"
-									+ lineSeparator);
-						}
-						bw.write("\t}" + lineSeparator);
+						// just a normal method
+						bw.write("\t\t// TODO Auto-generated method stub"
+								+ lineSeparator);
 					}
+					bw.write("\t}" + lineSeparator); // end of method
 				}
+			}
 
-				bw.write("}"); // end of file
+			bw.write("}"); // end of file
 
-				bw.close();
-				fw.close();
-				files++;
-			} catch (IOException e) {
+			bw.close();
+			fw.close();
+			return true; // finished everything beautifully
+		} catch (IOException e) {
+			// ignore any raised exceptions
+			if (CodeGenerator.debugging) {
 				e.printStackTrace();
 			}
 		}
 
-		return files;
+		return false; // oops
 	}
 }
