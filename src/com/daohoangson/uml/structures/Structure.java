@@ -595,10 +595,10 @@ public abstract class Structure implements StructureListener {
 	}
 
 	/**
-	 * Gets the type of the structure. Do not get confused with
-	 * {@link #getName()}
+	 * Gets the structure name of the structure. Do not get confused with
+	 * {@link #getName()} which gets the name (or id) of the structure
 	 * 
-	 * @return
+	 * @return the structure name of the structure
 	 */
 	public String getStructureName() {
 		// extracts the name from real class name
@@ -619,7 +619,7 @@ public abstract class Structure implements StructureListener {
 	}
 
 	/**
-	 * Gets the name of the structure
+	 * Gets the name (or id) of the structure
 	 * 
 	 * @return name of the structure
 	 */
@@ -648,7 +648,8 @@ public abstract class Structure implements StructureListener {
 	}
 
 	/**
-	 * Shortcuts to {@link #getTypeAsStructure(String)} with the structure type
+	 * Shortcuts to {@link #getTypeAsStructure(String, boolean)} with the
+	 * structure type
 	 * 
 	 * @return array of target structures if any
 	 */
@@ -665,7 +666,7 @@ public abstract class Structure implements StructureListener {
 	 *            tells the method to allow splitting type or not (use full in
 	 *            generalized string). You may want to take a look at
 	 *            {@link #validateType(String, boolean)}
-	 * @return
+	 * @return an array of structure mentioned/used in type string
 	 */
 	private Structure[] getTypeAsStructure(String type, boolean split) {
 		List<Structure> types = new LinkedList<Structure>();
@@ -760,9 +761,9 @@ public abstract class Structure implements StructureListener {
 	}
 
 	/**
-	 * Return the container of the structure. May be null
+	 * Gets the container of the structure. May be null
 	 * 
-	 * @return
+	 * @return the only container of the structure
 	 */
 	public Structure getContainer() {
 		return container;
@@ -820,7 +821,8 @@ public abstract class Structure implements StructureListener {
 	 * Adds another structure as a child. Parents always listen for changes from
 	 * children
 	 * 
-	 * @param structure
+	 * @param that
+	 *            the child
 	 * @throws StructureException
 	 */
 	public boolean add(Structure that) throws StructureException {
@@ -927,7 +929,8 @@ public abstract class Structure implements StructureListener {
 	/**
 	 * Removes a child. Also stop listening to that child
 	 * 
-	 * @param structure
+	 * @param that
+	 *            the child
 	 * @throws StructureException
 	 */
 	public boolean remove(Structure that) throws StructureException {
@@ -1009,7 +1012,8 @@ public abstract class Structure implements StructureListener {
 
 	/**
 	 * Create a new structure which is an exact copy of current structure.
-	 * Includes all children
+	 * Includes all children. We should have used {@link #clone()} (or
+	 * overriden) it but it doesn't support throwing exceptions, so...
 	 * 
 	 * @return the copied structure
 	 * @throws StructureException

@@ -47,6 +47,6 @@ public class TestParser {
 	public static void main(String[] args) throws StructureException,
 			ParseException, IOException {
 		// new TestParser(args);
-		new TestParser(new String[] { "src" });
+		new TestParser(new String[] { "src/com/tranvietson" });
 	}
 }

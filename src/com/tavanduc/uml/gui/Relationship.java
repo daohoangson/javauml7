@@ -41,7 +41,7 @@ abstract public class Relationship {
 	/**
 	 * The distance between lines and components
 	 */
-	protected int cfg_distance = 5;
+	protected int cfg_distance;
 	/**
 	 * Determines if we are in debug mode.
 	 */
@@ -66,7 +66,7 @@ abstract public class Relationship {
 	/**
 	 * Gets the source structure
 	 * 
-	 * @return
+	 * @return the source structure
 	 */
 	public Structure getFrom() {
 		return from;
@@ -75,7 +75,7 @@ abstract public class Relationship {
 	/**
 	 * Gets the destination structure
 	 * 
-	 * @return
+	 * @return the destination structure
 	 */
 	public Structure getTo() {
 		return to;
@@ -89,8 +89,11 @@ abstract public class Relationship {
 	 * 
 	 * @param g
 	 *            the target <code>Graphics</code> to be drawn
+	 * @param size_factor
+	 *            specifies the zooming level of the relationship. You may want
+	 *            to take a look at {@link Diagram#setSizeFactor(float)}
 	 */
-	abstract public void draw(Graphics g);
+	abstract public void draw(Graphics g, float size_factor);
 
 	/**
 	 * Customized drawing method for each relationship. Must be overridden in

@@ -18,7 +18,7 @@ public class GeneralizationRelationship extends Relationship {
 	/**
 	 * The length of the arrow
 	 */
-	private double cfg_arrow_length = 10;
+	private double cfg_arrow_length;
 	/**
 	 * The angle for the arrow (from the core line)
 	 */
@@ -26,8 +26,7 @@ public class GeneralizationRelationship extends Relationship {
 	/**
 	 * The length of the arrow sides
 	 */
-	private double cfg_arrow_side_length = cfg_arrow_length
-			* Math.cos(cfg_arrow_side_angle);
+	private double cfg_arrow_side_length;
 
 	public GeneralizationRelationship(Diagram diagram, Structure from,
 			Structure to) {
@@ -35,7 +34,12 @@ public class GeneralizationRelationship extends Relationship {
 	}
 
 	@Override
-	public void draw(Graphics g) {
+	public void draw(Graphics g, float size_factor) {
+		cfg_arrow_length = 10 * size_factor;
+		cfg_arrow_side_length = cfg_arrow_length
+				* Math.cos(cfg_arrow_side_angle);
+		cfg_distance = (int) (5 * size_factor);
+
 		drawConnectingPath(g, 0, cfg_arrow_length);
 	}
 
