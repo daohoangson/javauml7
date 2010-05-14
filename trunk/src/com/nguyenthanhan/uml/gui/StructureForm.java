@@ -7,6 +7,7 @@ import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.util.Vector;
 
 import javax.swing.AbstractButton;
 import javax.swing.ButtonGroup;
@@ -17,7 +18,10 @@ import javax.swing.JOptionPane;
 import javax.swing.JRadioButton;
 import javax.swing.JTextField;
 
+import com.daohoangson.uml.structures.Structure;
+import com.tranvietson.uml.structures.StructureEvent;
 import com.tranvietson.uml.structures.StructureException;
+import com.tranvietson.uml.structures.StructureListener;
 
 public abstract class StructureForm extends ConvenientForm implements
 		ActionListener {
@@ -28,6 +32,13 @@ public abstract class StructureForm extends ConvenientForm implements
 	protected String scope = null;
 	protected JButton btn_create;
 	protected JCheckBox cb_multiple;
+	/**
+	 * List of objects which listen to our event.
+	 * 
+	 * @see #addStructureListener(StructureListener)
+	 * @see #removeStructureListener(StructureListener)
+	 */
+	private Vector<StructureListener> listeners;
 
 	public StructureForm(Window owner, String title, boolean cfg_use_type,
 			boolean cfg_use_visibility, boolean cfg_use_scope) {
@@ -100,12 +111,16 @@ public abstract class StructureForm extends ConvenientForm implements
 		txt_name.requestFocusInWindow();
 	}
 
-	abstract protected void __submit() throws StructureException;
+	abstract protected Structure __submit() throws StructureException;
 
 	@Override
 	protected void submit() {
 		try {
-			__submit();
+			Structure structure = __submit();
+
+			if (structure != null) {
+				fireChanged(structure);
+			}
 
 			if (cb_multiple.isSelected()) {
 				reset();
@@ -131,6 +146,57 @@ public abstract class StructureForm extends ConvenientForm implements
 				scope = cb.getText();
 			} else {
 				scope = null;
+			}
+		}
+	}
+
+	/**
+	 * Adds an object to this structure listeners list
+	 * 
+	 * @param listener
+	 *            the object who needs to listen to this
+	 */
+	synchronized public void addStructureListener(StructureListener listener) {
+		if (listeners == null) {
+			listeners = new Vector<StructureListener>();
+		}
+		if (!listeners.contains(listener)) {
+			listeners.add(listener);
+		}
+	}
+
+	/**
+	 * Removes an object from this structure listeners list
+	 * 
+	 * @param listener
+	 *            the object who is listening to this
+	 */
+	synchronized public void removeStructureListener(StructureListener listener) {
+		if (listeners != null) {
+			listeners.remove(listener);
+		}
+	}
+
+	/**
+	 * Triggers the changed event
+	 * 
+	 * @param structure
+	 *            the structure involved in the event
+	 */
+	@SuppressWarnings("unchecked")
+	protected void fireChanged(Structure structure) {
+		if (listeners != null && listeners.size() > 0) {
+			StructureEvent e = new StructureEvent(structure,
+					StructureEvent.ACTIVE);
+
+			Vector<StructureListener> targets;
+			synchronized (this) {
+				targets = (Vector<StructureListener>) listeners.clone();
+			}
+
+			for (int i = 0; i < targets.size(); i++) {
+				StructureListener listener = targets.elementAt(i);
+				listener.structureChanged(e);
 			}
 		}
 	}

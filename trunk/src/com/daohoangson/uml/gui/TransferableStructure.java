@@ -8,8 +8,9 @@ import java.io.IOException;
 import com.daohoangson.uml.structures.Structure;
 
 /**
- * The transferable class to use with Drag and Drop functionality. There is a
- * public static DataFlavor which can be used with ease.
+ * A structure which is transferable. The transferable class to use with Drag
+ * and Drop functionality. There is a public static DataFlavor which can be used
+ * with ease.
  * 
  * @author Dao Hoang Son
  * @version 1.0
@@ -42,8 +43,7 @@ public class TransferableStructure implements Transferable {
 
 	@Override
 	public DataFlavor[] getTransferDataFlavors() {
-		DataFlavor[] dfs = new DataFlavor[1];
-		dfs[0] = TransferableStructure.df;
+		DataFlavor[] dfs = { TransferableStructure.df };
 		return dfs;
 	}
 

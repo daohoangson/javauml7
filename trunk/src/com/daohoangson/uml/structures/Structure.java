@@ -978,26 +978,28 @@ public abstract class Structure implements StructureListener {
 	 * Disposes this structure. Removes any container/parents. Dispose any
 	 * children. Removes from {@link #names} also. Simply speaking, completely
 	 * remove this structure, just like it has never existed.
-	 * 
-	 * @throws StructureException
 	 */
-	public void dispose() throws StructureException {
-		if (container != null) {
-			container.remove(this);
-		}
+	public void dispose() {
+		try {
+			if (container != null) {
+				container.remove(this);
+			}
 
-		// TODO: Need a more proper way and figure it out why synchronized
-		// doesn't work
-		Iterator<Structure> itr_parents = new LinkedList<Structure>(parents)
-				.iterator();
-		while (itr_parents.hasNext()) {
-			itr_parents.next().remove(this);
-		}
+			// TODO: Need a more proper way and figure it out why synchronized
+			// doesn't work
+			Iterator<Structure> itr_parents = new LinkedList<Structure>(parents)
+					.iterator();
+			while (itr_parents.hasNext()) {
+				itr_parents.next().remove(this);
+			}
 
-		Iterator<Structure> itr_children = new LinkedList<Structure>(children)
-				.iterator();
-		while (itr_children.hasNext()) {
-			itr_children.next().dispose();
+			Iterator<Structure> itr_children = new LinkedList<Structure>(
+					children).iterator();
+			while (itr_children.hasNext()) {
+				itr_children.next().dispose();
+			}
+		} catch (StructureException e) {
+			// ignore
 		}
 
 		if (Structure.names.containsValue(this)) {

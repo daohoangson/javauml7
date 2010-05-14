@@ -39,7 +39,6 @@ import com.tavanduc.uml.gui.MultiplicityRelationship;
 import com.tavanduc.uml.gui.RealizationRelationship;
 import com.tavanduc.uml.gui.Relationship;
 import com.tranvietson.uml.structures.StructureEvent;
-import com.tranvietson.uml.structures.StructureException;
 import com.tranvietson.uml.structures.StructureListener;
 
 /**
@@ -478,14 +477,7 @@ public class Diagram extends JPanel implements StructureListener,
 		Iterator<Structure> itr = new LinkedList<Structure>(structures)
 				.iterator();
 		while (itr.hasNext()) {
-			try {
-				itr.next().dispose();
-			} catch (StructureException e) {
-				// simply ignore
-				if (Diagram.debugging) {
-					e.printStackTrace();
-				}
-			}
+			itr.next().dispose();
 		}
 		structures.clear();
 		setAutoDrawing(true);
