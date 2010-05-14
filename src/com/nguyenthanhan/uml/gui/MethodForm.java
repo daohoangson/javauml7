@@ -14,11 +14,10 @@ public class MethodForm extends StructureForm {
 		super(owner, "Adding new Method for " + container, true, true, true);
 
 		this.container = container;
-		setVisible(true);
 	}
 
 	@Override
-	public void __submit() throws StructureException {
+	public Structure __submit() throws StructureException {
 		Method newMethod;
 		if (container.getName().equals(txt_name.getText())) {
 			// constructor
@@ -35,5 +34,7 @@ public class MethodForm extends StructureForm {
 		}
 
 		container.add(newMethod);
+
+		return newMethod;
 	}
 }

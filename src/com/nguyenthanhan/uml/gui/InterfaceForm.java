@@ -3,6 +3,7 @@ package com.nguyenthanhan.uml.gui;
 import java.awt.Window;
 
 import com.daohoangson.uml.gui.Diagram;
+import com.daohoangson.uml.structures.Structure;
 import com.tranvietson.uml.structures.Interface;
 import com.tranvietson.uml.structures.StructureException;
 
@@ -14,17 +15,18 @@ public class InterfaceForm extends StructureForm {
 		super(owner, "Adding new Interface", false, true, false);
 
 		this.diagram = diagram;
-		setVisible(true);
 	}
 
 	@Override
-	public void __submit() throws StructureException {
+	public Structure __submit() throws StructureException {
 		Interface newInterface = new Interface(txt_name.getText());
 		if (visibility.length() > 0) {
 			newInterface.setModifier(visibility);
 		}
 
 		diagram.add(newInterface);
+
+		return newInterface;
 	}
 
 }

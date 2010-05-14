@@ -60,7 +60,6 @@ public class AboutForm extends ConvenientForm implements HyperlinkListener {
 
 		pack();
 		setLocationRelativeTo(null);
-		setVisible(true);
 	}
 
 	@Override

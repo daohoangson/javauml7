@@ -74,7 +74,6 @@ public class InfoForm extends ConvenientForm implements ActionListener {
 
 		pack();
 		setLocationRelativeTo(null);
-		setVisible(true);
 	}
 
 	public Structure getStructure() {

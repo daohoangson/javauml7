@@ -14,11 +14,10 @@ public class ArgumentForm extends StructureForm {
 		super(owner, "Adding Argument for " + container, true, false, false);
 
 		this.container = container;
-		setVisible(true);
 	}
 
 	@Override
-	public void __submit() throws StructureException {
+	public Structure __submit() throws StructureException {
 		Argument newArgument = new Argument(txt_name.getText(), txt_type
 				.getText());
 		if (visibility.length() > 0) {
@@ -29,5 +28,7 @@ public class ArgumentForm extends StructureForm {
 		}
 
 		container.add(newArgument);
+
+		return newArgument;
 	}
 }

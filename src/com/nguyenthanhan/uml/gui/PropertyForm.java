@@ -18,7 +18,7 @@ public class PropertyForm extends StructureForm {
 	}
 
 	@Override
-	public void __submit() throws StructureException {
+	public Structure __submit() throws StructureException {
 		Property newProperty = new Property(txt_name.getText(), txt_type
 				.getText());
 		if (visibility.length() > 0) {
@@ -29,5 +29,7 @@ public class PropertyForm extends StructureForm {
 		}
 
 		container.add(newProperty);
+
+		return newProperty;
 	}
 }
