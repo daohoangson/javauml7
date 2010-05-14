@@ -9,9 +9,14 @@ import java.awt.Graphics;
 import java.awt.Image;
 import java.awt.Point;
 import java.awt.Rectangle;
+import java.awt.event.InputEvent;
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
+import java.awt.event.MouseWheelEvent;
+import java.awt.event.MouseWheelListener;
 import java.awt.image.BufferedImage;
 import java.awt.image.ImageObserver;
 import java.util.Arrays;
@@ -23,12 +28,12 @@ import java.util.Vector;
 import java.util.Map.Entry;
 
 import javax.swing.JComponent;
-import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 
 import com.daohoangson.uml.structures.Structure;
 import com.daohoangson.uml.structures.StructureNameComparator;
+import com.tavanduc.uml.gui.DiagramStructureGroup;
 import com.tavanduc.uml.gui.GeneralizationRelationship;
 import com.tavanduc.uml.gui.MultiplicityRelationship;
 import com.tavanduc.uml.gui.RealizationRelationship;
@@ -47,7 +52,7 @@ import com.tranvietson.uml.structures.StructureListener;
  * 
  */
 public class Diagram extends JPanel implements StructureListener,
-		MouseMotionListener, MouseListener {
+		MouseMotionListener, MouseListener, MouseWheelListener, KeyListener {
 	private static final long serialVersionUID = -3147843723002469900L;
 	/**
 	 * A list of all global structures.
@@ -137,6 +142,13 @@ public class Diagram extends JPanel implements StructureListener,
 	 */
 	private Point flag_drag_moving = null;
 	/**
+	 * The size factor property
+	 * 
+	 * @see #setSizeFactor(double)
+	 * @see #getSizeFactor()
+	 */
+	private float size_factor = 1.0f;
+	/**
 	 * The gap between 2 components vertically
 	 */
 	private int cfg_gap_vertical = 50;
@@ -144,7 +156,18 @@ public class Diagram extends JPanel implements StructureListener,
 	 * The gap between 2 components horizontally
 	 */
 	private int cfg_gap_horizontal = 50;
+	/**
+	 * Hold the currently pressed component
+	 */
 	private DiagramStructureGroup pressedComponent = null;
+	/**
+	 * Hold the last pressed component
+	 */
+	private DiagramStructureGroup lastPressedComponent = null;
+
+	/**
+	 * Hold the last pressed location
+	 */
 	private Point pressedLocation = null;
 
 	/**
@@ -156,6 +179,8 @@ public class Diagram extends JPanel implements StructureListener,
 		setLayout(null); // we will align components by ourselves
 		addMouseListener(this);
 		addMouseMotionListener(this);
+		addMouseWheelListener(this);
+		addKeyListener(this);
 	}
 
 	/**
@@ -172,6 +197,40 @@ public class Diagram extends JPanel implements StructureListener,
 	}
 
 	/**
+	 * Changes diagram zooming level. Sets the size factor for the diagram and
+	 * trigger a re-draw
+	 * 
+	 * @param size_factor
+	 *            the new size factor
+	 * 
+	 * @see #draw()
+	 */
+	public void setSizeFactor(float size_factor) {
+		// make sure it's visible
+		size_factor = (float) Math.max(0.25, size_factor);
+
+		if (this.size_factor != size_factor) {
+			this.size_factor = size_factor;
+			draw();
+		}
+	}
+
+	/**
+	 * Turns the auto-drawing on change feature on or off
+	 * 
+	 * @param b
+	 *            true to enable, false to disable
+	 * 
+	 * @see #flag_auto_draw
+	 */
+	public void setAutoDrawing(boolean b) {
+		if (b && !flag_auto_draw) {
+			draw();
+		}
+		flag_auto_draw = b;
+	}
+
+	/**
 	 * Get the scroll-able component. Use this for a better user experience.
 	 * Anyway, this is optional. You can always
 	 * {@linkplain JComponent#add(Component) add} directly this object.
@@ -182,45 +241,15 @@ public class Diagram extends JPanel implements StructureListener,
 		if (scrollpane == null) {
 			scrollpane = new JScrollPane(this);
 			// the diagram is usually big
-			// we want it a little bit faster
+			// we want it scrolls a little bit faster
 			int unitIncrement = 15;
 			scrollpane.getVerticalScrollBar().setUnitIncrement(unitIncrement);
 			scrollpane.getHorizontalScrollBar().setUnitIncrement(unitIncrement);
+			// mouse wheel is for zooming
+			scrollpane.setWheelScrollingEnabled(false);
 		}
 
 		return scrollpane;
-	}
-
-	/**
-	 * Tries its best to bring the requested structure into the viewport
-	 * 
-	 * @param structure
-	 *            the structure needs to be viewed
-	 */
-	public void ensureStructureIsVisible(Structure structure) {
-		Rectangle rect = getBoundsFor(structure);
-		if (rect != null) {
-			Rectangle visible = getVisibleRect();
-			Point structureLocation = rect.getLocation();
-			Dimension structureSize = rect.getSize();
-			Dimension visibleSize = visible.getSize();
-			int x, y;
-			if (structureSize.width < visibleSize.width) {
-				x = structureLocation.x
-						- (visibleSize.width - structureSize.width) / 2;
-			} else {
-				x = structureLocation.x;
-			}
-			if (structureSize.height < visibleSize.height) {
-				y = structureLocation.y
-						- (visibleSize.height - structureSize.height) / 2;
-			} else {
-				y = structureLocation.y;
-			}
-			rect.setLocation(x, y);
-			rect.setSize(visible.getSize());
-			scrollRectToVisible(rect);
-		}
 	}
 
 	/**
@@ -234,20 +263,24 @@ public class Diagram extends JPanel implements StructureListener,
 		return array;
 	}
 
+	public float getSizeFactor() {
+		return size_factor;
+	}
+
 	/**
 	 * Calculates the bound of the component. The result is relative to the
 	 * diagram itself (bypass all parents if any)
 	 * 
 	 * @param c
 	 *            the component. Should be in the components tree
-	 * @return
+	 * @return the found bounds
 	 */
 	private Rectangle getBoundsFor(Component c) {
 		if (c == null) {
 			return new Rectangle();
 		}
 
-		Rectangle bounce = c.getBounds();
+		Rectangle bounds = c.getBounds();
 
 		while (c.getParent() != null) {
 			c = c.getParent();
@@ -255,11 +288,11 @@ public class Diagram extends JPanel implements StructureListener,
 				break;
 			}
 			Rectangle bigger_bounce = c.getBounds();
-			bounce.setLocation(bigger_bounce.x + bounce.x, bigger_bounce.y
-					+ bounce.y);
+			bounds.setLocation(bigger_bounce.x + bounds.x, bigger_bounce.y
+					+ bounds.y);
 		}
 
-		return bounce;
+		return bounds;
 	}
 
 	/**
@@ -351,7 +384,7 @@ public class Diagram extends JPanel implements StructureListener,
 	 * @param observer
 	 *            the observer which get notified when image is built
 	 * 
-	 * @see {@link #paint(Graphics)}
+	 * @see #paint(Graphics)
 	 */
 	public void saveImage(ImageObserver observer) {
 		this.observer = observer;
@@ -371,7 +404,7 @@ public class Diagram extends JPanel implements StructureListener,
 	 * @param observer
 	 *            the observer which get notified when image is built
 	 * 
-	 * @see {@link #saveImage(ImageObserver)}
+	 * @see #saveImage(ImageObserver)
 	 */
 	public void startClipping(ImageObserver observer) {
 		this.observer = observer;
@@ -460,6 +493,38 @@ public class Diagram extends JPanel implements StructureListener,
 	}
 
 	/**
+	 * Tries its best to bring the requested structure into the viewport
+	 * 
+	 * @param structure
+	 *            the structure needs to be viewed
+	 */
+	public void ensureStructureIsVisible(Structure structure) {
+		Rectangle rect = getBoundsFor(structure);
+		if (rect != null) {
+			Rectangle visible = getVisibleRect();
+			Point structureLocation = rect.getLocation();
+			Dimension structureSize = rect.getSize();
+			Dimension visibleSize = visible.getSize();
+			int x, y;
+			if (structureSize.width < visibleSize.width) {
+				x = structureLocation.x
+						- (visibleSize.width - structureSize.width) / 2;
+			} else {
+				x = structureLocation.x;
+			}
+			if (structureSize.height < visibleSize.height) {
+				y = structureLocation.y
+						- (visibleSize.height - structureSize.height) / 2;
+			} else {
+				y = structureLocation.y;
+			}
+			rect.setLocation(x, y);
+			rect.setSize(visible.getSize());
+			scrollRectToVisible(rect);
+		}
+	}
+
+	/**
 	 * Does custom painting procedures.
 	 * <ul>
 	 * <li>Draws relationships</li>
@@ -488,7 +553,7 @@ public class Diagram extends JPanel implements StructureListener,
 				Relationship relationship = itr.next();
 				if (onFocusStructure == null
 						|| relationship.getFrom() == onFocusStructure) {
-					relationship.draw(g);
+					relationship.draw(g, size_factor);
 				}
 			}
 		}
@@ -536,21 +601,6 @@ public class Diagram extends JPanel implements StructureListener,
 					image_rect.height);
 			g.setColor(original);
 		}
-	}
-
-	/**
-	 * Turns the auto-drawing on change feature on or off
-	 * 
-	 * @param b
-	 *            true to enable, false to disable
-	 * 
-	 * @see #flag_auto_draw
-	 */
-	public void setAutoDrawing(boolean b) {
-		if (b && !flag_auto_draw) {
-			draw();
-		}
-		flag_auto_draw = b;
 	}
 
 	/**
@@ -624,11 +674,14 @@ public class Diagram extends JPanel implements StructureListener,
 			System.err.println();
 		}
 
+		// remove all built components
 		removeAll();
-
 		built = new Hashtable<Structure, Component>();
 		Dimension diagram_size = new Dimension();
+		int gap_horizontal = (int) (cfg_gap_horizontal * size_factor);
+		int gap_vertical = (int) (cfg_gap_vertical * size_factor);
 
+		// start building all components
 		for (int dependency_limit = 0; dependency_limit < n; dependency_limit++) {
 			for (int j = 0; j < n; j++) {
 				int dependency_count = 0;
@@ -642,11 +695,11 @@ public class Diagram extends JPanel implements StructureListener,
 					Component c = build(j);
 					if (c != null) {
 						Dimension d = c.getPreferredSize();
-						c.setLocation(diagram_size.width + cfg_gap_horizontal,
-								0 + cfg_gap_vertical);
-						diagram_size.width += d.width + 2 * cfg_gap_horizontal;
+						c.setLocation(diagram_size.width + gap_horizontal,
+								0 + gap_vertical);
+						diagram_size.width += d.width + 2 * gap_horizontal;
 						diagram_size.height = Math.max(diagram_size.height,
-								d.height + 2 * cfg_gap_vertical);
+								d.height + 2 * gap_vertical);
 					}
 				}
 			}
@@ -666,7 +719,10 @@ public class Diagram extends JPanel implements StructureListener,
 		if (built.get(structure) == null) {
 			// this structure hasn't been built
 			// build it now
-			Component component = buildComponentFor(structure);
+			Component component = new DiagramStructureGroup(structure,
+					new Dimension((int) (cfg_gap_vertical * size_factor),
+							(int) (cfg_gap_horizontal * size_factor)),
+					size_factor);
 			if (component instanceof Container) {
 				container = (Container) component;
 				synchronized (built) {
@@ -701,26 +757,6 @@ public class Diagram extends JPanel implements StructureListener,
 		return container;
 	}
 
-	private Component buildComponentFor(Structure structure) {
-		JComponent c;
-
-		JLabel label = new DiagramStructureName(structure);
-
-		if (structure.checkCanHaveChildren()) {
-			c = new DiagramStructureGroup(structure, label, new Dimension(
-					cfg_gap_vertical, cfg_gap_horizontal));
-
-			Structure children[] = structure.getChildren();
-			for (int i = 0; i < children.length; i++) {
-				c.add(buildComponentFor(children[i]));
-			}
-		} else {
-			c = label;
-		}
-
-		return c;
-	}
-
 	/**
 	 * Adds an object to this structure listeners list
 	 * 
@@ -751,11 +787,8 @@ public class Diagram extends JPanel implements StructureListener,
 	/**
 	 * Triggers the changed event
 	 * 
-	 * @param type
-	 *            the tyep of the event. Possible value is defined in
-	 *            {@link StructureEvent}: <code>UNDEFINED</code>,
-	 *            <code>NAME</code>, <code>TYPE</code>, <code>MODIFIER</code>,
-	 *            <code>CHILDREN</code>,<code>ACTIVE</code>
+	 * @param structure
+	 *            the structure involved in the event
 	 */
 	@SuppressWarnings("unchecked")
 	protected void fireChanged(Structure structure) {
@@ -841,6 +874,17 @@ public class Diagram extends JPanel implements StructureListener,
 				Point newL = pressedComponent.getLocationOnScreen();
 				pressedLocation.setLocation(oldP.x + newL.x - oldL.x, oldP.y
 						+ newL.y - oldL.y);
+
+				Rectangle old_v = getVisibleRect();
+				scrollRectToVisible(pressedComponent.getBounds());
+				Rectangle new_v = getVisibleRect();
+				if (!new_v.equals(old_v)) {
+					// we scrolled a little bit
+					// update the location
+					pressedLocation.setLocation(pressedLocation.x - new_v.x
+							+ old_v.x, pressedLocation.y - new_v.y + old_v.y);
+				}
+
 				repaint();
 			}
 		}
@@ -884,8 +928,10 @@ public class Diagram extends JPanel implements StructureListener,
 			if (e.getButton() == MouseEvent.BUTTON1) {
 				Object s = e.getSource();
 				if (s instanceof DiagramStructureGroup) {
+					lastPressedComponent = null;
 					pressedComponent = (DiagramStructureGroup) s;
 					pressedLocation = e.getLocationOnScreen();
+					requestFocus();
 				}
 			}
 		}
@@ -906,7 +952,106 @@ public class Diagram extends JPanel implements StructureListener,
 			}
 		} else {
 			// moving component finished
+			lastPressedComponent = pressedComponent;
 			pressedComponent = null;
 		}
+	}
+
+	@Override
+	public void mouseWheelMoved(MouseWheelEvent e) {
+		int r = e.getWheelRotation();
+		float dsf;
+		if (e.getScrollType() == MouseWheelEvent.WHEEL_UNIT_SCROLL) {
+			// unit scrolling
+			// jump small step each
+			dsf = 0.1f;
+		} else {
+			// block scrolling
+			// should jump larger step
+			dsf = 0.5f;
+		}
+		dsf *= -r;
+
+		// calculate the zooming point
+		Dimension old_s = getPreferredSize();
+		if (old_s.width == 0 || old_s.height == 0) {
+			return;
+		}
+		Point old_p = e.getPoint();
+		Rectangle old_v = getVisibleRect();
+		double xp = (double) old_p.x / old_s.width;
+		double yp = (double) old_p.y / old_s.height;
+		int dx = old_p.x - old_v.x;
+		int dy = old_p.y - old_v.y;
+
+		// resize
+		setSizeFactor(getSizeFactor() + dsf);
+
+		// make sure the zooming point is near the mouse
+		Dimension new_s = getPreferredSize();
+		if (new_s.width == 0 || new_s.height == 0) {
+			return;
+		}
+		Point new_p = new Point((int) (xp * new_s.width),
+				(int) (yp * new_s.height));
+		Rectangle new_v = new Rectangle(new Point(new_p.x - dx, new_p.y - dy),
+				old_v.getSize());
+		scrollRectToVisible(new_v);
+
+		if (Diagram.debugging) {
+			System.err.println("old visible: " + old_v);
+			System.err.println("old point: " + old_p);
+			System.err.println("Percents: " + xp + ", " + yp);
+			System.err.println("new point: " + new_p);
+			System.err.println("new visible: " + new_v);
+		}
+	}
+
+	@Override
+	public void keyPressed(KeyEvent e) {
+		int kc = e.getKeyCode();
+
+		if (lastPressedComponent != null) {
+			int dx = 0;
+			int dy = 0;
+
+			switch (kc) {
+			case KeyEvent.VK_UP:
+				dy = -1;
+				break;
+			case KeyEvent.VK_DOWN:
+				dy = 1;
+				break;
+			case KeyEvent.VK_LEFT:
+				dx = -1;
+				break;
+			case KeyEvent.VK_RIGHT:
+				dx = 1;
+				break;
+			}
+
+			if (dx != 0 || dy != 0) {
+				int step;
+				if ((e.getModifiersEx() & InputEvent.CTRL_DOWN_MASK) == InputEvent.CTRL_DOWN_MASK) {
+					// holding CTRL
+					step = 5;
+				} else {
+					step = 15;
+				}
+				lastPressedComponent.setLocationRelative(step * dx, step * dy);
+			}
+		}
+	}
+
+	@Override
+	public void keyReleased(KeyEvent e) {
+		// TODO Auto-generated method stub
+
+	}
+
+	@Override
+	public void keyTyped(KeyEvent e) {
+		// TODO Auto-generated method stub
+
 	}
 }

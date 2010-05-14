@@ -72,7 +72,7 @@ public class LexicalAnalyzer implements Enumeration<Token> {
 	 * @param types
 	 *            type filtering. Only automata that matches these types will
 	 *            get processed. Using a zero-length array will parse everything
-	 * @return
+	 * @return the next token matched
 	 */
 	public Token nextElement(int[] types) {
 		GrammarMatch next = grammar.next(source, offset, types);

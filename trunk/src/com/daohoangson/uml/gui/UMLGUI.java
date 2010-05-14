@@ -1,8 +1,24 @@
 package com.daohoangson.uml.gui;
 
+import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.Component;
 import java.awt.Container;
 import java.awt.Window;
+import java.awt.datatransfer.UnsupportedFlavorException;
+import java.awt.dnd.DnDConstants;
+import java.awt.dnd.DragGestureEvent;
+import java.awt.dnd.DragGestureListener;
+import java.awt.dnd.DragSource;
+import java.awt.dnd.DragSourceDragEvent;
+import java.awt.dnd.DragSourceDropEvent;
+import java.awt.dnd.DragSourceEvent;
+import java.awt.dnd.DragSourceListener;
+import java.awt.dnd.DropTarget;
+import java.awt.dnd.DropTargetDragEvent;
+import java.awt.dnd.DropTargetDropEvent;
+import java.awt.dnd.DropTargetEvent;
+import java.awt.dnd.DropTargetListener;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ContainerEvent;
@@ -13,6 +29,7 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.io.IOException;
 import java.net.URL;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -31,7 +48,9 @@ import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPopupMenu;
 import javax.swing.JSplitPane;
+import javax.swing.JToolBar;
 import javax.swing.KeyStroke;
+import javax.swing.SwingConstants;
 import javax.swing.WindowConstants;
 import javax.swing.tree.TreePath;
 
@@ -46,6 +65,7 @@ import com.nguyenthanhan.uml.gui.InterfaceForm;
 import com.nguyenthanhan.uml.gui.ListForm;
 import com.nguyenthanhan.uml.gui.MethodForm;
 import com.nguyenthanhan.uml.gui.PropertyForm;
+import com.tavanduc.uml.gui.DiagramStructureGroup;
 import com.tranvietson.uml.codegen.CodeGenerator;
 import com.tranvietson.uml.structures.StructureException;
 
@@ -69,8 +89,7 @@ import com.tranvietson.uml.structures.StructureException;
  * 
  * @see UMLGUI#debugging
  */
-public class UMLGUI extends JFrame implements ActionListener,
-		ContainerListener, MouseListener {
+public class UMLGUI extends JFrame implements ActionListener, ContainerListener {
 	private static final long serialVersionUID = -2192671131702680754L;
 	/**
 	 * Determines if we are in debug mode.
@@ -104,8 +123,8 @@ public class UMLGUI extends JFrame implements ActionListener,
 	private List<String> disabledActions = new LinkedList<String>();
 
 	/**
-	 * Constructor. Sets up everything up. Including a menu bar and the diagram.
-	 * The structure of menu bar is as follow
+	 * Constructor. Sets up everything up. Including a menu bar with the
+	 * structure as follow
 	 * <ul>
 	 * <li><u>F</u>ile (file)
 	 * <ul>
@@ -135,11 +154,19 @@ public class UMLGUI extends JFrame implements ActionListener,
 	 * </ul>
 	 * </li>
 	 * </ul>
-	 * Menu/Menuitem can be disable by using
-	 * {@link #setActionEnabled(String, boolean)} with the correct action
-	 * command (specified in parenthesis above)
+	 * It also has a tool bar (no drag-able)
+	 * <ul>
+	 * <li>Zoom In (zoom.in)</li>
+	 * <li>Zoom Out (zoom.out)</li>
+	 * </ul>
+	 * Items can be disable by using {@link #setActionEnabled(String, boolean)}
+	 * with the correct action command (specified in parenthesis above).
+	 * 
+	 * Of course, the diagram is displayed at the center with outline on the
+	 * left
 	 */
 	public UMLGUI() {
+		// start building main menu
 		JMenuBar menuBar = new JMenuBar();
 
 		JMenu menuFile = new JMenu("File");
@@ -259,19 +286,48 @@ public class UMLGUI extends JFrame implements ActionListener,
 		mhi.setMnemonic(KeyEvent.VK_A);
 		UMLGUI.setIcon(mhi, "about", null);
 		menuHelp.add(mhi);
+		// finished with the main menu
+
+		// start building the tool bar
+		JToolBar toolBar = new JToolBar();
+
+		JButton tbb;
+
+		tbb = new JButton();
+		tbb.setActionCommand("zoom.in");
+		tbb.addActionListener(this);
+		UMLGUI.setIcon(tbb, "zoom_in", null);
+		toolBar.add(tbb);
+
+		tbb = new JButton();
+		tbb.setActionCommand("zoom.out");
+		tbb.addActionListener(this);
+		UMLGUI.setIcon(tbb, "zoom_out", null);
+		toolBar.add(tbb);
+
+		toolBar.setOrientation(SwingConstants.VERTICAL);
+		toolBar.setFloatable(false);
+		// finished with the tool bar
+
+		// start adding components to our frame
+		// it's funny that this scope it much shorter than the above part
+		setLayout(new BorderLayout());
 
 		setJMenuBar(menuBar);
+		add(toolBar, BorderLayout.LINE_END);
 
 		diagram = new Diagram();
 		diagram.addContainerListener(this);
-		diagram.addMouseListener(this);
+		new UMLGUIMouseMaster(this, diagram);
 		outline = new Outline(diagram);
-		outline.addMouseListener(this);
+		new UMLGUIMouseMaster(this, outline);
 		JSplitPane sp = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, outline
 				.getScrollable(), diagram.getScrollable());
 		sp.setDividerLocation(200);
-		add(sp);
+		add(sp, BorderLayout.CENTER);
+		// finished adding main components
 
+		// get ready to display now...
 		setSize(700, 400);
 		setTitle("UML");
 
@@ -283,6 +339,7 @@ public class UMLGUI extends JFrame implements ActionListener,
 			// in an Applet for example?
 		}
 
+		// take care of debugging
 		if (UMLGUI.debugging) {
 			Structure.debugging = UMLGUI.debugging;
 			Diagram.debugging = UMLGUI.debugging;
@@ -429,19 +486,23 @@ public class UMLGUI extends JFrame implements ActionListener,
 	 * <li>Class: use {@link ClassForm}</li>
 	 * <li>Interface: use {@link InterfaceForm}</li>
 	 * <li>Property: use
-	 * {@link ListForm#select(java.awt.Frame, String, Structure[], String)}
-	 * allowing user to choose a Class or a Interface before using
-	 * {@link PropertyForm}</li>
+	 * {@link ListForm#select(Window, String, Structure[], String)} allowing
+	 * user to choose a Class or a Interface before using {@link PropertyForm}</li>
 	 * <li>Method: use
-	 * {@link ListForm#select(java.awt.Frame, String, Structure[], String)}
-	 * allowing user to choose a Class or a Interface before using
-	 * {@link MethodForm}</li>
+	 * {@link ListForm#select(Window, String, Structure[], String)} allowing
+	 * user to choose a Class or a Interface before using {@link MethodForm}</li>
 	 * <li>Argument: user
-	 * {@link ListForm#select(java.awt.Frame, String, Structure[], String)} 2
-	 * times before using {@link ArgumentForm}
+	 * {@link ListForm#select(Window, String, Structure[], String)} 2 times
+	 * before using {@link ArgumentForm}
 	 * </ul>
 	 * </li>
 	 * <li>about: Display author information</li>
+	 * <li>Tool bar actions
+	 * <ul>
+	 * <li>zoom.in/zoom.out: Using {@link Diagram#setSizeFactor(float)} to
+	 * change the zooming level</li>
+	 * </ul>
+	 * </li>
 	 * <li>info.x: Redirect to {@link #doStructureCommand(String, String)}</li>
 	 * </ul>
 	 * This method even catches all Security Exception if they are thrown out.
@@ -556,6 +617,15 @@ public class UMLGUI extends JFrame implements ActionListener,
 		} else if (action.equals("about")) {
 			// display about form
 			new AboutForm(this);
+		} else if (action.startsWith("zoom.")) {
+			float dsf = 0.25f;
+			if (action.equals("zoom.in")) {
+				dsf *= 1;
+			} else {
+				dsf *= -1;
+			}
+			diagram.setSizeFactor(diagram.getSizeFactor() + dsf);
+			// float size_factor = diagram.getSizeFactor();
 		} else if (action.startsWith("info.")) {
 			// redirect action handler
 			doStructureCommand(s.getText(), action);
@@ -568,7 +638,7 @@ public class UMLGUI extends JFrame implements ActionListener,
 	 * @param title
 	 *            the title for the window
 	 */
-	private void doFind(String title) {
+	void doFind(String title) {
 		Structure structure = FindForm.find(this, title, diagram
 				.getStructures());
 		if (structure != null) {
@@ -591,8 +661,7 @@ public class UMLGUI extends JFrame implements ActionListener,
 	 *            <code>false</code> is passed, the mode is automatically set to
 	 *            <code>true</code>
 	 */
-	private void doRelated(String title, Structure structure,
-			boolean ask_for_mode) {
+	void doRelated(String title, Structure structure, boolean ask_for_mode) {
 		if (lastOpened != null && lastOpened.isVisible()) {
 			lastOpened.requestFocus();
 			return;
@@ -694,9 +763,9 @@ public class UMLGUI extends JFrame implements ActionListener,
 	 * @param title
 	 *            the title of the action
 	 * 
-	 * @see Diagram#cfg_draw_on_change
+	 * @see Diagram#setAutoDrawing(boolean)
 	 */
-	private void doLoad(String title) {
+	void doLoad(String title) {
 		JFileChooser fc = new JFileChooser(".");
 		fc.setDialogTitle(title);
 		fc.setApproveButtonText("Load Source");
@@ -743,7 +812,7 @@ public class UMLGUI extends JFrame implements ActionListener,
 	 * @see Diagram#saveImage(java.awt.image.ImageObserver)
 	 * @see DiagramImageObserver
 	 */
-	private void doImage(String title) {
+	void doImage(String title) {
 		JFileChooser fc = new JFileChooser(".");
 		fc.setDialogTitle(title);
 		fc.setFileFilter(new DiagramImageFilter());
@@ -764,7 +833,7 @@ public class UMLGUI extends JFrame implements ActionListener,
 	 * @see Diagram#startClipping(java.awt.image.ImageObserver)
 	 * @see DiagramImageObserver
 	 */
-	private void doClipping(String title) {
+	void doClipping(String title) {
 		JFileChooser fc = new JFileChooser(".");
 		fc.setDialogTitle(title);
 		fc.setFileFilter(new DiagramImageFilter());
@@ -788,7 +857,7 @@ public class UMLGUI extends JFrame implements ActionListener,
 	 * @param title
 	 *            the title of the action
 	 */
-	private void doExport(String title) {
+	void doExport(String title) {
 		JFileChooser fc = new JFileChooser(".");
 		fc.setDialogTitle(title);
 		fc.setApproveButtonText("Export Here");
@@ -820,9 +889,16 @@ public class UMLGUI extends JFrame implements ActionListener,
 	 * Displays the {@link InfoForm} for the requested structure
 	 * 
 	 * @param structure
-	 *            the requested structure
+	 *            the requested structure. Null structure will be ignored
 	 */
-	private void doInfo(Structure structure) {
+	void doInfo(Structure structure) {
+		if (structure == null) {
+			if (UMLGUI.debugging) {
+				System.err.println("doInfo() got null structure!");
+			}
+			return;
+		}
+
 		if (lastOpened != null && lastOpened.isVisible()) {
 			// we don't allow multiple information form to be
 			// displayed
@@ -878,7 +954,7 @@ public class UMLGUI extends JFrame implements ActionListener,
 		});
 	}
 
-	private void doPopup(MouseEvent e) {
+	void doPopup(MouseEvent e, Structure structure) {
 		if (!e.isPopupTrigger()) {
 			return;
 		}
@@ -886,26 +962,7 @@ public class UMLGUI extends JFrame implements ActionListener,
 		Object obj = e.getSource();
 
 		if (obj instanceof Component) {
-			UMLGUICommand[] commands = null;
-			if (obj instanceof StructureBased) {
-				commands = getStructureCommands(((StructureBased) obj)
-						.getStructure(), true);
-			} else if (obj == diagram) {
-				commands = getStructureCommands(null, true);
-			} else if (obj == outline) {
-				TreePath path = outline.getPathForLocation(e.getX(), e.getY());
-				if (path != null) {
-					Object node = path.getLastPathComponent();
-					if (node instanceof StructureBased) {
-						commands = getStructureCommands(((StructureBased) node)
-								.getStructure(), true);
-					}
-				}
-				if (commands == null) {
-					// still null?
-					commands = getStructureCommands(null, true);
-				}
-			}
+			UMLGUICommand[] commands = getStructureCommands(structure, true);
 
 			if (commands != null && commands.length > 0) {
 				JPopupMenu popup = new JPopupMenu();
@@ -1050,28 +1107,73 @@ public class UMLGUI extends JFrame implements ActionListener,
 				setupDiagramComponentActions(children[i]);
 			}
 
+			// watch future changes too
 			container.addContainerListener(this);
 		}
 
 		if (c instanceof StructureBased) {
-			c.addMouseListener(this);
+			// make it double-click-able and right-click-able
+			new UMLGUIMouseMaster(this, c);
+		}
+
+		if (c instanceof DiagramStructureGroup) {
+			// make it drop-able
+			new UMLGUIDroper(c);
+		} else if (c instanceof StructureBased) {
+			// make it drag-able
+			new UMLGUIDrager(c);
 		}
 	}
 
 	@Override
 	public void componentAdded(ContainerEvent e) {
-		setupDiagramComponentActions(e.getChild());
+		if (e.getSource() == diagram) {
+			setupDiagramComponentActions(e.getChild());
+		}
 	}
 
 	@Override
 	public void componentRemoved(ContainerEvent e) {
 		// do nothing intentionally
 	}
+}
+
+class UMLGUICommand {
+	public String title;
+	public String action;
+	public Icon icon;
+
+	public UMLGUICommand(String title, String action, String icon_name) {
+		this.title = title;
+		this.action = action;
+		icon = UMLGUI.getIcon(icon_name);
+	}
+
+	public UMLGUICommand(String title, String action) {
+		this(title, action, action.replace('.', '_'));
+	}
+}
+
+class UMLGUIMouseMaster implements MouseListener {
+	private UMLGUI gui;
+	private Structure structure;
+
+	public UMLGUIMouseMaster(UMLGUI gui, Component component) {
+		this.gui = gui;
+
+		if (component instanceof StructureBased) {
+			structure = ((StructureBased) component).getStructure();
+		} else {
+			structure = null;
+		}
+
+		component.addMouseListener(this);
+	}
 
 	@Override
 	public void mouseClicked(MouseEvent e) {
-		if (e.getClickCount() == 2 && e.getSource() instanceof StructureBased) {
-			doInfo(((StructureBased) e.getSource()).getStructure());
+		if (e.getClickCount() == 2) {
+			gui.doInfo(structure);
 		}
 	}
 
@@ -1094,20 +1196,197 @@ public class UMLGUI extends JFrame implements ActionListener,
 	public void mouseReleased(MouseEvent e) {
 		doPopup(e);
 	}
+
+	private void doPopup(MouseEvent e) {
+		Structure structure = this.structure;
+		if (structure == null) {
+			// make sure no structure can be associated with the menu
+			if (e.getSource() instanceof Outline) {
+				Outline outline = (Outline) e.getSource();
+				TreePath path = outline.getPathForLocation(e.getX(), e.getY());
+				if (path != null) {
+					Object node = path.getLastPathComponent();
+					if (node instanceof TreeNodeStructure) {
+						structure = ((TreeNodeStructure) node).getStructure();
+					}
+				}
+			}
+		}
+
+		gui.doPopup(e, structure);
+	}
 }
 
-class UMLGUICommand {
-	public String title;
-	public String action;
-	public Icon icon;
+class UMLGUIDrager implements DragGestureListener, DragSourceListener {
+	/**
+	 * The component to get dragging enabled
+	 */
+	private Component component;
+	/**
+	 * The primary dragging source to support drag functionality
+	 */
+	private DragSource dragSource;
+	/**
+	 * The original (foreground) color of the label
+	 */
+	private Color original_color;
+	/**
+	 * The color when the label is being dragged
+	 */
+	private Color cfg_drag_color = Color.blue;
 
-	public UMLGUICommand(String title, String action, String icon_name) {
-		this.title = title;
-		this.action = action;
-		icon = UMLGUI.getIcon(icon_name);
+	public UMLGUIDrager(Component component) {
+		this.component = component;
+
+		if (component instanceof StructureBased) {
+			// this can be created any time with any component
+			// but it only works with StructureBased components
+			original_color = component.getForeground();
+
+			dragSource = new DragSource();
+			dragSource.createDefaultDragGestureRecognizer(component,
+					DnDConstants.ACTION_COPY_OR_MOVE, this);
+		}
 	}
 
-	public UMLGUICommand(String title, String action) {
-		this(title, action, action.replace('.', '_'));
+	@Override
+	public void dragGestureRecognized(DragGestureEvent dge) {
+		component.setForeground(cfg_drag_color);
+		dragSource.startDrag(dge, null, new TransferableStructure(
+				((StructureBased) component).getStructure()), this);
+	}
+
+	@Override
+	public void dragDropEnd(DragSourceDropEvent dsde) {
+		if (component.getForeground() == cfg_drag_color) {
+			component.setForeground(original_color);
+		}
+	}
+
+	@Override
+	public void dragEnter(DragSourceDragEvent dsde) {
+		// TODO Auto-generated method stub
+
+	}
+
+	@Override
+	public void dragExit(DragSourceEvent dse) {
+		// TODO Auto-generated method stub
+
+	}
+
+	@Override
+	public void dragOver(DragSourceDragEvent dsde) {
+		// TODO Auto-generated method stub
+
+	}
+
+	@Override
+	public void dropActionChanged(DragSourceDragEvent dsde) {
+		// TODO Auto-generated method stub
+
+	}
+}
+
+class UMLGUIDroper implements DropTargetListener {
+	/**
+	 * The component to get dragging enabled
+	 */
+	private Component component;
+	/**
+	 * The corresponding structure. This can be null sometimes
+	 */
+	private Structure structure;
+	/**
+	 * The original (foreground) color of the panel
+	 */
+	private Color original_color;
+	/**
+	 * The color when the panel has something dragging by
+	 */
+	private Color cfg_hover_color = Color.red;
+
+	public UMLGUIDroper(Component component) {
+		this.component = component;
+		original_color = component.getForeground();
+
+		if (component instanceof StructureBased) {
+			structure = ((StructureBased) component).getStructure();
+		} else {
+			structure = null;
+		}
+
+		new DropTarget(component, this);
+	}
+
+	@Override
+	public void dragEnter(DropTargetDragEvent dtde) {
+		component.setForeground(cfg_hover_color);
+	}
+
+	@Override
+	public void dragExit(DropTargetEvent dte) {
+		component.setForeground(original_color);
+	}
+
+	@Override
+	public void dragOver(DropTargetDragEvent dtde) {
+		// TODO Auto-generated method stub
+	}
+
+	/**
+	 * Accepts the drop action. Removes the structure from its container and add
+	 * to the corresponding structure of this component
+	 * 
+	 * @param dtde
+	 */
+	@Override
+	public void drop(DropTargetDropEvent dtde) {
+		component.setForeground(original_color);
+
+		try {
+			Structure transfered = (Structure) dtde.getTransferable()
+					.getTransferData(TransferableStructure.df);
+
+			if (transfered.getContainer() != structure) {
+				int action = dtde.getDropAction();
+
+				switch (action) {
+				case DnDConstants.ACTION_COPY:
+					// copying structure
+					Structure copied = transfered.copy();
+					structure.add(copied);
+
+					dtde.acceptDrop(action);
+					return;
+				case DnDConstants.ACTION_MOVE:
+					// moving structure
+					if (transfered.getContainer() != null) {
+						transfered.getContainer().remove(transfered);
+					}
+
+					structure.add(transfered);
+
+					dtde.acceptDrop(action);
+					return;
+				}
+			}
+		} catch (UnsupportedFlavorException e) {
+			System.err.println("Ewwww. This is not well tasted!");
+		} catch (IOException e) {
+			// ignore
+		} catch (StructureException e) {
+			JOptionPane.showMessageDialog(component,
+					"Action can not be completed\n" + e.getMessage(), "Error",
+					JOptionPane.ERROR_MESSAGE);
+		}
+
+		dtde.rejectDrop();
+	}
+
+	@Override
+	public void dropActionChanged(DropTargetDragEvent dtde) {
+		// TODO Auto-generated method stub
+
 	}
 }

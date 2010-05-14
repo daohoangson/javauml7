@@ -1,31 +1,22 @@
-package com.daohoangson.uml.gui;
+package com.tavanduc.uml.gui;
 
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Point;
-import java.awt.datatransfer.UnsupportedFlavorException;
-import java.awt.dnd.DnDConstants;
-import java.awt.dnd.DropTarget;
-import java.awt.dnd.DropTargetDragEvent;
-import java.awt.dnd.DropTargetDropEvent;
-import java.awt.dnd.DropTargetEvent;
-import java.awt.dnd.DropTargetListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
-import java.io.IOException;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
 import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
-import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 
+import com.daohoangson.uml.gui.StructureBased;
 import com.daohoangson.uml.structures.Structure;
-import com.tranvietson.uml.structures.StructureException;
 
 /**
  * Grouping for several {@linkplain Structure structure}s
@@ -34,8 +25,8 @@ import com.tranvietson.uml.structures.StructureException;
  * @version 1.2
  * 
  */
-class DiagramStructureGroup extends JPanel implements DropTargetListener,
-		MouseListener, StructureBased {
+public class DiagramStructureGroup extends JPanel implements MouseListener,
+		StructureBased {
 	private static final long serialVersionUID = -6330448983826031865L;
 	/**
 	 * The corresponding structure of the panel
@@ -55,14 +46,6 @@ class DiagramStructureGroup extends JPanel implements DropTargetListener,
 	 */
 	private Component method_first;
 	/**
-	 * The original (foreground) color of the panel
-	 */
-	private Color original_color;
-	/**
-	 * The color when the panel has something dragging by
-	 */
-	private Color cfg_hover_color = Color.red;
-	/**
 	 * The width of border for structure's component
 	 */
 	private int cfg_border_width = 5;
@@ -73,8 +56,18 @@ class DiagramStructureGroup extends JPanel implements DropTargetListener,
 	 * @see #getPreferredSize()
 	 */
 	private Dimension block_size;
+	/**
+	 * Components which get managed by this component
+	 */
 	private List<DiagramStructureGroup> dependent_components = new LinkedList<DiagramStructureGroup>();
+	/**
+	 * Hold the last calculated width for dependent components
+	 */
 	private int dependent_components_width = 0;
+	/**
+	 * The pseudo location for this component and its dependent components (they
+	 * will be center aligned)
+	 */
 	private Point pseudoLocation;
 
 	/**
@@ -89,21 +82,24 @@ class DiagramStructureGroup extends JPanel implements DropTargetListener,
 	 * 
 	 * @see #block_size
 	 */
-	public DiagramStructureGroup(Structure structure, Component head,
-			Dimension block_size) {
+	public DiagramStructureGroup(Structure structure, Dimension block_size,
+			float size_factor) {
 		super();
 
 		this.structure = structure;
-		this.head = head;
 		this.block_size = block_size;
-		new DropTarget(this, this);
 
-		original_color = getForeground();
 		setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
 		setAlignmentX(Component.CENTER_ALIGNMENT);
 		setBorder(getForeground());
 
+		head = new DiagramStructureName(structure, size_factor);
 		add(head);
+
+		Structure children[] = structure.getChildren();
+		for (int i = 0; i < children.length; i++) {
+			add(new DiagramStructureName(children[i], size_factor));
+		}
 	}
 
 	@Override
@@ -124,9 +120,9 @@ class DiagramStructureGroup extends JPanel implements DropTargetListener,
 	/**
 	 * Gets the structure name of the structure
 	 * 
-	 * @return
+	 * @return the structure name of the structure
 	 */
-	String getStructureName() {
+	public String getStructureName() {
 		return structure.getStructureName();
 	}
 
@@ -206,18 +202,21 @@ class DiagramStructureGroup extends JPanel implements DropTargetListener,
 	public Component add(Component comp) {
 		if (comp instanceof DiagramStructureGroup) {
 			dependent_components.add((DiagramStructureGroup) comp);
-			getParent().add(comp);
 
+			// skip adding comp to this component children
+			// we will manage it by ourself
 			return this;
 		} else {
 			try {
 				DiagramStructureName label = (DiagramStructureName) comp;
 				if (property_first == null
-						&& label.getStructureName().equals("Property")) {
+						&& label.getStructure().getStructureName().equals(
+								"Property")) {
 					property_first = comp;
 				}
 				if (method_first == null
-						&& label.getStructureName().equals("Method")) {
+						&& label.getStructure().getStructureName().equals(
+								"Method")) {
 					method_first = comp;
 				}
 			} catch (ClassCastException e) {
@@ -264,75 +263,6 @@ class DiagramStructureGroup extends JPanel implements DropTargetListener,
 			int my = method_first.getBounds().y;
 			g.drawLine(0, my, getWidth(), my);
 		}
-	}
-
-	@Override
-	public void dragEnter(DropTargetDragEvent dtde) {
-		setForeground(cfg_hover_color);
-	}
-
-	@Override
-	public void dragExit(DropTargetEvent dte) {
-		setForeground(original_color);
-	}
-
-	@Override
-	public void dragOver(DropTargetDragEvent dtde) {
-		// TODO Auto-generated method stub
-	}
-
-	/**
-	 * Accepts the drop action. Removes the structure from its container and add
-	 * to the corresponding structure of this component
-	 * 
-	 * @param dtde
-	 */
-	@Override
-	public void drop(DropTargetDropEvent dtde) {
-		setForeground(original_color);
-
-		try {
-			Structure structure = (Structure) dtde.getTransferable()
-					.getTransferData(TransferableStructure.df);
-
-			if (structure.getContainer() != this.structure) {
-				int action = dtde.getDropAction();
-
-				switch (action) {
-				case DnDConstants.ACTION_COPY:
-					Structure copied = structure.copy();
-					this.structure.add(copied);
-					break;
-				case DnDConstants.ACTION_MOVE:
-					// moving structure
-					if (structure.getContainer() != null
-							&& structure.getContainer().getStructureName()
-									.equals(this.structure.getStructureName())) {
-						structure.getContainer().remove(structure);
-					}
-
-					this.structure.add(structure);
-
-					dtde.acceptDrop(DnDConstants.ACTION_MOVE);
-					return;
-				}
-			}
-		} catch (UnsupportedFlavorException e) {
-			System.err.println("Ewwww. This is not well tasted!");
-		} catch (IOException e) {
-			// ignore
-		} catch (StructureException e) {
-			JOptionPane.showMessageDialog(this, "Action can not be completed\n"
-					+ e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-		}
-
-		dtde.rejectDrop();
-	}
-
-	@Override
-	public void dropActionChanged(DropTargetDragEvent dtde) {
-		// TODO Auto-generated method stub
-
 	}
 
 	/**

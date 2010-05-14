@@ -5,7 +5,7 @@ import java.util.LinkedList;
 import java.util.List;
 
 /**
- * The case class for an automata. Provide basic related operations for
+ * The base class for an automata. Provide basic related operations for
  * automata. This is an abstract class so sub classes are needed all the time
  * 
  * @author Dao Hoang Son
@@ -107,7 +107,7 @@ public abstract class Automata {
 }
 
 /**
- * An automata state. Contains edges to next state.
+ * An automata state. Contains edge(s) to next state(s).
  * 
  * @author Dao Hoang Son
  * @version 1.0

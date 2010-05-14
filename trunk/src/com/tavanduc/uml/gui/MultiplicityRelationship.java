@@ -18,7 +18,7 @@ public class MultiplicityRelationship extends Relationship {
 	/**
 	 * The length of the diamond shape
 	 */
-	private double cfg_diamond_length = 15;
+	private double cfg_diamond_length;
 	/**
 	 * The angle for the diamond sides
 	 */
@@ -26,8 +26,7 @@ public class MultiplicityRelationship extends Relationship {
 	/**
 	 * The length of the diamond sides
 	 */
-	private double cfg_diamond_side_length = cfg_diamond_length / 2
-			* Math.cos(cfg_diamond_side_angle);
+	private double cfg_diamond_side_length;
 
 	public MultiplicityRelationship(Diagram diagram, Structure from,
 			Structure to) {
@@ -35,7 +34,12 @@ public class MultiplicityRelationship extends Relationship {
 	}
 
 	@Override
-	public void draw(Graphics g) {
+	public void draw(Graphics g, float size_factor) {
+		cfg_diamond_length = 15 * size_factor;
+		cfg_diamond_side_length = cfg_diamond_length / 2
+				* Math.cos(cfg_diamond_side_angle);
+		cfg_distance = (int) (5 * size_factor);
+
 		drawConnectingPath(g, 0, cfg_diamond_length);
 	}
 
