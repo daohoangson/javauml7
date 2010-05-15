@@ -14,7 +14,6 @@ public class PropertyForm extends StructureForm {
 		super(owner, "Adding new Property for " + container, true, true, true);
 
 		this.container = container;
-		setVisible(true);
 	}
 
 	@Override

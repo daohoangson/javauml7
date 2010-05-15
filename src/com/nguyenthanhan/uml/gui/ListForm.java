@@ -57,6 +57,10 @@ public class ListForm extends ConvenientForm {
 			JOptionPane.showMessageDialog(owner, String.format(
 					"There is no %s", listStructureName), title,
 					JOptionPane.ERROR_MESSAGE);
+		} else if (list.length == 1) {
+			// there is only 1 to list?
+			// we are not that dumb!
+			ListForm.selected = list[0];
 		} else {
 			new ListForm(owner, title, list, listStructureName)
 					.setVisible(true);

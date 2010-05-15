@@ -1,5 +1,6 @@
 package com.daohoangson.uml.parser;
 
+
 /**
  * A grammar of Java language. This grammar makes use of several different type
  * of automata

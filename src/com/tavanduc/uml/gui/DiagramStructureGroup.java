@@ -104,7 +104,7 @@ public class DiagramStructureGroup extends JPanel implements MouseListener,
 
 	@Override
 	public String toString() {
-		return "DnDPanel of " + head;
+		return "DnDPanel of " + structure;
 	}
 
 	/**

@@ -179,7 +179,8 @@ class Token {
 	 * An array of operators
 	 */
 	final static String[] operators = { "+", "-", "*", "/", "%", "==", "!",
-			"!=", ">", "<", ">=", "<=", "&&", "||", ".", "?", ":", "[]" };
+			"!=", ">", "<", ">=", "<=", "&&", "||", ".", "?", ":", "[]", "&",
+			"|", "^" };
 
 	final static int VALUE_CHAR = 2001;
 	final static int VALUE_STRING = 2002;

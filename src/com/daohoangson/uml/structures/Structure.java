@@ -531,6 +531,19 @@ public abstract class Structure implements StructureListener {
 	}
 
 	/**
+	 * Checks if the structure accepts children with the specified structure
+	 * name
+	 * 
+	 * @param structureName
+	 *            the structure name need checking
+	 * @return
+	 */
+	public boolean checkCanHaveChildren(String structureName) {
+		return Structure
+				.foundStringInArray(structureName, cfg_child_structures);
+	}
+
+	/**
 	 * Checks if the structure accepts parents.
 	 * 
 	 * @return true if yes
@@ -538,6 +551,20 @@ public abstract class Structure implements StructureListener {
 	public boolean checkCanHaveParents() {
 		return cfg_container_structures.length > 0
 				|| cfg_parent_structures.length > 0;
+	}
+
+	/**
+	 * Checks if the structure accepts parents with the specified structure name
+	 * 
+	 * @param structureName
+	 *            the structure name need checking
+	 * @return
+	 */
+	public boolean checkCanHaveParents(String structureName) {
+		return Structure.foundStringInArray(structureName,
+				cfg_parent_structures)
+				|| Structure.foundStringInArray(structureName,
+						cfg_container_structures);
 	}
 
 	/**
@@ -834,20 +861,19 @@ public abstract class Structure implements StructureListener {
 
 		// checks if it's safe to add that as a child of this
 		if (cfg_child_structures.length > 0) {
-			for (int i = 0, n = cfg_child_structures.length; i < n; i++) {
-				if (cfg_child_structures[i].equals(that.getStructureName())) {
-					if (checkHasChildLike(that)) {
-						throw new StructureException(this
-								+ " already has a similar "
-								+ that.getStructureName() + " to " + that);
-					}
-					that.addStructureListener(this);
-					synchronized (children) {
-						children.add(that);
-					}
-
-					added = true;
+			if (Structure.foundStringInArray(that.getStructureName(),
+					cfg_child_structures)) {
+				if (checkHasChildLike(that)) {
+					throw new StructureException(this
+							+ " already has a similar "
+							+ that.getStructureName() + " to " + that);
 				}
+				that.addStructureListener(this);
+				synchronized (children) {
+					children.add(that);
+				}
+
+				added = true;
 			}
 		}
 
