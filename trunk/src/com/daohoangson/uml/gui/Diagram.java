@@ -27,9 +27,11 @@ import java.util.List;
 import java.util.Vector;
 import java.util.Map.Entry;
 
+import javax.swing.InputMap;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
+import javax.swing.KeyStroke;
 
 import com.daohoangson.uml.structures.Structure;
 import com.daohoangson.uml.structures.StructureNameComparator;
@@ -193,6 +195,10 @@ public class Diagram extends JPanel implements StructureListener,
 	public void setFocus(Structure structure) {
 		onFocusStructure = structure;
 		repaint();
+
+		if (Diagram.debugging) {
+			System.err.println("On Focus: " + structure);
+		}
 	}
 
 	/**
@@ -246,6 +252,13 @@ public class Diagram extends JPanel implements StructureListener,
 			scrollpane.getHorizontalScrollBar().setUnitIncrement(unitIncrement);
 			// mouse wheel is for zooming
 			scrollpane.setWheelScrollingEnabled(false);
+			// disable keyboard scrolling
+			InputMap im = scrollpane
+					.getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT);
+			im.put(KeyStroke.getKeyStroke("UP"), "none");
+			im.put(KeyStroke.getKeyStroke("DOWN"), "none");
+			im.put(KeyStroke.getKeyStroke("LEFT"), "none");
+			im.put(KeyStroke.getKeyStroke("RIGHT"), "none");
 		}
 
 		return scrollpane;
@@ -340,7 +353,7 @@ public class Diagram extends JPanel implements StructureListener,
 			getBoundsCache();
 		}
 
-		if (boundsCache != null) {
+		if (boundsCache != null && structure != null) {
 			return boundsCache.get(structure);
 		} else {
 			return null;
@@ -488,12 +501,29 @@ public class Diagram extends JPanel implements StructureListener,
 	 * Tries its best to bring the requested structure into the viewport
 	 * 
 	 * @param structure
-	 *            the structure needs to be viewed
+	 *            the structure needs bringing to visible area
+	 * @param always
+	 *            set this to true to change the view port all the time.
+	 *            Otherwise, it will only be changed it the structure is not
+	 *            visible
 	 */
-	public void ensureStructureIsVisible(Structure structure) {
+	public void ensureStructureIsVisible(Structure structure, boolean always) {
 		Rectangle rect = getBoundsFor(structure);
+
 		if (rect != null) {
 			Rectangle visible = getVisibleRect();
+
+			if (!always) {
+				// check if the structure is not visible before doing anything
+				if (rect.x > visible.x
+						&& rect.x + rect.width < visible.x + visible.width
+						&& rect.y > visible.y
+						&& rect.y + rect.height < visible.y + visible.height) {
+					// it's still visible, keep the current view port
+					return;
+				}
+			}
+
 			Point structureLocation = rect.getLocation();
 			Dimension structureSize = rect.getSize();
 			Dimension visibleSize = visible.getSize();
@@ -514,6 +544,17 @@ public class Diagram extends JPanel implements StructureListener,
 			rect.setSize(visible.getSize());
 			scrollRectToVisible(rect);
 		}
+	}
+
+	/**
+	 * A shortcut to {@link #ensureStructureIsVisible(Structure, boolean)} with
+	 * always set to true
+	 * 
+	 * @param structure
+	 *            the target structure
+	 */
+	public void ensureStructureIsVisible(Structure structure) {
+		ensureStructureIsVisible(structure, true);
 	}
 
 	/**
@@ -566,7 +607,7 @@ public class Diagram extends JPanel implements StructureListener,
 						image_rect.y, image_rect.x + image_rect.width,
 						image_rect.y + image_rect.height, null);
 				if (Diagram.debugging) {
-					System.err.println("Copying clipping area: " + result);
+					System.err.println("Copy clipping area result: " + result);
 				}
 
 				image_rect = null;
@@ -577,9 +618,20 @@ public class Diagram extends JPanel implements StructureListener,
 			synchronized (observer) {
 				if (observer != null) {
 					// notify the observer so it can do the job
-					observer.imageUpdate(painted, ImageObserver.ALLBITS, 0, 0,
-							0, 0);
+					boolean result = observer.imageUpdate(painted,
+							ImageObserver.ALLBITS, 0, 0, 0, 0);
 					observer = null;
+
+					if (Diagram.debugging) {
+						System.err.println("Trigger the observer result: "
+								+ result);
+					}
+				} else {
+					// no observer?
+					// what a waste of painting procedure!
+					if (Diagram.debugging) {
+						System.err.println("No observer registered!!!!");
+					}
 				}
 			}
 
@@ -702,6 +754,10 @@ public class Diagram extends JPanel implements StructureListener,
 
 		validate();
 		repaint();
+
+		if (Diagram.debugging) {
+			System.err.println("Diagram drawing procedure completed");
+		}
 	}
 
 	private Container build(int i) {
@@ -819,70 +875,6 @@ public class Diagram extends JPanel implements StructureListener,
 	}
 
 	@Override
-	public void mouseDragged(MouseEvent e) {
-		if (e.getSource() == this) {
-			if (image_rect != null) {
-				// the mouse is being dragged around
-				// update the clipping area
-				if (image_rect.getLocation().equals(new Point())) {
-					image_rect.setLocation(e.getPoint());
-				} else {
-					int x1 = image_rect.getLocation().x;
-					int y1 = image_rect.getLocation().y;
-					int x2 = e.getPoint().x;
-					int y2 = e.getPoint().y;
-					image_rect.setBounds(Math.min(x1, x2), Math.min(y1, y2),
-							Math.abs(x2 - x1), Math.abs((y2 - y1)));
-				}
-				// and display the clipping area now
-				repaint();
-			} else if (flag_drag_moving != null) {
-				// dragging-moving around
-				Point newP = e.getLocationOnScreen();
-				int dx = newP.x - flag_drag_moving.x;
-				int dy = newP.y - flag_drag_moving.y;
-				// revert to make it more... natural
-				dx *= -1;
-				dy *= -1;
-				if (scrollpane != null) {
-					scrollpane.getHorizontalScrollBar()
-							.setValue(
-									scrollpane.getHorizontalScrollBar()
-											.getValue()
-											+ dx);
-					scrollpane.getVerticalScrollBar().setValue(
-							scrollpane.getVerticalScrollBar().getValue() + dy);
-				}
-				flag_drag_moving = newP;
-			}
-		} else {
-			if (pressedComponent != null) {
-				// moving component
-				Point oldP = pressedLocation;
-				Point newP = e.getLocationOnScreen();
-				Point oldL = pressedComponent.getLocationOnScreen();
-				pressedComponent.setLocationRelative(newP.x - oldP.x, newP.y
-						- oldP.y);
-				Point newL = pressedComponent.getLocationOnScreen();
-				pressedLocation.setLocation(oldP.x + newL.x - oldL.x, oldP.y
-						+ newL.y - oldL.y);
-
-				Rectangle old_v = getVisibleRect();
-				scrollRectToVisible(pressedComponent.getBounds());
-				Rectangle new_v = getVisibleRect();
-				if (!new_v.equals(old_v)) {
-					// we scrolled a little bit
-					// update the location
-					pressedLocation.setLocation(pressedLocation.x - new_v.x
-							+ old_v.x, pressedLocation.y - new_v.y + old_v.y);
-				}
-
-				repaint();
-			}
-		}
-	}
-
-	@Override
 	public void mouseMoved(MouseEvent e) {
 		// TODO Auto-generated method stub
 
@@ -923,7 +915,7 @@ public class Diagram extends JPanel implements StructureListener,
 					lastPressedComponent = null;
 					pressedComponent = (DiagramStructureGroup) s;
 					pressedLocation = e.getLocationOnScreen();
-					requestFocus();
+					requestFocus(); // prepare to use arrow keys later
 				}
 			}
 		}
@@ -946,6 +938,96 @@ public class Diagram extends JPanel implements StructureListener,
 			// moving component finished
 			lastPressedComponent = pressedComponent;
 			pressedComponent = null;
+		}
+	}
+
+	@Override
+	public void mouseDragged(MouseEvent e) {
+		if (e.getSource() == this) {
+			if (image_rect != null) {
+				// the mouse is being dragged around
+				// update the clipping area
+				if (image_rect.getLocation().equals(new Point())) {
+					image_rect.setLocation(e.getPoint());
+				} else {
+					int x1 = image_rect.getLocation().x;
+					int y1 = image_rect.getLocation().y;
+					int x2 = e.getPoint().x;
+					int y2 = e.getPoint().y;
+					image_rect.setBounds(Math.min(x1, x2), Math.min(y1, y2),
+							Math.abs(x2 - x1), Math.abs((y2 - y1)));
+				}
+				// and display the clipping area now
+				repaint();
+
+				if (Diagram.debugging) {
+					System.err.println("Clipping. Location: " + image_rect.x
+							+ "," + image_rect.y + ". Size: "
+							+ image_rect.width + "x" + image_rect.height);
+				}
+			} else if (flag_drag_moving != null) {
+				// dragging-moving around
+				Point newP = e.getLocationOnScreen();
+				int dx = newP.x - flag_drag_moving.x;
+				int dy = newP.y - flag_drag_moving.y;
+				// revert to make it more... natural
+				dx *= -1;
+				dy *= -1;
+				if (scrollpane != null) {
+					scrollpane.getHorizontalScrollBar()
+							.setValue(
+									scrollpane.getHorizontalScrollBar()
+											.getValue()
+											+ dx);
+					scrollpane.getVerticalScrollBar().setValue(
+							scrollpane.getVerticalScrollBar().getValue() + dy);
+
+					if (Diagram.debugging) {
+						System.err.println("Moving around. "
+								+ "Horizontal: "
+								+ scrollpane.getHorizontalScrollBar()
+										.getValue() + ". Vertical: "
+								+ scrollpane.getVerticalScrollBar().getValue());
+					}
+				} else {
+					if (Diagram.debugging) {
+						System.err.println("Moving arround. "
+								+ "FAIL because of no scroll bar");
+					}
+				}
+				flag_drag_moving = newP;
+			}
+		} else {
+			if (pressedComponent != null) {
+				// moving component
+				Point oldP = pressedLocation;
+				Point newP = e.getLocationOnScreen();
+				Point oldL = pressedComponent.getLocationOnScreen();
+				pressedComponent.setLocationRelative(newP.x - oldP.x, newP.y
+						- oldP.y);
+				Point newL = pressedComponent.getLocationOnScreen();
+				pressedLocation.setLocation(oldP.x + newL.x - oldL.x, oldP.y
+						+ newL.y - oldL.y);
+
+				Rectangle old_v = getVisibleRect();
+				scrollRectToVisible(pressedComponent.getBounds());
+				Rectangle new_v = getVisibleRect();
+				if (!new_v.equals(old_v)) {
+					// we scrolled a little bit
+					// update the location
+					pressedLocation.setLocation(pressedLocation.x - new_v.x
+							+ old_v.x, pressedLocation.y - new_v.y + old_v.y);
+				}
+
+				repaint();
+
+				if (Diagram.debugging) {
+					System.err.println("Moving component: " + pressedComponent
+							+ ".\nNew location: "
+							+ pressedComponent.getLocation().x + ","
+							+ pressedComponent.getLocation().y);
+				}
+			}
 		}
 	}
 
@@ -991,11 +1073,8 @@ public class Diagram extends JPanel implements StructureListener,
 		scrollRectToVisible(new_v);
 
 		if (Diagram.debugging) {
-			System.err.println("old visible: " + old_v);
-			System.err.println("old point: " + old_p);
-			System.err.println("Percents: " + xp + ", " + yp);
-			System.err.println("new point: " + new_p);
-			System.err.println("new visible: " + new_v);
+			System.err.println("Middle wheel zooming. "
+					+ "Coordinate percents: " + xp + ", " + yp);
 		}
 	}
 
@@ -1031,6 +1110,16 @@ public class Diagram extends JPanel implements StructureListener,
 					step = 15;
 				}
 				lastPressedComponent.setLocationRelative(step * dx, step * dy);
+
+				ensureStructureIsVisible(lastPressedComponent.getStructure(),
+						false);
+
+				if (Diagram.debugging) {
+					System.err.println("Moving component: "
+							+ lastPressedComponent + "\nNew location: "
+							+ lastPressedComponent.getLocation().x + ","
+							+ lastPressedComponent.getLocation().y);
+				}
 			}
 		}
 	}

@@ -52,8 +52,6 @@ public class Parser {
 	public Parser(Diagram diagram) {
 		this.diagram = diagram;
 		grammar = new GrammarOfJava();
-
-		LexicalAnalyzer.debugging = Parser.debugging;
 	}
 
 	/**
@@ -184,6 +182,14 @@ public class Parser {
 					pending_modifiers.clear();
 				}
 				break;
+			case Token.PACKAGENAME:
+				if (flag_adding_parent) {
+					structure.addParentName(token.content);
+				} else {
+					throw new ParseException("Unexpected package name found: "
+							+ token.content, token.offset);
+				}
+				break;
 			case Token.EXTENDS:
 			case Token.IMPLEMENTS:
 				flag_adding_parent = true;
@@ -215,6 +221,16 @@ public class Parser {
 			case Token.IMPORT:
 				requires(analyzer, new int[] { Token.PACKAGENAME });
 				requires(analyzer, new int[] { Token.COLON });
+				break;
+
+			case Token.COLON:
+				// colon can be placed independently
+				if (pending_type == -1 && pending_modifiers.size() == 0
+						&& structure == null) {
+					// all good
+				} else {
+					throw new ParseException("Unexpected ;", token.offset);
+				}
 				break;
 
 			case -1:
@@ -364,6 +380,7 @@ public class Parser {
 				break;
 			case Token.TYPE:
 			case Token.NAME:
+			case Token.PACKAGENAME:
 				if (pending_type == null) {
 					pending_type = token.content;
 					Token name = requires(analyzer, new int[] { Token.NAME,
@@ -431,16 +448,21 @@ public class Parser {
 				if (flag_abstract_method || flag_inside_interface) {
 					flag_abstract_method = false; // switch back the flag
 				} else {
-					if (pending_name == null || pending_type == null) {
-						throw new ParseException(
-								"Unexpected ';'. Expecting type with name",
-								token.offset);
+					if (pending_name == null && pending_type == null
+							&& pending_modifiers.size() == 0) {
+						// all good
+					} else {
+						if (pending_name == null || pending_type == null) {
+							throw new ParseException(
+									"Unexpected ';'. Expecting type with name",
+									token.offset);
+						}
+						structure.add(new Property(pending_name, pending_type,
+								pending_modifiers.toArray(new String[0])));
+						pending_name = null;
+						pending_type = null;
+						pending_modifiers.clear();
 					}
-					structure.add(new Property(pending_name, pending_type,
-							pending_modifiers.toArray(new String[0])));
-					pending_name = null;
-					pending_type = null;
-					pending_modifiers.clear();
 				}
 				break;
 			case Token.ASSIGN:
@@ -499,6 +521,7 @@ public class Parser {
 			switch (token.type) {
 			case Token.TYPE:
 			case Token.NAME:
+			case Token.PACKAGENAME:
 				if (pending_type == null) {
 					pending_type = token.content;
 					Token name = requires(analyzer, new int[] { Token.NAME });

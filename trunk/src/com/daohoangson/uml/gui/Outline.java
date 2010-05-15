@@ -2,6 +2,7 @@ package com.daohoangson.uml.gui;
 
 import java.awt.Component;
 import java.awt.Dimension;
+import java.awt.Point;
 import java.awt.Rectangle;
 import java.util.Enumeration;
 import java.util.Hashtable;
@@ -22,10 +23,21 @@ import com.daohoangson.uml.structures.Structure;
 import com.tranvietson.uml.structures.StructureEvent;
 import com.tranvietson.uml.structures.StructureListener;
 
+/**
+ * A tree list of structures with its children
+ * 
+ * @author Dao Hoang Son
+ * @version 1.0
+ * 
+ */
 public class Outline extends JTree implements TreeExpansionListener {
 	private static final long serialVersionUID = -9149376828755778513L;
 	private Diagram diagram = null;
 	private JScrollPane scrollpane = null;
+	/**
+	 * Determines if we are in debug mode.
+	 */
+	static public boolean debugging = false;
 
 	public Outline(Diagram diagram) {
 		super(new TreeModelStructure(diagram));
@@ -51,6 +63,19 @@ public class Outline extends JTree implements TreeExpansionListener {
 		}
 
 		return scrollpane;
+	}
+
+	public Structure getStructureForLocation(Point location) {
+		Structure structure = null;
+		TreePath path = getPathForLocation(location.x, location.y);
+		if (path != null) {
+			Object node = path.getLastPathComponent();
+			if (node instanceof StructureBased) {
+				structure = ((StructureBased) node).getStructure();
+			}
+		}
+
+		return structure;
 	}
 
 	public void ensureStructureIsVisible(Structure structure) {
@@ -146,9 +171,13 @@ class TreeModelStructure extends DefaultTreeModel implements StructureListener {
 
 	@Override
 	public void structureChanged(StructureEvent e) {
-		reload();
-	}
+		Structure structure = (Structure) e.getSource();
+		reload(TreeNodeStructure.create(structure));
 
+		if (Outline.debugging) {
+			System.err.println("Outline reloaded for " + structure);
+		}
+	}
 }
 
 class TreeNodeStructure implements TreeNode, StructureBased {

@@ -43,6 +43,7 @@ public class DiagramImageObserver implements ImageObserver {
 		try {
 			ImageIO.write((RenderedImage) img, imagepath.substring(
 					imagepath.length() - 3).toLowerCase(), new File(imagepath));
+			return true;
 		} catch (IOException e) {
 			// simply ignore
 		}
@@ -52,6 +53,13 @@ public class DiagramImageObserver implements ImageObserver {
 
 }
 
+/**
+ * A file filter which accepts .jpg and .png files only
+ * 
+ * @author Dao Hoang Son
+ * @version 1.0
+ * 
+ */
 class DiagramImageFilter extends FileFilter {
 
 	@Override

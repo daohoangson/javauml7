@@ -89,6 +89,10 @@ public class FindForm extends ConvenientForm implements DocumentListener {
 			JOptionPane.showMessageDialog(owner, String
 					.format("There is nothing, yet"), title,
 					JOptionPane.ERROR_MESSAGE);
+		} else if (structures.length == 1) {
+			// there is only 1 to find?
+			// we are not that dumb!
+			FindForm.found = structures[0];
 		} else {
 			new FindForm(owner, title, structures).setVisible(true);
 		}
