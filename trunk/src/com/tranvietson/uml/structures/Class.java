@@ -65,6 +65,16 @@ public class Class extends Structure {
 	}
 
 	@Override
+	public boolean setModifier(String modifier) throws StructureException {
+		if (modifier.length() == 0 || modifier.equals("public")) {
+			return super.setModifier(modifier);
+		} else {
+			throw new StructureException("A Class can only have "
+					+ "default or public visibility!");
+		}
+	}
+
+	@Override
 	public boolean checkIsAlike(Structure that) {
 		return that.getStructureName().equals(getStructureName())
 				&& getName().equals(that.getName());

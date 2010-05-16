@@ -410,11 +410,8 @@ public abstract class Structure implements StructureListener {
 			}
 		}
 
-		if (Structure.debugging) {
-			System.err.println("Unsupported modifier: " + modifier);
-		}
-
-		return false;
+		throw new StructureException(this + "doesn't support modifier "
+				+ modifier);
 	}
 
 	/**

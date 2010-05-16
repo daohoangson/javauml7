@@ -11,7 +11,8 @@ public class MethodForm extends StructureForm {
 	private Structure container;
 
 	public MethodForm(Window owner, Structure container) {
-		super(owner, "Adding new Method for " + container, true, true, true);
+		super(owner, "Adding new Method for " + container, true, new String[] {
+				"public", "protected", "private" }, true);
 
 		this.container = container;
 	}

@@ -50,7 +50,7 @@ public class Interface extends Structure {
 	}
 
 	/**
-	 * Constructor with interface name and an array of modifers
+	 * Constructor with interface name and an array of modifiers
 	 * 
 	 * @param name
 	 * @param modifiers
@@ -60,6 +60,16 @@ public class Interface extends Structure {
 		setName(name);
 		for (int i = 0, n = modifiers.length; i < n; i++) {
 			setModifier(modifiers[i]);
+		}
+	}
+
+	@Override
+	public boolean setModifier(String modifier) throws StructureException {
+		if (modifier.length() == 0 || modifier.equals("public")) {
+			return super.setModifier(modifier);
+		} else {
+			throw new StructureException("An Interface can only have "
+					+ "default or public visibility!");
 		}
 	}
 

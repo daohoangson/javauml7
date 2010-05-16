@@ -11,7 +11,8 @@ public class PropertyForm extends StructureForm {
 	private Structure container;
 
 	public PropertyForm(Window owner, Structure container) {
-		super(owner, "Adding new Property for " + container, true, true, true);
+		super(owner, "Adding new Property for " + container, true,
+				new String[] { "public", "protected", "private" }, true);
 
 		this.container = container;
 	}

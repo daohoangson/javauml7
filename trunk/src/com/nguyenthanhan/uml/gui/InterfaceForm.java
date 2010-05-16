@@ -12,7 +12,8 @@ public class InterfaceForm extends StructureForm {
 	private Diagram diagram;
 
 	public InterfaceForm(Window owner, Diagram diagram) {
-		super(owner, "Adding new Interface", false, true, false);
+		super(owner, "Adding new Interface", false, new String[] { "public", },
+				false);
 
 		this.diagram = diagram;
 	}
