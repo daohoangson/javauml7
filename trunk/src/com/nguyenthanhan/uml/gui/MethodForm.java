@@ -5,11 +5,19 @@ import java.awt.Window;
 import com.daohoangson.uml.structures.Structure;
 import com.tranvietson.uml.structures.Method;
 import com.tranvietson.uml.structures.StructureException;
-
+/**
+ * @(#)MethodForm.java
+ *     Create methods for class or interface
+ * @author Nguyen Thanh An
+ * @version 1.0
+ */
 public class MethodForm extends StructureForm {
 	private static final long serialVersionUID = 6957222110006867837L;
 	private Structure container;
-
+	/**
+	 * MethodForm constructor
+	 * @param owner, container
+	 */
 	public MethodForm(Window owner, Structure container) {
 		super(owner, "Adding new Method for " + container, true, new String[] {
 				"public", "protected", "private" }, true);

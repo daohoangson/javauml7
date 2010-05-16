@@ -23,7 +23,12 @@ import com.daohoangson.uml.structures.Structure;
 import com.tranvietson.uml.structures.StructureEvent;
 import com.tranvietson.uml.structures.StructureException;
 import com.tranvietson.uml.structures.StructureListener;
-
+/**
+ * @(#)StructureForm.java
+ * 
+ * @author Nguyen Thanh An
+ * @version 1.0
+ */
 public abstract class StructureForm extends ConvenientForm implements
 		ActionListener {
 	private static final long serialVersionUID = 297547056430421671L;
@@ -40,7 +45,13 @@ public abstract class StructureForm extends ConvenientForm implements
 	 * @see #removeStructureListener(StructureListener)
 	 */
 	private Vector<StructureListener> listeners;
-
+	/**
+	 * StructureForm constructor
+	 * 
+	 * @param owner, title, cfg_use_type,
+	 *        cfg_use_visibility, cfg_use_scope
+	 *          
+	 */
 	public StructureForm(Window owner, String title, boolean cfg_use_type,
 			String[] cfg_visibilities, boolean cfg_use_scope) {
 		super(owner, title, ModalityType.APPLICATION_MODAL);
