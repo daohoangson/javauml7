@@ -11,7 +11,7 @@ public class ArgumentForm extends StructureForm {
 	private Structure container;
 
 	public ArgumentForm(Window owner, Structure container) {
-		super(owner, "Adding Argument for " + container, true, false, false);
+		super(owner, "Adding Argument for " + container, true, null, false);
 
 		this.container = container;
 	}

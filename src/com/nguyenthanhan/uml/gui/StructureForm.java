@@ -7,6 +7,7 @@ import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.util.Arrays;
 import java.util.Vector;
 
 import javax.swing.AbstractButton;
@@ -41,7 +42,7 @@ public abstract class StructureForm extends ConvenientForm implements
 	private Vector<StructureListener> listeners;
 
 	public StructureForm(Window owner, String title, boolean cfg_use_type,
-			boolean cfg_use_visibility, boolean cfg_use_scope) {
+			String[] cfg_visibilities, boolean cfg_use_scope) {
 		super(owner, title, ModalityType.APPLICATION_MODAL);
 		setLayout(new FlowLayout());
 
@@ -61,13 +62,26 @@ public abstract class StructureForm extends ConvenientForm implements
 			add(txt_type);
 		}
 
-		if (cfg_use_visibility) {
+		if (cfg_visibilities != null) {
 			ButtonGroup bg = new ButtonGroup();
-			String[] visibilities = { "public", "protected", "private" };
-			int[] mnemonics = { KeyEvent.VK_U, KeyEvent.VK_O, KeyEvent.VK_I };
-			for (int i = 0; i < visibilities.length; i++) {
-				JRadioButton rb = new JRadioButton(visibilities[i]);
-				rb.setMnemonic(mnemonics[i]);
+			char[] vowels = { 'a', 'e', 'i', 'o', 'u' };
+			int[] vowels_code = { KeyEvent.VK_A, KeyEvent.VK_E, KeyEvent.VK_I,
+					KeyEvent.VK_O, KeyEvent.VK_U };
+			for (int i = 0; i < cfg_visibilities.length; i++) {
+				JRadioButton rb = new JRadioButton(cfg_visibilities[i]);
+				int mnemonic = -1;
+				for (int j = 0; j < cfg_visibilities[i].length(); j++) {
+					int index = Arrays.binarySearch(vowels, cfg_visibilities[i]
+							.charAt(j));
+					if (index > 0 && vowels_code[index] > 0) {
+						mnemonic = vowels_code[index];
+						vowels_code[index] = -1; // do not use this anymore
+						break;
+					}
+				}
+				if (mnemonic > -1) {
+					rb.setMnemonic(mnemonic);
+				}
 				rb.setActionCommand("visibility");
 				rb.addActionListener(this);
 

@@ -98,9 +98,11 @@ public class Parser {
 				parsed++;
 				try {
 					parse(Parser.readFileAsString(file));
-				} catch (StructureException e) {
-					throw new ParseException("Structure Hierarchy: "
-							+ e.getMessage(), -1);
+				} catch (ParseException e) {
+					// build a meaningful exception message
+					throw new ParseException("Unable to parse file:\n"
+							+ file.getAbsolutePath() + "\n" + e.getMessage(), e
+							.getErrorOffset());
 				}
 			}
 		}
@@ -118,7 +120,7 @@ public class Parser {
 	 * @throws ParserException
 	 * @throws StructureException
 	 */
-	public void parse(String source) throws ParseException, StructureException {
+	public void parse(String source) throws ParseException {
 		LexicalAnalyzer analyzer = new LexicalAnalyzer(source, grammar);
 
 		String packagename = "";
@@ -126,128 +128,139 @@ public class Parser {
 		int pending_type = -1;
 		List<String> pending_modifiers = new LinkedList<String>();
 		boolean flag_adding_parent = false;
+		Token token = null;
 
-		while (analyzer.hasMoreElements()) {
-			Token token = analyzer.nextElement();
+		try {
+			while (analyzer.hasMoreElements()) {
+				token = analyzer.nextElement();
 
-			switch (token.type) {
-			case Token.CLASS:
-			case Token.INTERFACE:
-			case Token.ENUM:
-				if (pending_type == -1) {
-					pending_type = token.type;
-				} else {
+				switch (token.type) {
+				case Token.CLASS:
+				case Token.INTERFACE:
+				case Token.ENUM:
+					if (pending_type == -1) {
+						pending_type = token.type;
+					} else {
+						throw new ParseException("Unexpected " + token.content,
+								token.offset);
+					}
+					break;
+				case Token.VISIBILITY:
+				case Token.SCOPE:
+					pending_modifiers.add(token.content);
+					break;
+				case Token.ABSTRACT:
+					// ignore
+					break;
+				case Token.TYPE:
+					if (flag_adding_parent) {
+						structure.addParentName(token.content);
+					} else {
+						throw new ParseException("Unexpected type "
+								+ token.content, token.offset);
+					}
+				case Token.NAME:
+					if (flag_adding_parent) {
+						structure.addParentName(token.content);
+					} else {
+						String name = token.content;
+						String[] modifiers = pending_modifiers
+								.toArray(new String[0]);
+						switch (pending_type) {
+						case Token.CLASS:
+							structure = new Class(name, modifiers);
+							break;
+						case Token.INTERFACE:
+							structure = new Interface(name, modifiers);
+							break;
+						case Token.ENUM:
+							// skip enum
+							skipTo(analyzer, Token.LBRACE);
+							skipRightBrace(analyzer, 1);
+							break;
+						default:
+							throw new ParseException("Unexpected name found: "
+									+ name, token.offset);
+						}
+						pending_type = -1;
+						pending_modifiers.clear();
+					}
+					break;
+				case Token.PACKAGENAME:
+					if (flag_adding_parent) {
+						structure.addParentName(token.content);
+					} else {
+						throw new ParseException(
+								"Unexpected package name found: "
+										+ token.content, token.offset);
+					}
+					break;
+				case Token.EXTENDS:
+				case Token.IMPLEMENTS:
+					flag_adding_parent = true;
+					break;
+
+				case Token.LBRACE:
+					flag_adding_parent = false;
+					parsePropertyAndMethod(structure, analyzer);
+					break;
+				case Token.RBRACE:
+					structure.setInfo("package", packagename);
+					diagram.add(structure);
+					structure = null;
+					break;
+
+				case Token.COMMA:
+					if (flag_adding_parent) {
+						// ignore
+					} else {
+						throw new ParseException("Unexpected ,", token.offset);
+					}
+					break;
+
+				case Token.PACKAGE:
+					packagename = requires(analyzer,
+							new int[] { Token.PACKAGENAME }).content;
+					requires(analyzer, new int[] { Token.COLON });
+					break;
+				case Token.IMPORT:
+					requires(analyzer, new int[] { Token.PACKAGENAME });
+					requires(analyzer, new int[] { Token.COLON });
+					break;
+
+				case Token.COLON:
+					// colon can be placed independently
+					if (pending_type == -1 && pending_modifiers.size() == 0
+							&& structure == null) {
+						// all good
+					} else {
+						throw new ParseException("Unexpected ;", token.offset);
+					}
+					break;
+
+				case -1:
+					if (pending_type == -1 && pending_modifiers.size() == 0
+							&& structure == null) {
+						// all good
+						return;
+					} else if (Parser.debugging) {
+						System.err.println(pending_type);
+						System.err.println(pending_modifiers);
+						System.err.println(structure);
+					}
+
+				default:
 					throw new ParseException("Unexpected " + token.content,
 							token.offset);
 				}
-				break;
-			case Token.VISIBILITY:
-			case Token.SCOPE:
-				pending_modifiers.add(token.content);
-				break;
-			case Token.ABSTRACT:
-				// ignore
-				break;
-			case Token.TYPE:
-				if (flag_adding_parent) {
-					structure.addParentName(token.content);
-				} else {
-					throw new ParseException(
-							"Unexpected type " + token.content, token.offset);
-				}
-			case Token.NAME:
-				if (flag_adding_parent) {
-					structure.addParentName(token.content);
-				} else {
-					String name = token.content;
-					String[] modifiers = pending_modifiers
-							.toArray(new String[0]);
-					switch (pending_type) {
-					case Token.CLASS:
-						structure = new Class(name, modifiers);
-						break;
-					case Token.INTERFACE:
-						structure = new Interface(name, modifiers);
-						break;
-					case Token.ENUM:
-						// skip enum
-						skipTo(analyzer, Token.LBRACE);
-						skipRightBrace(analyzer, 1);
-						break;
-					default:
-						throw new ParseException("Unexpected name found: "
-								+ name, token.offset);
-					}
-					pending_type = -1;
-					pending_modifiers.clear();
-				}
-				break;
-			case Token.PACKAGENAME:
-				if (flag_adding_parent) {
-					structure.addParentName(token.content);
-				} else {
-					throw new ParseException("Unexpected package name found: "
-							+ token.content, token.offset);
-				}
-				break;
-			case Token.EXTENDS:
-			case Token.IMPLEMENTS:
-				flag_adding_parent = true;
-				break;
-
-			case Token.LBRACE:
-				flag_adding_parent = false;
-				parsePropertyAndMethod(structure, analyzer);
-				break;
-			case Token.RBRACE:
-				structure.setInfo("package", packagename);
-				diagram.add(structure);
-				structure = null;
-				break;
-
-			case Token.COMMA:
-				if (flag_adding_parent) {
-					// ignore
-				} else {
-					throw new ParseException("Unexpected ,", token.offset);
-				}
-				break;
-
-			case Token.PACKAGE:
-				packagename = requires(analyzer,
-						new int[] { Token.PACKAGENAME }).content;
-				requires(analyzer, new int[] { Token.COLON });
-				break;
-			case Token.IMPORT:
-				requires(analyzer, new int[] { Token.PACKAGENAME });
-				requires(analyzer, new int[] { Token.COLON });
-				break;
-
-			case Token.COLON:
-				// colon can be placed independently
-				if (pending_type == -1 && pending_modifiers.size() == 0
-						&& structure == null) {
-					// all good
-				} else {
-					throw new ParseException("Unexpected ;", token.offset);
-				}
-				break;
-
-			case -1:
-				if (pending_type == -1 && pending_modifiers.size() == 0
-						&& structure == null) {
-					// all good
-					return;
-				} else if (Parser.debugging) {
-					System.err.println(pending_type);
-					System.err.println(pending_modifiers);
-					System.err.println(structure);
-				}
-
-			default:
-				throw new ParseException("Unexpected " + token.content,
-						token.offset);
 			}
+		} catch (StructureException e) {
+			int offset = -1;
+			if (token != null) {
+				offset = token.offset;
+			}
+			throw new ParseException("Structure Hierarchy: " + e.getMessage(),
+					offset);
 		}
 	}
 
@@ -354,7 +367,7 @@ public class Parser {
 	 * @throws ParserException
 	 */
 	private void parsePropertyAndMethod(Structure structure,
-			LexicalAnalyzer analyzer) throws StructureException, ParseException {
+			LexicalAnalyzer analyzer) throws ParseException {
 		List<String> pending_modifiers = new LinkedList<String>();
 		String pending_name = null;
 		String pending_type = null;
@@ -362,132 +375,143 @@ public class Parser {
 		boolean flag_abstract_method = false;
 		boolean flag_inside_interface = structure.getStructureName().equals(
 				"Interface");
+		Token token = null;
 
 		if (Parser.debugging) {
 			System.err.println("parsePropertyAndMethod for " + structure);
 		}
 
-		while (analyzer.hasMoreElements()) {
-			Token token = analyzer.nextElement();
+		try {
+			while (analyzer.hasMoreElements()) {
+				token = analyzer.nextElement();
 
-			switch (token.type) {
-			case Token.VISIBILITY:
-			case Token.SCOPE:
-				pending_modifiers.add(token.content);
-				break;
-			case Token.ABSTRACT:
-				flag_abstract_method = true;
-				break;
-			case Token.TYPE:
-			case Token.NAME:
-			case Token.PACKAGENAME:
-				if (pending_type == null) {
-					pending_type = token.content;
-					Token name = requires(analyzer, new int[] { Token.NAME,
-							Token.LPAR });
-					if (name.type == Token.NAME) {
-						pending_name = name.content;
+				switch (token.type) {
+				case Token.VISIBILITY:
+				case Token.SCOPE:
+					pending_modifiers.add(token.content);
+					break;
+				case Token.ABSTRACT:
+					flag_abstract_method = true;
+					break;
+				case Token.TYPE:
+				case Token.NAME:
+				case Token.PACKAGENAME:
+					if (pending_type == null) {
+						pending_type = token.content;
+						Token name = requires(analyzer, new int[] { Token.NAME,
+								Token.LPAR });
+						if (name.type == Token.NAME) {
+							pending_name = name.content;
+						} else {
+							analyzer.pushback();
+						}
+					} else if (pending_type != null && token.type == Token.NAME) {
+						pending_name = token.content;
 					} else {
-						analyzer.pushback();
+						throw new ParseException("Unexpected " + token.content,
+								token.offset);
 					}
-				} else if (pending_type != null && token.type == Token.NAME) {
-					pending_name = token.content;
-				} else {
+					break;
+				case Token.OPERATOR:
+					if (token.content.equals("[]") && pending_type != null) {
+						pending_type += "[]";
+					} else {
+						throw new ParseException("Unexpected operator "
+								+ token.content, token.offset);
+					}
+					break;
+
+				case Token.LPAR:
+					if (pending_name == null && pending_type != null
+							&& pending_type.equals(structure.getName())) {
+						// must be a constructor
+						pending_name = "" + pending_type;
+						pending_type = null;
+					}
+					if (pending_name == null) {
+						throw new ParseException(
+								"Unexpected '('. Expecting name", token.offset);
+					}
+					child = new Method(pending_name, pending_type,
+							pending_modifiers.toArray(new String[0]));
+					pending_name = null;
+					pending_type = null;
+					pending_modifiers.clear();
+					parseArgument(child, analyzer);
+					break;
+				case Token.RPAR:
+					structure.add(child);
+					child = null;
+					break;
+				case Token.LBRACE:
+					skipRightBrace(analyzer, 1);
+					break;
+				case Token.RBRACE:
+					analyzer.pushback();
+					return;
+				case Token.COMMA:
+					if (pending_name == null || pending_type == null) {
+						throw new ParseException(
+								"Unexpected ','. Expecting type with name",
+								token.offset);
+					}
+					structure.add(new Property(pending_name, pending_type,
+							pending_modifiers.toArray(new String[0])));
+					pending_name = null;
+					break;
+				case Token.COLON:
+					if (flag_abstract_method || flag_inside_interface) {
+						flag_abstract_method = false; // switch back the flag
+					} else {
+						if (pending_name == null && pending_type == null
+								&& pending_modifiers.size() == 0) {
+							// all good
+						} else {
+							if (pending_name == null || pending_type == null) {
+								throw new ParseException(
+										"Unexpected ';'. Expecting type with name",
+										token.offset);
+							}
+							structure.add(new Property(pending_name,
+									pending_type, pending_modifiers
+											.toArray(new String[0])));
+							pending_name = null;
+							pending_type = null;
+							pending_modifiers.clear();
+						}
+					}
+					break;
+				case Token.ASSIGN:
+					if (pending_name == null || pending_type == null) {
+						throw new ParseException(
+								"Unexpected '='. Expecting type with name",
+								token.offset);
+					}
+					structure.add(new Property(pending_name, pending_type,
+							pending_modifiers.toArray(new String[0])));
+					pending_name = null;
+					pending_type = null;
+					pending_modifiers.clear();
+					skipTo(analyzer, Token.COLON);
+					break;
+
+				case Token.THROWS:
+					skipTo(analyzer, Token.LBRACE);
+					analyzer.pushback();
+					break;
+
+				default:
 					throw new ParseException("Unexpected " + token.content,
 							token.offset);
 				}
-				break;
-			case Token.OPERATOR:
-				if (token.content.equals("[]") && pending_type != null) {
-					pending_type += "[]";
-				} else {
-					throw new ParseException("Unexpected operator "
-							+ token.content, token.offset);
-				}
-				break;
-
-			case Token.LPAR:
-				if (pending_name == null && pending_type != null
-						&& pending_type.equals(structure.getName())) {
-					// must be a constructor
-					pending_name = "" + pending_type;
-					pending_type = null;
-				}
-				if (pending_name == null) {
-					throw new ParseException("Unexpected '('. Expecting name",
-							token.offset);
-				}
-				child = new Method(pending_name, pending_type,
-						pending_modifiers.toArray(new String[0]));
-				pending_name = null;
-				pending_type = null;
-				pending_modifiers.clear();
-				parseArgument(child, analyzer);
-				break;
-			case Token.RPAR:
-				structure.add(child);
-				child = null;
-				break;
-			case Token.LBRACE:
-				skipRightBrace(analyzer, 1);
-				break;
-			case Token.RBRACE:
-				analyzer.pushback();
-				return;
-			case Token.COMMA:
-				if (pending_name == null || pending_type == null) {
-					throw new ParseException(
-							"Unexpected ','. Expecting type with name",
-							token.offset);
-				}
-				structure.add(new Property(pending_name, pending_type,
-						pending_modifiers.toArray(new String[0])));
-				pending_name = null;
-				break;
-			case Token.COLON:
-				if (flag_abstract_method || flag_inside_interface) {
-					flag_abstract_method = false; // switch back the flag
-				} else {
-					if (pending_name == null && pending_type == null
-							&& pending_modifiers.size() == 0) {
-						// all good
-					} else {
-						if (pending_name == null || pending_type == null) {
-							throw new ParseException(
-									"Unexpected ';'. Expecting type with name",
-									token.offset);
-						}
-						structure.add(new Property(pending_name, pending_type,
-								pending_modifiers.toArray(new String[0])));
-						pending_name = null;
-						pending_type = null;
-						pending_modifiers.clear();
-					}
-				}
-				break;
-			case Token.ASSIGN:
-				if (pending_name == null || pending_type == null) {
-					throw new ParseException(
-							"Unexpected '='. Expecting type with name",
-							token.offset);
-				}
-				structure.add(new Property(pending_name, pending_type,
-						pending_modifiers.toArray(new String[0])));
-				pending_name = null;
-				pending_type = null;
-				pending_modifiers.clear();
-				skipTo(analyzer, Token.COLON);
-				break;
-
-			case Token.THROWS:
-				skipTo(analyzer, Token.LBRACE);
-				analyzer.pushback();
-				break;
-
-			default:
-				throw new ParseException("Unexpected " + token.content,
-						token.offset);
 			}
+		} catch (StructureException e) {
+			int offset = -1;
+			if (token != null) {
+				offset = token.offset;
+			}
+			throw new ParseException("Structure Hierarchy: " + e.getMessage(),
+					offset);
 		}
 
 		// reach here? Should be an error
@@ -506,66 +530,77 @@ public class Parser {
 	 * @throws StructureException
 	 */
 	private void parseArgument(Structure method, LexicalAnalyzer analyzer)
-			throws ParseException, StructureException {
+			throws ParseException {
 		String pending_type = null;
 		String pending_name = null;
 		boolean flag_awaiting = false;
+		Token token = null;
 
 		if (Parser.debugging) {
 			System.err.println("parseArgument for " + method);
 		}
 
-		while (analyzer.hasMoreElements()) {
-			Token token = analyzer.nextElement();
+		try {
+			while (analyzer.hasMoreElements()) {
+				token = analyzer.nextElement();
 
-			switch (token.type) {
-			case Token.TYPE:
-			case Token.NAME:
-			case Token.PACKAGENAME:
-				if (pending_type == null) {
-					pending_type = token.content;
-					Token name = requires(analyzer, new int[] { Token.NAME });
-					pending_name = name.content;
-				} else {
+				switch (token.type) {
+				case Token.TYPE:
+				case Token.NAME:
+				case Token.PACKAGENAME:
+					if (pending_type == null) {
+						pending_type = token.content;
+						Token name = requires(analyzer,
+								new int[] { Token.NAME });
+						pending_name = name.content;
+					} else {
+						throw new ParseException("Unexpected " + token.content,
+								token.offset);
+					}
+					break;
+				case Token.OPERATOR:
+					if (token.content.equals("[]") && pending_type != null) {
+						pending_type += "[]";
+					} else {
+						throw new ParseException("Unexpected operator "
+								+ token.content, token.offset);
+					}
+					break;
+
+				case Token.COMMA:
+				case Token.RPAR:
+					if (pending_type != null && pending_name != null) {
+						method.add(new Argument(pending_name, pending_type));
+						pending_name = null;
+						pending_type = null;
+						flag_awaiting = false;
+					} else if (flag_awaiting) {
+						throw new ParseException(
+								"Unexpected '('. Expecting argument declaration",
+								token.offset);
+					}
+					switch (token.type) {
+					case Token.COMMA:
+						flag_awaiting = true;
+						break;
+					case Token.RPAR:
+						analyzer.pushback();
+						return;
+					}
+					break;
+
+				default:
 					throw new ParseException("Unexpected " + token.content,
 							token.offset);
 				}
-				break;
-			case Token.OPERATOR:
-				if (token.content.equals("[]") && pending_type != null) {
-					pending_type += "[]";
-				} else {
-					throw new ParseException("Unexpected operator "
-							+ token.content, token.offset);
-				}
-				break;
-
-			case Token.COMMA:
-			case Token.RPAR:
-				if (pending_type != null && pending_name != null) {
-					method.add(new Argument(pending_name, pending_type));
-					pending_name = null;
-					pending_type = null;
-					flag_awaiting = false;
-				} else if (flag_awaiting) {
-					throw new ParseException(
-							"Unexpected '('. Expecting argument declaration",
-							token.offset);
-				}
-				switch (token.type) {
-				case Token.COMMA:
-					flag_awaiting = true;
-					break;
-				case Token.RPAR:
-					analyzer.pushback();
-					return;
-				}
-				break;
-
-			default:
-				throw new ParseException("Unexpected " + token.content,
-						token.offset);
 			}
+		} catch (StructureException e) {
+			int offset = -1;
+			if (token != null) {
+				offset = token.offset;
+			}
+			throw new ParseException("Structure Hierarchy: " + e.getMessage(),
+					offset);
 		}
 
 		// reach here?

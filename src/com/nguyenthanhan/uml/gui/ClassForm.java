@@ -12,7 +12,8 @@ public class ClassForm extends StructureForm {
 	private Diagram diagram;
 
 	public ClassForm(Window owner, Diagram diagram) {
-		super(owner, "Adding new Class", false, true, false);
+		super(owner, "Adding new Class", false, new String[] { "public" },
+				false);
 
 		this.diagram = diagram;
 	}

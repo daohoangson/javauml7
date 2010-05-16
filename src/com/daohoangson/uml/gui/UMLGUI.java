@@ -32,6 +32,7 @@ import java.awt.event.WindowEvent;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.LinkedList;
@@ -423,15 +424,6 @@ public class UMLGUI extends JFrame implements ActionListener, ContainerListener 
 			// there are cases when we can't do this simple close operation
 			// in an Applet for example?
 		}
-
-		// take care of debugging
-		if (UMLGUI.debugging) {
-			Structure.debugging = UMLGUI.debugging;
-			Diagram.debugging = UMLGUI.debugging;
-			Outline.debugging = UMLGUI.debugging;
-			Parser.debugging = UMLGUI.debugging;
-			LexicalAnalyzer.debugging = UMLGUI.debugging;
-		}
 	}
 
 	public UMLGUI() {
@@ -772,7 +764,16 @@ public class UMLGUI extends JFrame implements ActionListener, ContainerListener 
 				int parsed = 0;
 				for (int i = 0; i < paths.length; i++) {
 					// we support multiple files
-					parsed += parser.parse(paths[i]);
+					try {
+						parsed += parser.parse(paths[i]);
+					} catch (ParseException e) {
+						if (UMLGUI.debugging) {
+							e.printStackTrace();
+						}
+						JOptionPane.showMessageDialog(this, e.getMessage()
+								+ "\nOffset: " + e.getErrorOffset(), title,
+								JOptionPane.ERROR_MESSAGE);
+					}
 				}
 
 				if (parsed > 0) {
@@ -1318,6 +1319,17 @@ public class UMLGUI extends JFrame implements ActionListener, ContainerListener 
 				System.err.println("Icon not found: " + name);
 			}
 			return null;
+		}
+	}
+
+	public static void setDebugging(boolean flag) {
+		UMLGUI.debugging = flag;
+		if (flag == true) {
+			Structure.debugging = UMLGUI.debugging;
+			Diagram.debugging = UMLGUI.debugging;
+			Outline.debugging = UMLGUI.debugging;
+			Parser.debugging = UMLGUI.debugging;
+			LexicalAnalyzer.debugging = UMLGUI.debugging;
 		}
 	}
 }
