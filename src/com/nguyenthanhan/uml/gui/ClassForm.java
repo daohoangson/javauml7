@@ -6,15 +6,23 @@ import com.daohoangson.uml.gui.Diagram;
 import com.daohoangson.uml.structures.Structure;
 import com.tranvietson.uml.structures.Class;
 import com.tranvietson.uml.structures.StructureException;
-
+/**
+ * @(#)ClassForm.java
+ * 		Create a simple class 
+ * @author Nguyen Thanh An
+ * @version 1.0
+ */
 public class ClassForm extends StructureForm {
 	private static final long serialVersionUID = 8063825239295045L;
 	private Diagram diagram;
-
+	/**
+	 * ClassForm constructor 
+	 * @param owner, diagram
+	 */
 	public ClassForm(Window owner, Diagram diagram) {
 		super(owner, "Adding new Class", false, new String[] { "public" },
 				false);
-
+		
 		this.diagram = diagram;
 	}
 

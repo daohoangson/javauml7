@@ -15,7 +15,13 @@ import javax.swing.JOptionPane;
 import javax.swing.event.HyperlinkEvent;
 import javax.swing.event.HyperlinkListener;
 import javax.swing.event.HyperlinkEvent.EventType;
-
+/**
+ * @(#)AboutForm.java
+ * 		Introduction team members 
+ * 		& information of source code
+ * @author Nguyen Thanh An
+ * @version 1.0
+ */
 public class AboutForm extends ConvenientForm implements HyperlinkListener {
 	private static final long serialVersionUID = 7722581420480179614L;
 
@@ -44,7 +50,7 @@ public class AboutForm extends ConvenientForm implements HyperlinkListener {
 		ep.setBackground(getBackground());
 		b.add(ep);
 
-		// TODO: Anybody knows why the button is not center aligned?
+		// TODO: Create the button "OK" is center aligned
 		JButton btn = new JButton("OK");
 		btn.addActionListener(new ActionListener() {
 			@Override
@@ -52,6 +58,7 @@ public class AboutForm extends ConvenientForm implements HyperlinkListener {
 				submit();
 			}
 		});
+		btn.setAlignmentX(0.5f);
 		b.add(btn);
 
 		int w = 10;
