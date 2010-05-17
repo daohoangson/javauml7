@@ -17,7 +17,6 @@ public class Interface extends Structure {
 	protected void config() {
 		cfg_unique_globally = true;
 		cfg_use_visibility = true;
-		cfg_use_scope = true;
 		cfg_container_structures = new String[] { "Interface" };
 		cfg_child_structures = new String[] { "Property", "Method" };
 		cfg_hide_visibility = true;
@@ -64,13 +63,8 @@ public class Interface extends Structure {
 	}
 
 	@Override
-	public boolean setModifier(String modifier) throws StructureException {
-		if (modifier.length() == 0 || modifier.equals("public")) {
-			return super.setModifier(modifier);
-		} else {
-			throw new StructureException("An Interface can only have "
-					+ "default or public visibility!");
-		}
+	public String[] checkAllowedVisibilities() {
+		return new String[] { "default", "public" };
 	}
 
 	@Override

@@ -20,6 +20,7 @@ public class Method extends Structure {
 		cfg_use_type = true;
 		cfg_use_visibility = true;
 		cfg_use_scope = true;
+		cfg_use_abstract = true;
 		cfg_container_structures = new String[] { "Class", "Interface" };
 		cfg_child_structures = new String[] { "Argument" };
 		cfg_hide_children = true;

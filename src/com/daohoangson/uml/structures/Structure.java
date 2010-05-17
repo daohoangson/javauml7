@@ -44,33 +44,24 @@ public abstract class Structure implements StructureListener {
 	 */
 	private String type = null;
 	/**
-	 * Specifies a default level of visibility
-	 */
-	final static private int VISIBILITY_DEFAULT = -1;
-	/**
-	 * Specifies a public level of visibility
-	 */
-	final static private int VISIBILITY_PUBLIC = 0;
-	/**
-	 * Specifies a protected level of visibility
-	 */
-	final static private int VISIBILITY_PROTECTED = 1;
-	/**
-	 * Specifies a private level of visibility
-	 */
-	final static private int VISIBILITY_PRIVATE = 2;
-	/**
-	 * The visibility of the structure.
+	 * The visibility of the structure. Default value is "default". Obviously,
+	 * every structure has default visibility... in default
 	 * 
 	 * @see #getVisibility()
 	 */
-	private int visibility = Structure.VISIBILITY_DEFAULT;
+	private String visibility = "default";
 	/**
 	 * The scope of the structure.
 	 * 
 	 * @see #getScope()
 	 */
 	private boolean is_static = false;
+	/**
+	 * The abstract-ness of the structure
+	 * 
+	 * @see #getAbstract()
+	 */
+	private boolean is_abstract = false;
 	/**
 	 * The container.
 	 * 
@@ -129,6 +120,12 @@ public abstract class Structure implements StructureListener {
 	 * @see #checkUseScope()
 	 */
 	protected boolean cfg_use_scope = false;
+	/**
+	 * Specifies if the structure accepts abstract modifier
+	 * 
+	 * @see #checkUseAbstract()
+	 */
+	protected boolean cfg_use_abstract = false;
 	/**
 	 * Specifies if the structure accepts container. Each structure can only
 	 * have 1 container! Default value is an empty array which means doesn't
@@ -193,10 +190,6 @@ public abstract class Structure implements StructureListener {
 	 */
 	static private List<StructureAdding> adding_queue = new LinkedList<StructureAdding>();
 	/**
-	 * Global listener. Will be call when new structure is created
-	 */
-	static public StructureListener global_listener = null;
-	/**
 	 * List of objects which listen to our event.
 	 * 
 	 * @see #addStructureListener(StructureListener)
@@ -232,13 +225,6 @@ public abstract class Structure implements StructureListener {
 	 */
 	public Structure() {
 		config();
-
-		// new structure is created
-		// call the listener if any
-		if (Structure.global_listener != null) {
-			Structure.global_listener.structureChanged(new StructureEvent(this,
-					StructureEvent.ACTIVE));
-		}
 	}
 
 	/**
@@ -373,23 +359,15 @@ public abstract class Structure implements StructureListener {
 
 		// checks for access modifiers
 		if (cfg_use_visibility) {
-			String visibilities[] = { "public", "protected", "private" };
-			int visibilities_int[] = { Structure.VISIBILITY_PUBLIC,
-					Structure.VISIBILITY_PROTECTED,
-					Structure.VISIBILITY_PRIVATE };
+			String visibilities[] = checkAllowedVisibilities();
 			for (int i = 0, n = visibilities.length; i < n; i++) {
 				if (visibilities[i].equals(modifier)) {
-					if (visibility == Structure.VISIBILITY_DEFAULT) {
-						visibility = visibilities_int[i];
-						if (Structure.debugging) {
-							System.err.println(getStructureName()
-									+ ".setModifier (visibility): " + modifier);
-						}
-						return true;
-					} else {
-						throw new StructureException(this
-								+ " can not have multiple access modifiers");
+					visibility = new String(modifier);
+					if (Structure.debugging) {
+						System.err.println(getStructureName()
+								+ ".setModifier (visibility): " + modifier);
 					}
+					return true;
 				}
 			}
 		}
@@ -397,15 +375,41 @@ public abstract class Structure implements StructureListener {
 		// checks for scope modifier
 		if (cfg_use_scope) {
 			if ("static".equals(modifier)) {
+				if (is_abstract) {
+					// can not static and abstract
+					throw new StructureException("Can not apply static scope "
+							+ "to abstract structure");
+				}
 				if (is_static == false) {
 					is_static = true;
+					fireChanged(StructureEvent.MODIFIER);
 				}
 				if (Structure.debugging) {
 					System.err.println(getStructureName()
 							+ ".setModifier (scope): is_static = " + is_static);
 				}
+				return true;
+			}
+		}
 
-				fireChanged(StructureEvent.MODIFIER);
+		// checks for abstract modifier
+		if (cfg_use_abstract) {
+			if ("abstract".equals(modifier)) {
+				if (is_abstract) {
+					// can not static and abstract
+					throw new StructureException(
+							"Can not make static structure "
+									+ "an abstract one");
+				}
+				if (is_abstract == false) {
+					is_abstract = true;
+					fireChanged(StructureEvent.MODIFIER);
+				}
+				if (Structure.debugging) {
+					System.err.println(getStructureName()
+							+ ".setModifier (abstract): is_abstract = "
+							+ is_abstract);
+				}
 				return true;
 			}
 		}
@@ -445,30 +449,37 @@ public abstract class Structure implements StructureListener {
 			boolean cfg_hide_visibility) {
 		String str = "";
 		if (cfg_use_visibility && !cfg_hide_visibility) {
-			switch (visibility) {
-			case VISIBILITY_PUBLIC:
-				str += "+ ";
-				break;
-			case VISIBILITY_PROTECTED:
-				str += "# ";
-				break;
-			case VISIBILITY_PRIVATE:
-				str += "- ";
-				break;
-			case VISIBILITY_DEFAULT:
+			if (visibility.equals("default")) {
 				str += "~ ";
-				break;
+			} else if (visibility.equals("public")) {
+				str += "+ ";
+			} else if (visibility.equals("protected")) {
+				str += "# ";
+			} else if (visibility.equals("private")) {
+				str += "- ";
 			}
-		}
-		if (cfg_use_type) {
-			str += getType() + " ";
 		}
 		str += getName();
 
 		str = prefix + str + suffix;
 
+		if (type != null && !type.equals("void")) {
+			str += ": " + getType();
+		}
+
 		if (is_static) {
-			str = "<html><u>" + str + "</u></html>";
+			// display static structure with under-line
+			str = "<u>" + str + "</u>";
+		}
+
+		if (is_abstract) {
+			// display abstract structure in italic
+			str = "<i>" + str + "</i>";
+		}
+
+		if (is_static || is_abstract) {
+			// because we used HTML above
+			str = "<html>" + str + "</html>";
 		}
 
 		return str;
@@ -489,7 +500,7 @@ public abstract class Structure implements StructureListener {
 	}
 
 	/**
-	 * Checks if the structure accepts type or not. Use full to build the
+	 * Checks if the structure accepts type or not. Useful to build the
 	 * interface
 	 * 
 	 * @return true if it is
@@ -499,7 +510,7 @@ public abstract class Structure implements StructureListener {
 	}
 
 	/**
-	 * Checks if the structure accepts visibility or not. Use full to build the
+	 * Checks if the structure accepts visibility or not. Useful to build the
 	 * interface
 	 * 
 	 * @return true if it is
@@ -509,7 +520,26 @@ public abstract class Structure implements StructureListener {
 	}
 
 	/**
-	 * Checks if the structure accepts scope or not. Use full to build the
+	 * Checks for allowed visibility modifiers
+	 * 
+	 * @return an array of allowed ones
+	 */
+	public String[] checkAllowedVisibilities() {
+		return new String[] { "default", "public", "protected", "private" };
+	}
+
+	/**
+	 * Checks if the structure accepts scope or not. Useful to build the
+	 * interface
+	 * 
+	 * @return true if it is
+	 */
+	public boolean checkUseAbstract() {
+		return cfg_use_abstract;
+	}
+
+	/**
+	 * Checks if the structure accepts abstract or not. Use full to build the
 	 * interface
 	 * 
 	 * @return true if it is
@@ -738,21 +768,19 @@ public abstract class Structure implements StructureListener {
 	}
 
 	/**
-	 * Gets a string represent structure's visibility
+	 * Gets a string represent structure's visibility. Please note that this
+	 * method automatically omit default visibility
 	 * 
 	 * @return the visibility (public|protected|private) or a zero-length string
 	 *         (no null value)
 	 */
 	public String getVisibility() {
-		switch (visibility) {
-		case VISIBILITY_PUBLIC:
-			return "public";
-		case VISIBILITY_PROTECTED:
-			return "protected";
-		case VISIBILITY_PRIVATE:
-			return "private";
-		default:
+		if (visibility.equals("default")) {
+			// omit default
 			return "";
+		} else {
+			// return the visibility
+			return new String(visibility);
 		}
 	}
 
@@ -764,6 +792,19 @@ public abstract class Structure implements StructureListener {
 	public String getScope() {
 		if (is_static) {
 			return "static";
+		} else {
+			return "";
+		}
+	}
+
+	/**
+	 * Gets a string represent structure's abstract-ness
+	 * 
+	 * @return the scope or a zero-length string (no null value)
+	 */
+	public String getAbstract() {
+		if (is_abstract) {
+			return "abstract";
 		} else {
 			return "";
 		}

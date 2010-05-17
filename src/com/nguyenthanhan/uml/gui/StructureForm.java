@@ -23,6 +23,7 @@ import com.daohoangson.uml.structures.Structure;
 import com.tranvietson.uml.structures.StructureEvent;
 import com.tranvietson.uml.structures.StructureException;
 import com.tranvietson.uml.structures.StructureListener;
+
 /**
  * @(#)StructureForm.java
  * 
@@ -32,10 +33,12 @@ import com.tranvietson.uml.structures.StructureListener;
 public abstract class StructureForm extends ConvenientForm implements
 		ActionListener {
 	private static final long serialVersionUID = 297547056430421671L;
+	private Structure prototype;
 	protected JTextField txt_name;
 	protected JTextField txt_type;
-	protected String visibility = "";
-	protected String scope = null;
+	protected String sel_visibility = null;
+	protected String sel_scope = null;
+	protected String sel_abstract = null;
 	protected JButton btn_create;
 	protected JCheckBox cb_multiple;
 	/**
@@ -45,15 +48,15 @@ public abstract class StructureForm extends ConvenientForm implements
 	 * @see #removeStructureListener(StructureListener)
 	 */
 	private Vector<StructureListener> listeners;
+
 	/**
 	 * StructureForm constructor
 	 * 
-	 * @param owner, title, cfg_use_type,
-	 *        cfg_use_visibility, cfg_use_scope
-	 *          
+	 * @param owner
+	 *            , title, cfg_use_type, cfg_use_visibility, cfg_use_scope
+	 * 
 	 */
-	public StructureForm(Window owner, String title, boolean cfg_use_type,
-			String[] cfg_visibilities, boolean cfg_use_scope) {
+	public StructureForm(Window owner, String title, Structure prototype) {
 		super(owner, title, ModalityType.APPLICATION_MODAL);
 		setLayout(new FlowLayout());
 
@@ -64,7 +67,7 @@ public abstract class StructureForm extends ConvenientForm implements
 		add(lb_name);
 		add(txt_name);
 
-		if (cfg_use_type) {
+		if (prototype.checkUseType()) {
 			txt_type = new JTextField(15);
 			JLabel lb_type = new JLabel("Type");
 			lb_type.setLabelFor(txt_type);
@@ -73,8 +76,9 @@ public abstract class StructureForm extends ConvenientForm implements
 			add(txt_type);
 		}
 
-		if (cfg_visibilities != null) {
+		if (prototype.checkUseVisibility()) {
 			ButtonGroup bg = new ButtonGroup();
+			String[] cfg_visibilities = prototype.checkAllowedVisibilities();
 			char[] vowels = { 'a', 'e', 'i', 'o', 'u' };
 			int[] vowels_code = { KeyEvent.VK_A, KeyEvent.VK_E, KeyEvent.VK_I,
 					KeyEvent.VK_O, KeyEvent.VK_U };
@@ -98,13 +102,27 @@ public abstract class StructureForm extends ConvenientForm implements
 
 				bg.add(rb);
 				add(rb);
+
+				// automatically select the first one
+				if (i == 0) {
+					rb.setSelected(true);
+				}
 			}
 		}
 
-		if (cfg_use_scope) {
+		if (prototype.checkUseScope()) {
 			JCheckBox cb = new JCheckBox("static");
 			cb.setMnemonic(KeyEvent.VK_S);
 			cb.setActionCommand("scope");
+			cb.addActionListener(this);
+
+			add(cb);
+		}
+
+		if (prototype.checkUseAbstract()) {
+			JCheckBox cb = new JCheckBox("abstract");
+			cb.setMnemonic(KeyEvent.VK_T);
+			cb.setActionCommand("abstract");
 			cb.addActionListener(this);
 
 			add(cb);
@@ -125,6 +143,8 @@ public abstract class StructureForm extends ConvenientForm implements
 
 		pack();
 		setLocationRelativeTo(null);
+
+		this.prototype = prototype;
 	}
 
 	private void reset() {
@@ -136,12 +156,37 @@ public abstract class StructureForm extends ConvenientForm implements
 		txt_name.requestFocusInWindow();
 	}
 
-	abstract protected Structure __submit() throws StructureException;
+	protected Structure __submit(Structure prototype) throws StructureException {
+		Structure structure = null;
+
+		try {
+			structure = prototype.getClass().newInstance();
+		} catch (Exception e) {
+			throw new StructureException("Unable to create new "
+					+ prototype.getStructureName());
+		}
+
+		structure.setName(txt_name.getText());
+		if (prototype.checkUseType()) {
+			structure.setType(txt_type.getText());
+		}
+		if (sel_visibility != null) {
+			structure.setModifier(sel_visibility);
+		}
+		if (sel_scope != null) {
+			structure.setModifier(sel_scope);
+		}
+		if (sel_abstract != null) {
+			structure.setModifier(sel_abstract);
+		}
+
+		return structure;
+	}
 
 	@Override
 	protected void submit() {
 		try {
-			Structure structure = __submit();
+			Structure structure = __submit(prototype);
 
 			if (structure != null) {
 				fireChanged(structure);
@@ -164,13 +209,20 @@ public abstract class StructureForm extends ConvenientForm implements
 
 		if (action.equals("visibility")) {
 			String modifier = ((AbstractButton) e.getSource()).getText();
-			visibility = modifier;
+			sel_visibility = modifier;
 		} else if (action.equals("scope")) {
 			JCheckBox cb = (JCheckBox) e.getSource();
 			if (cb.isSelected()) {
-				scope = cb.getText();
+				sel_scope = cb.getText();
 			} else {
-				scope = null;
+				sel_scope = null;
+			}
+		} else if (action.equals("abstract")) {
+			JCheckBox cb = (JCheckBox) e.getSource();
+			if (cb.isSelected()) {
+				sel_abstract = cb.getText();
+			} else {
+				sel_abstract = null;
 			}
 		}
 	}
