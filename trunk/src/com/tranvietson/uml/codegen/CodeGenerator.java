@@ -92,6 +92,12 @@ public class CodeGenerator {
 				bw.write(structure.getVisibility() + " "); // visibility
 			}
 
+			// write abstract if it exists
+			if (structure.checkUseAbstract()
+					&& structure.getAbstract().length() > 0) {
+				bw.write(structure.getAbstract() + " "); // abstract
+			}
+
 			// if it's a class
 			if (structure.getStructureName().equals("Class")) {
 				// class declaration
@@ -149,6 +155,10 @@ public class CodeGenerator {
 				// check if it has visibility
 				if (child.getVisibility().length() > 0) {
 					bw.write(child.getVisibility() + " ");
+				}
+				// check if it is abstract
+				if (child.getAbstract().length() > 0) {
+					bw.write(child.getAbstract() + " ");
 				}
 				// check if it has type
 				if (child.getType() != null) {

@@ -6,32 +6,31 @@ import com.daohoangson.uml.gui.Diagram;
 import com.daohoangson.uml.structures.Structure;
 import com.tranvietson.uml.structures.Interface;
 import com.tranvietson.uml.structures.StructureException;
+
 /**
- * @(#)InterfaceForm.java
- *      Create a simple interface
+ * @(#)InterfaceForm.java Create a simple interface
  * @author Nguyen Thanh An
  * @version 1.0
  */
 public class InterfaceForm extends StructureForm {
 	private static final long serialVersionUID = -789691956735803020L;
 	private Diagram diagram;
+
 	/**
 	 * InterfaceForm constructor
-	 * @param owner, diagram
+	 * 
+	 * @param owner
+	 *            , diagram
 	 */
 	public InterfaceForm(Window owner, Diagram diagram) {
-		super(owner, "Adding new Interface", false, new String[] { "public", },
-				false);
+		super(owner, "Adding new Interface", new Interface());
 
 		this.diagram = diagram;
 	}
 
 	@Override
-	public Structure __submit() throws StructureException {
-		Interface newInterface = new Interface(txt_name.getText());
-		if (visibility.length() > 0) {
-			newInterface.setModifier(visibility);
-		}
+	protected Structure __submit(Structure prototype) throws StructureException {
+		Structure newInterface = super.__submit(prototype);
 
 		diagram.add(newInterface);
 

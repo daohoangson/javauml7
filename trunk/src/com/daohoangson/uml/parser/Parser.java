@@ -147,10 +147,8 @@ public class Parser {
 					break;
 				case Token.VISIBILITY:
 				case Token.SCOPE:
-					pending_modifiers.add(token.content);
-					break;
 				case Token.ABSTRACT:
-					// ignore
+					pending_modifiers.add(token.content);
 					break;
 				case Token.TYPE:
 					if (flag_adding_parent) {
@@ -391,6 +389,7 @@ public class Parser {
 					pending_modifiers.add(token.content);
 					break;
 				case Token.ABSTRACT:
+					pending_modifiers.add(token.content);
 					flag_abstract_method = true;
 					break;
 				case Token.TYPE:
