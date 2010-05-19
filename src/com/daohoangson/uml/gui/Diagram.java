@@ -5,6 +5,8 @@ import java.awt.Component;
 import java.awt.Container;
 import java.awt.Cursor;
 import java.awt.Dimension;
+import java.awt.Font;
+import java.awt.FontMetrics;
 import java.awt.Graphics;
 import java.awt.Image;
 import java.awt.Point;
@@ -158,6 +160,18 @@ public class Diagram extends JPanel implements StructureListener,
 	 */
 	private int cfg_gap_horizontal = 50;
 	/**
+	 * The minimum size factor
+	 * 
+	 * @see #setSizeFactor(float)
+	 */
+	private float cfg_min_size_factor = 0.25f;
+	/**
+	 * The maximum size factor
+	 * 
+	 * @see #setSizeFactor(float)
+	 */
+	private float cfg_max_size_factor = 5;
+	/**
 	 * Hold the currently pressed component
 	 */
 	private DiagramStructureGroup pressedComponent = null;
@@ -165,11 +179,18 @@ public class Diagram extends JPanel implements StructureListener,
 	 * Hold the last pressed component
 	 */
 	private DiagramStructureGroup lastPressedComponent = null;
-
 	/**
 	 * Hold the last pressed location
 	 */
 	private Point pressedLocation = null;
+	/**
+	 * Hold the title of the diagram. If it is set, it will display at the top
+	 * left corner of the diagram
+	 * 
+	 * @see #setTitle(String)
+	 * @see #getTitle()
+	 */
+	private String title = null;
 
 	/**
 	 * Constructor. Setup some useful configurations.
@@ -182,6 +203,33 @@ public class Diagram extends JPanel implements StructureListener,
 		addMouseMotionListener(this);
 		addMouseWheelListener(this);
 		addKeyListener(this);
+
+		// JScrollPane
+		scrollpane = new JScrollPane(this);
+		// the diagram is usually big
+		// we want it scrolls a little bit faster
+		int unitIncrement = 15;
+		scrollpane.getVerticalScrollBar().setUnitIncrement(unitIncrement);
+		scrollpane.getHorizontalScrollBar().setUnitIncrement(unitIncrement);
+		// mouse wheel is for zooming
+		scrollpane.setWheelScrollingEnabled(false);
+		// disable keyboard scrolling
+		InputMap im = scrollpane
+				.getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT);
+		im.put(KeyStroke.getKeyStroke("UP"), "none");
+		im.put(KeyStroke.getKeyStroke("DOWN"), "none");
+		im.put(KeyStroke.getKeyStroke("LEFT"), "none");
+		im.put(KeyStroke.getKeyStroke("RIGHT"), "none");
+	}
+
+	/**
+	 * Sets the title for the diagram
+	 * 
+	 * @param title
+	 *            the new title
+	 */
+	public void setTitle(String title) {
+		this.title = title;
 	}
 
 	/**
@@ -195,6 +243,12 @@ public class Diagram extends JPanel implements StructureListener,
 	public void setFocus(Structure structure) {
 		onFocusStructure = structure;
 		repaint();
+
+		// if (structure != null) {
+		// setTitle(structure.getName());
+		// } else {
+		// setTitle(null);
+		// }
 
 		if (Diagram.debugging) {
 			System.err.println("On Focus: " + structure);
@@ -211,12 +265,16 @@ public class Diagram extends JPanel implements StructureListener,
 	 * @see #draw()
 	 */
 	public void setSizeFactor(float size_factor) {
-		// make sure it's visible
-		size_factor = (float) Math.max(0.25, size_factor);
+		// make sure it's in range
+		size_factor = Math.max(cfg_min_size_factor, Math.min(
+				cfg_max_size_factor, size_factor));
 
 		if (this.size_factor != size_factor) {
+			float old_size_factor = this.size_factor;
 			this.size_factor = size_factor;
 			draw();
+
+			firePropertyChange("size_factor", old_size_factor, size_factor);
 		}
 	}
 
@@ -236,6 +294,15 @@ public class Diagram extends JPanel implements StructureListener,
 	}
 
 	/**
+	 * Returns the current title of the diagram
+	 * 
+	 * @return the title
+	 */
+	public String getTitle() {
+		return title;
+	}
+
+	/**
 	 * Get the scroll-able component. Use this for a better user experience.
 	 * Anyway, this is optional. You can always
 	 * {@linkplain JComponent#add(Component) add} directly this object.
@@ -243,24 +310,6 @@ public class Diagram extends JPanel implements StructureListener,
 	 * @return a JScrollPane object of the diagram
 	 */
 	public Component getScrollable() {
-		if (scrollpane == null) {
-			scrollpane = new JScrollPane(this);
-			// the diagram is usually big
-			// we want it scrolls a little bit faster
-			int unitIncrement = 15;
-			scrollpane.getVerticalScrollBar().setUnitIncrement(unitIncrement);
-			scrollpane.getHorizontalScrollBar().setUnitIncrement(unitIncrement);
-			// mouse wheel is for zooming
-			scrollpane.setWheelScrollingEnabled(false);
-			// disable keyboard scrolling
-			InputMap im = scrollpane
-					.getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT);
-			im.put(KeyStroke.getKeyStroke("UP"), "none");
-			im.put(KeyStroke.getKeyStroke("DOWN"), "none");
-			im.put(KeyStroke.getKeyStroke("LEFT"), "none");
-			im.put(KeyStroke.getKeyStroke("RIGHT"), "none");
-		}
-
 		return scrollpane;
 	}
 
@@ -380,6 +429,28 @@ public class Diagram extends JPanel implements StructureListener,
 
 		return boundsCacheArray;
 
+	}
+
+	/**
+	 * Checks if the diagram can be zoomed in
+	 * 
+	 * @return true if it can
+	 * 
+	 * @see #setSizeFactor(float)
+	 */
+	public boolean checkCanZoomIn() {
+		return size_factor < cfg_max_size_factor;
+	}
+
+	/**
+	 * Checks if the diagram can be zoomed out
+	 * 
+	 * @return true if it can
+	 * 
+	 * @see #setSizeFactor(float)
+	 */
+	public boolean checkCanZoomOut() {
+		return size_factor > cfg_min_size_factor;
 	}
 
 	/**
@@ -580,6 +651,7 @@ public class Diagram extends JPanel implements StructureListener,
 
 		boundsCache = null; // remove the cache because it's useless now
 
+		// draw relationships
 		synchronized (relationships) {
 			Iterator<Relationship> itr = relationships.iterator();
 			while (itr.hasNext()) {
@@ -589,6 +661,33 @@ public class Diagram extends JPanel implements StructureListener,
 					relationship.draw(g, size_factor);
 				}
 			}
+		}
+
+		// draw title
+		if (title != null) {
+			Font bak_font = g.getFont();
+			Color bak_color = g.getColor();
+
+			g.setFont(new Font("Courier New", Font.PLAIN, 12));
+			g.setColor(Color.black);
+			FontMetrics fm = g.getFontMetrics();
+			int h = fm.getHeight();
+			int w = fm.stringWidth(title);
+			int dx = 5;
+			int dy = 5;
+			// Rectangle visible = getVisibleRect();
+			// we want to position the title inside the visible rect
+			// but it doesn't work out so will just display it
+			// at the top left corner
+			Rectangle visible = new Rectangle();
+			g.drawString(title, visible.x + dx, visible.y + dy + h);
+			g.drawLine(visible.x + dx + w + dx, visible.y, visible.x + dx + w
+					+ dx, visible.y + dy + h + dy);
+			g.drawLine(visible.x, visible.y + dy + h + dy, visible.x + dx + w
+					+ dx, visible.y + dy + h + dy);
+
+			g.setFont(bak_font);
+			g.setColor(bak_color);
 		}
 
 		if (image != null) {
@@ -1110,9 +1209,9 @@ public class Diagram extends JPanel implements StructureListener,
 					step = 15;
 				}
 				lastPressedComponent.setLocationRelative(step * dx, step * dy);
-
 				ensureStructureIsVisible(lastPressedComponent.getStructure(),
 						false);
+				repaint();
 
 				if (Diagram.debugging) {
 					System.err.println("Moving component: "

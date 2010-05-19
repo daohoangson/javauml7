@@ -1,6 +1,5 @@
 package com.daohoangson.uml.parser;
 
-
 /**
  * A grammar of Java language. This grammar makes use of several different type
  * of automata
@@ -43,13 +42,12 @@ public class GrammarOfJava extends Grammar {
 		add(new AutomataOfStatic(Token.IMPLEMENTS, "implements"));
 		add(new AutomataOfStatic(Token.THROWS, "throws"));
 
-		add(new AutomataOfStatic(Token.KEYWORD_IGNORED, new String[] { "final",
-				"native", "strictfp", "synchronized", "transient", "volatile" }));
-		add(new AutomataOfArrayAccess());
-
 		add(new AutomataOfAnnotation());
 		add(new AutomataOfStatic(Token.PACKAGE, "package"));
 		add(new AutomataOfStatic(Token.IMPORT, "import"));
+		
+		add(new AutomataOfStatic(Token.KEYWORD_IGNORED, new String[] { "final",
+				"native", "strictfp", "synchronized", "transient", "volatile" }));
 
 		add(new AutomataOfStatic(Token.LPAR, '('));
 		add(new AutomataOfStatic(Token.RPAR, ')'));
@@ -67,6 +65,8 @@ public class GrammarOfJava extends Grammar {
 		add(new AutomataOfCharValue());
 		add(new AutomataOfStringValue());
 		add(new AutomataOfNumberValue());
+
+		add(new AutomataOfArrayAccess());
 	}
 }
 

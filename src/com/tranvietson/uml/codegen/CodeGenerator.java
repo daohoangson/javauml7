@@ -13,6 +13,10 @@ public class CodeGenerator {
 	 */
 	private String rootpath;
 	/**
+	 * Specifies if we should overwrite existed files
+	 */
+	private boolean overwrite;
+	/**
 	 * Determines if we are in debug mode.
 	 */
 	static public boolean debugging = false;
@@ -24,7 +28,20 @@ public class CodeGenerator {
 	 *            the root path to use for source file(s)
 	 */
 	public CodeGenerator(String rootpath) {
+		this(rootpath, false);
+	}
+
+	/**
+	 * Constructor with a root path and the overwrite flag.
+	 * 
+	 * @param rootpath
+	 *            the root path to use for source file(s)
+	 * @param overwrite
+	 *            set to true to overwrite without asking
+	 */
+	public CodeGenerator(String rootpath, boolean overwrite) {
 		this.rootpath = rootpath;
+		this.overwrite = overwrite;
 	}
 
 	/**
@@ -54,9 +71,16 @@ public class CodeGenerator {
 			}
 			new File(path).mkdirs();
 
+			File source = new File(path + pathSeparator + structure.getName()
+					+ ".java");
+			if (source.exists() && !overwrite) {
+				// the file existed and we do not have overwrite flag
+				// stop here
+				return false;
+			}
+
 			// setup the writer
-			FileWriter fw = new FileWriter(path + pathSeparator
-					+ structure.getName() + ".java");
+			FileWriter fw = new FileWriter(source);
 			BufferedWriter bw = new BufferedWriter(fw);
 
 			// output the package

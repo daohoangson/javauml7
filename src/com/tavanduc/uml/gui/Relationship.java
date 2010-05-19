@@ -124,9 +124,12 @@ abstract public class Relationship {
 			System.err.println("Drawing from " + getFrom() + " to " + getTo());
 		}
 
+		// get bound of structures
 		Rectangle fromBound = diagram.getBoundsFor(getFrom());
 		Rectangle toBound = diagram.getBoundsFor(getTo());
 		if (fromBound == null || toBound == null) {
+			// if one of the structures' bounds can not be found
+			// do nothing
 			return;
 		}
 
@@ -418,44 +421,6 @@ abstract public class Relationship {
 		if (cfg_dash_length == 0) {
 			g.drawLine(x1, y1, x2, y2);
 		} else {
-			// int xx, yy, x, y;
-			//
-			// if (x1 == x2) {
-			// // vertical line
-			// xx = 0;
-			// yy = cfg_dash_length;
-			// if (y1 > y2) {
-			// yy *= -1;
-			// }
-			// } else {
-			// // horizontal line
-			// xx = cfg_dash_length;
-			// yy = 0;
-			// if (x1 > x2) {
-			// xx *= -1;
-			// }
-			// }
-			//
-			// x = x1;
-			// y = y1;
-			//
-			// boolean space = false;
-			//
-			// while (Relationship.isBetween(x, x1, x2)
-			// && Relationship.isBetween(y, y1, y2)) {
-			// int xnext = x + xx;
-			// int ynext = y + yy;
-			// if (Relationship.isBetween(xnext, x1, x2)
-			// && Relationship.isBetween(ynext, y1, y2)) {
-			// if (space) {
-			// g.drawLine(x, y, xnext, ynext);
-			// }
-			// }
-			// x = xnext;
-			// y = ynext;
-			// space = !space;
-			// }
-			// rewritten using BasicStroke
 			Graphics2D g2d = (Graphics2D) g;
 			Stroke backup = g2d.getStroke();
 			Stroke dashed = new BasicStroke(1, BasicStroke.CAP_BUTT,

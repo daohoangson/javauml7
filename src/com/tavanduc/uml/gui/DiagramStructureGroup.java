@@ -161,15 +161,6 @@ public class DiagramStructureGroup extends JPanel implements MouseListener,
 		Dimension preferredSize = getPreferredSize();
 		Dimension thisSize = getSize();
 
-		// make sure it's in parent component size
-		// if (getParent() != null) {
-		// Dimension parentSize = getParent().getSize();
-		// x = Math.max(0, Math.min(x, parentSize.width -
-		// preferredSize.width));
-		// y = Math.max(0, Math.min(y, parentSize.height -
-		// preferredSize.height));
-		// }
-
 		// grid-style positioning
 		x = (int) (5 * Math.floor((double) x / 5));
 		y = (int) (5 * Math.floor((double) y / 5));
