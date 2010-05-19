@@ -15,10 +15,9 @@ import javax.swing.JOptionPane;
 import javax.swing.event.HyperlinkEvent;
 import javax.swing.event.HyperlinkListener;
 import javax.swing.event.HyperlinkEvent.EventType;
+
 /**
- * @(#)AboutForm.java
- * 		Introduction team members 
- * 		& information of source code
+ * @(#)AboutForm.java Introduction team members & information of source code
  * @author Nguyen Thanh An
  * @version 1.0
  */
@@ -28,8 +27,7 @@ public class AboutForm extends ConvenientForm implements HyperlinkListener {
 	public AboutForm(Window owner) {
 		super(owner, "About", ModalityType.APPLICATION_MODAL);
 
-		// String uri = "http://code.google.com/p/javauml7/";
-		String uri = "http://www.google.com/search?q=it's+not+that+easy,+man!";
+		String uri = "http://code.google.com/p/javauml7/";
 		String html = "<html><h1>UML Assignment Application</h1>"
 				+ "<em>Built by Team 7, K53CC, UET, VNU</em><br/>"
 				+ "Team Members:<br/><ol>"
@@ -38,6 +36,7 @@ public class AboutForm extends ConvenientForm implements HyperlinkListener {
 				+ "<li>Ta Van Duc</li>"
 				+ "<li>Dao Hoang Son</li>"
 				+ "<li>Tran Viet Son</li>"
+				+ "<li>Nguyen Thi Ngoc Tu</li>"
 				+ "</ol>"
 				+ "More information (including source code) is available <a href=\""
 				+ uri + "\">here</a>" + "</html>";

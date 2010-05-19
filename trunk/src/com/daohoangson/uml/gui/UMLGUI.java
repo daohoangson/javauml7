@@ -29,6 +29,8 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
@@ -99,7 +101,8 @@ import com.tranvietson.uml.structures.StructureListener;
  * 
  * @see UMLGUI#debugging
  */
-public class UMLGUI extends JFrame implements ActionListener, ContainerListener {
+public class UMLGUI extends JFrame implements ActionListener,
+		ContainerListener, PropertyChangeListener {
 	private static final long serialVersionUID = -2192671131702680754L;
 	/**
 	 * Determines if we are in debug mode.
@@ -114,6 +117,8 @@ public class UMLGUI extends JFrame implements ActionListener, ContainerListener 
 	private int splitPaneLeftWidth = 200;
 	private JMenuBar menuBar;
 	private JToolBar toolBar;
+	private JButton toolBar_zoomIn;
+	private JButton toolBar_zoomOut;
 	private boolean flag_readonly = false;
 	/**
 	 * Hold the last opened window and used to make sure no more than one
@@ -350,19 +355,17 @@ public class UMLGUI extends JFrame implements ActionListener, ContainerListener 
 		// start building the tool bar
 		toolBar = new JToolBar();
 
-		JButton tbb;
+		toolBar_zoomIn = new JButton();
+		toolBar_zoomIn.setActionCommand("zoom.in");
+		toolBar_zoomIn.addActionListener(this);
+		UMLGUI.setIcon(toolBar_zoomIn, "zoom_in", null);
+		toolBar.add(toolBar_zoomIn);
 
-		tbb = new JButton();
-		tbb.setActionCommand("zoom.in");
-		tbb.addActionListener(this);
-		UMLGUI.setIcon(tbb, "zoom_in", null);
-		toolBar.add(tbb);
-
-		tbb = new JButton();
-		tbb.setActionCommand("zoom.out");
-		tbb.addActionListener(this);
-		UMLGUI.setIcon(tbb, "zoom_out", null);
-		toolBar.add(tbb);
+		toolBar_zoomOut = new JButton();
+		toolBar_zoomOut.setActionCommand("zoom.out");
+		toolBar_zoomOut.addActionListener(this);
+		UMLGUI.setIcon(toolBar_zoomOut, "zoom_out", null);
+		toolBar.add(toolBar_zoomOut);
 
 		// use the above declared array
 		for (int i = 0; i < structures.length; i++) {
@@ -400,6 +403,7 @@ public class UMLGUI extends JFrame implements ActionListener, ContainerListener 
 		diagram.addContainerListener(this);
 		new UMLGUIMouseMaster(this, diagram, false);
 		new UMLGUIDroper(diagram, this);
+		diagram.addPropertyChangeListener(this);
 		// build the outline
 		outline = new Outline(diagram);
 		new UMLGUIMouseMaster(this, outline, false);
@@ -422,7 +426,7 @@ public class UMLGUI extends JFrame implements ActionListener, ContainerListener 
 		} catch (SecurityException se) {
 			// just ignore
 			// there are cases when we can't do this simple close operation
-			// in an Applet for example?
+			// ...in an Applet for example?
 		}
 	}
 
@@ -430,7 +434,7 @@ public class UMLGUI extends JFrame implements ActionListener, ContainerListener 
 		this(false);
 	}
 
-	private boolean isAllowedAction(String action, boolean dialog) {
+	protected boolean isAllowedAction(String action, boolean dialog) {
 		boolean allowed = true;
 
 		if (flag_readonly
@@ -445,9 +449,8 @@ public class UMLGUI extends JFrame implements ActionListener, ContainerListener 
 			return true;
 		} else {
 			if (dialog) {
-				JOptionPane.showMessageDialog(this,
-						"Sorry. This action is currently not available",
-						getTitle(), JOptionPane.ERROR_MESSAGE);
+				showError(getTitle(),
+						"Sorry. This action is currently not available");
 			}
 			return false;
 		}
@@ -459,16 +462,15 @@ public class UMLGUI extends JFrame implements ActionListener, ContainerListener 
 	 * <ul>
 	 * <li>clear: Confirm and clear the entire diagram</li>
 	 * <li>draw: Call the {@link Diagram#draw()} method to re-draw immediately</li>
-	 * <li>find: Display the quick find dialog using {@link #doFind(String)}</li>
+	 * <li>find: Display the quick find dialog using {@link #doFind(Structure)}</li>
 	 * <li>related: Display related structures by calling
-	 * {@link #doRelated(String, Structure, boolean)} after a find form</li>
-	 * <li>load: Do the load procedure by calling {@link #doLoad(String)}</li>
-	 * <li>image: Do the save image procedure by calling
-	 * {@link #doImage(String)}</li>
+	 * {@link #doRelated(Structure, boolean)} after a find form</li>
+	 * <li>load: Do the load procedure by calling {@link #doLoad(File[])}</li>
+	 * <li>image: Do the save image procedure by calling {@link #doImage(File)}</li>
 	 * <li>clipping: Do the clipping procedure by calling
-	 * {@link #doClipping(String)}</li>
+	 * {@link #doClipping(File)}</li>
 	 * <li>export: Do the export source procedure by calling
-	 * {@link #doExport(String)}</li>
+	 * {@link #doExport(Structure)}</li>
 	 * <li>exit: Simply dispose the JFrame</li>
 	 * <li>view.fullscreen: Go into fullscreen mode</li>
 	 * <li>about: Display author information</li>
@@ -512,35 +514,35 @@ public class UMLGUI extends JFrame implements ActionListener, ContainerListener 
 			diagram.draw();
 		} else if (action.equals("find")) {
 			// display quick find form
-			doFind("Quick Find");
+			doFind(null);
 		} else if (action.equals("related")) {
 			// display related structures selecting form
 			doRelated(null, true);
 		} else if (action.equals("load")) {
 			// start loading
 			try {
-				doLoad();
+				doLoad(null);
 			} catch (SecurityException se) {
 				showPolicyError(getTitle());
 			}
 		} else if (action.equals("image")) {
 			// start saving image
 			try {
-				doImage();
+				doImage(null);
 			} catch (SecurityException se) {
 				showPolicyError(getTitle());
 			}
 		} else if (action.equals("clipping")) {
 			// start clipping
 			try {
-				doClipping();
+				doClipping(null);
 			} catch (SecurityException se) {
 				showPolicyError(getTitle());
 			}
 		} else if (action.equals("export")) {
 			// start exporting
 			try {
-				doExport();
+				doExport(null);
 			} catch (SecurityException se) {
 				showPolicyError(getTitle());
 			}
@@ -621,14 +623,21 @@ public class UMLGUI extends JFrame implements ActionListener, ContainerListener 
 	}
 
 	/**
-	 * Displays the quick find form
+	 * Displays the quick find form and make sure the selected structure is
+	 * visible using {@link Diagram#ensureStructureIsVisible(Structure)} and
+	 * {@link Outline#ensureStructureIsVisible(Structure)}
 	 * 
 	 * @param title
 	 *            the title for the window
+	 * @param structure
+	 *            a null value will trigger the quick form. Otherwise the action
+	 *            will be execute automatically
 	 */
-	void doFind(String title) {
-		Structure structure = FindForm.find(this, title, diagram
-				.getStructures());
+	public void doFind(Structure structure) {
+		String title = "Quick Find";
+		if (structure == null) {
+			structure = FindForm.find(this, title, diagram.getStructures());
+		}
 		if (structure != null) {
 			diagram.ensureStructureIsVisible(structure);
 			outline.ensureStructureIsVisible(structure);
@@ -647,7 +656,7 @@ public class UMLGUI extends JFrame implements ActionListener, ContainerListener 
 	 *            <code>false</code> is passed, the mode is automatically set to
 	 *            <code>true</code>
 	 */
-	void doRelated(Structure structure, boolean ask_for_mode) {
+	public void doRelated(Structure structure, boolean ask_for_mode) {
 		if (lastOpened != null && lastOpened.isVisible()) {
 			lastOpened.requestFocus();
 			return;
@@ -705,7 +714,7 @@ public class UMLGUI extends JFrame implements ActionListener, ContainerListener 
 	 * @param flag_display_multiplicity_related
 	 *            should look for multiplicity relations or not
 	 */
-	private void findRelated(Structure structure, Diagram target_diagram,
+	protected void findRelated(Structure structure, Diagram target_diagram,
 			boolean flag_display_multiplicity_related) {
 		if (!target_diagram.add(structure)) {
 			// the diagram refused the adding request
@@ -743,24 +752,33 @@ public class UMLGUI extends JFrame implements ActionListener, ContainerListener 
 	 * performance reason). Create new {@linkplain Parser parser} to parse the
 	 * directory recursively. Finally, trigger the diagram to update the display
 	 * 
+	 * @param path
+	 *            an array of <code>File</code> to skip the chooser. Pass a null
+	 *            array to follow the normal flow
+	 * 
 	 * @see Diagram#setAutoDrawing(boolean)
 	 */
-	void doLoad() {
+	public void doLoad(File[] paths) {
 		String title = "Load Source File(s)";
-		JFileChooser fc = new JFileChooser(".");
-		fc.setDialogTitle(title);
-		fc.setApproveButtonText("Load Source");
-		fc
-				.setApproveButtonToolTipText("Load source file(s) inside selected directory (and its' sub-directories)");
-		fc.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES);
-		fc.setFileFilter(new JavaSourceFilter());
-		fc.setMultiSelectionEnabled(true);
+		if (paths == null) {
+			JFileChooser fc = new JFileChooser(".");
+			fc.setDialogTitle(title);
+			fc.setApproveButtonText("Load Source");
+			fc
+					.setApproveButtonToolTipText("Load source file(s) inside selected directory (and its' sub-directories)");
+			fc.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES);
+			fc.setFileFilter(new JavaSourceFilter());
+			fc.setMultiSelectionEnabled(true);
 
-		if (fc.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
+			if (fc.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
+				paths = fc.getSelectedFiles();
+			}
+		}
+
+		if (paths != null) {
 			try {
 				diagram.setAutoDrawing(false);
 				Parser parser = new Parser(diagram);
-				File[] paths = fc.getSelectedFiles();
 				int parsed = 0;
 				for (int i = 0; i < paths.length; i++) {
 					// we support multiple files
@@ -770,27 +788,22 @@ public class UMLGUI extends JFrame implements ActionListener, ContainerListener 
 						if (UMLGUI.debugging) {
 							e.printStackTrace();
 						}
-						JOptionPane.showMessageDialog(this, e.getMessage()
-								+ "\nOffset: " + e.getErrorOffset(), title,
-								JOptionPane.ERROR_MESSAGE);
+						showError(title, e.getMessage() + "\nOffset: "
+								+ e.getErrorOffset());
 					}
 				}
 
 				if (parsed > 0) {
 					diagram.setAutoDrawing(true);
-					JOptionPane.showMessageDialog(this, String.format(
-							"Loaded %d file(s)!", parsed), title,
-							JOptionPane.INFORMATION_MESSAGE);
+					showInfo(title, String.format("Loaded %d file(s)!", parsed));
 				} else {
-					JOptionPane.showMessageDialog(this, "Loaded 0 file!",
-							title, JOptionPane.ERROR_MESSAGE);
+					showError(title, "Loaded 0 file!");
 				}
 			} catch (Exception e) {
 				if (UMLGUI.debugging) {
 					e.printStackTrace();
 				}
-				JOptionPane.showMessageDialog(this, e.getMessage(), title,
-						JOptionPane.ERROR_MESSAGE);
+				showError(title, e.getMessage());
 			}
 
 			// just to make sure because sometimes the try catch statement will
@@ -804,20 +817,29 @@ public class UMLGUI extends JFrame implements ActionListener, ContainerListener 
 	 * At first, use a file chooser to allow selecting a file to save image to.
 	 * Use the saving functionality from the diagram to export image.
 	 * 
+	 * @param path
+	 *            a <code>File</code> to skip the chooser. Pass a null
+	 *            <code>File</code> to follow the normal flow
+	 * 
 	 * @see Diagram#saveImage(java.awt.image.ImageObserver)
 	 * @see DiagramImageObserver
 	 */
-	void doImage() {
+	public void doImage(File path) {
 		String title = "Save as Image";
-		JFileChooser fc = new JFileChooser(".");
-		fc.setDialogTitle(title);
-		fc.setFileSelectionMode(JFileChooser.FILES_ONLY);
-		fc.setFileFilter(new DiagramImageFilter());
-		fc.setSelectedFile(new File("Diagram_" + UMLGUI.currentDateTime()));
 
-		if (fc.showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
-			diagram.saveImage(new DiagramImageObserver(fc.getSelectedFile()
-					.getAbsolutePath()));
+		if (path == null) {
+			JFileChooser fc = new JFileChooser(".");
+			fc.setDialogTitle(title);
+			fc.setFileSelectionMode(JFileChooser.FILES_ONLY);
+			fc.setFileFilter(new DiagramImageFilter());
+			fc.setSelectedFile(new File("Diagram_" + UMLGUI.currentDateTime()));
+			if (fc.showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
+				path = fc.getSelectedFile();
+			}
+		}
+
+		if (path != null) {
+			diagram.saveImage(new DiagramImageObserver(path.getAbsolutePath()));
 		}
 	}
 
@@ -825,22 +847,33 @@ public class UMLGUI extends JFrame implements ActionListener, ContainerListener 
 	 * Processes the clipping request.<br/>
 	 * Simply makes use of the method of the diagram.
 	 * 
+	 * @param path
+	 *            a <code>File</code> to skip the chooser. Pass a null
+	 *            <code>File</code> to follow the normal flow
+	 * 
 	 * @see Diagram#startClipping(java.awt.image.ImageObserver)
 	 * @see DiagramImageObserver
 	 */
-	void doClipping() {
+	public void doClipping(File path) {
 		String title = "Clipping";
-		JFileChooser fc = new JFileChooser(".");
-		fc.setDialogTitle(title);
-		fc.setFileSelectionMode(JFileChooser.FILES_ONLY);
-		fc.setFileFilter(new DiagramImageFilter());
-		fc.setSelectedFile(new File("Clipping_" + UMLGUI.currentDateTime()));
 
-		if (fc.showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
-			JOptionPane.showMessageDialog(this,
-					"OK, select the area you want to take screen shot now...",
-					title, JOptionPane.INFORMATION_MESSAGE);
-			diagram.startClipping(new DiagramImageObserver(fc.getSelectedFile()
+		if (path == null) {
+			JFileChooser fc = new JFileChooser(".");
+			fc.setDialogTitle(title);
+			fc.setFileSelectionMode(JFileChooser.FILES_ONLY);
+			fc.setFileFilter(new DiagramImageFilter());
+			fc
+					.setSelectedFile(new File("Clipping_"
+							+ UMLGUI.currentDateTime()));
+			if (fc.showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
+				path = fc.getSelectedFile();
+			}
+		}
+
+		if (path != null) {
+			showInfo(title,
+					"OK, select the area you want to take screen shot now...");
+			diagram.startClipping(new DiagramImageObserver(path
 					.getAbsolutePath()));
 		}
 	}
@@ -851,19 +884,29 @@ public class UMLGUI extends JFrame implements ActionListener, ContainerListener 
 	 * directory for generating. And then, obviously, create a
 	 * {@linkplain CodeGenerator code generator} to export to the specified
 	 * directory
+	 * 
+	 * @param rootpath
+	 *            a <code>File</code> to skip the chooser. Pass a null
+	 *            <code>File</code> to follow the normal flow
 	 */
-	void doExport() {
+	public void doExport(File rootpath) {
 		String title = "Export Source File(s)";
-		JFileChooser fc = new JFileChooser(".");
-		fc.setDialogTitle(title);
-		fc.setApproveButtonText("Export Here");
-		fc
-				.setApproveButtonToolTipText("Export source file(s) into selected directory");
-		fc.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
-		if (fc.showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
+
+		if (rootpath == null) {
+			JFileChooser fc = new JFileChooser(".");
+			fc.setDialogTitle(title);
+			fc.setApproveButtonText("Export Here");
+			fc
+					.setApproveButtonToolTipText("Export source file(s) into selected directory");
+			fc.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+			if (fc.showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
+				rootpath = fc.getSelectedFile();
+			}
+		}
+
+		if (rootpath != null) {
 			try {
-				CodeGenerator cg = new CodeGenerator(fc.getSelectedFile()
-						.getAbsolutePath());
+				CodeGenerator cg = new CodeGenerator(rootpath.getAbsolutePath());
 				Structure[] structures = diagram.getStructures();
 				int files = 0;
 				for (int i = 0; i < structures.length; i++) {
@@ -871,12 +914,11 @@ public class UMLGUI extends JFrame implements ActionListener, ContainerListener 
 						files++;
 					}
 				}
-				JOptionPane.showMessageDialog(this, String.format(
-						"Successfully exported %d file(s)", files), title,
-						JOptionPane.INFORMATION_MESSAGE);
+
+				showInfo(title, String.format(
+						"Successfully exported %d file(s)", files));
 			} catch (Exception e) {
-				JOptionPane.showMessageDialog(this, e.getMessage(), title,
-						JOptionPane.ERROR_MESSAGE);
+				showError(title, e.getMessage());
 			}
 		}
 	}
@@ -887,7 +929,7 @@ public class UMLGUI extends JFrame implements ActionListener, ContainerListener 
 	 * @param structure
 	 *            the requested structure. Null structure will be ignored
 	 */
-	void doInfo(Structure structure) {
+	public void doInfo(Structure structure) {
 		if (lastOpened != null && lastOpened.isVisible()) {
 			// we don't allow multiple information form to be
 			// displayed
@@ -946,7 +988,7 @@ public class UMLGUI extends JFrame implements ActionListener, ContainerListener 
 		lastOpened.setVisible(true);
 	}
 
-	void doPopup(MouseEvent e, Structure structure) {
+	protected void doPopup(MouseEvent e, Structure structure) {
 		if (!e.isPopupTrigger()) {
 			return;
 		}
@@ -977,7 +1019,7 @@ public class UMLGUI extends JFrame implements ActionListener, ContainerListener 
 		}
 	}
 
-	private UMLGUICommand[] getStructureCommands(Structure structure,
+	protected UMLGUICommand[] getStructureCommands(Structure structure,
 			boolean info) {
 		List<UMLGUICommand> list = new LinkedList<UMLGUICommand>();
 
@@ -997,6 +1039,11 @@ public class UMLGUI extends JFrame implements ActionListener, ContainerListener 
 
 			if (structureName.equals("Class")
 					|| structureName.equals("Interface")) {
+				list.add(new UMLGUICommand("New Class", "info.new.class"));
+				if (structureName.equals("Interface")) {
+					list.add(new UMLGUICommand("New Interface",
+							"info.new.interface"));
+				}
 				list
 						.add(new UMLGUICommand("New Property",
 								"info.new.property"));
@@ -1060,7 +1107,7 @@ public class UMLGUI extends JFrame implements ActionListener, ContainerListener 
 	 * @param structure
 	 *            the associated structure
 	 */
-	void doStructureCommand(String action, final Structure structure) {
+	protected void doStructureCommand(String action, final Structure structure) {
 		if (UMLGUI.debugging) {
 			System.err.println("doStructureCommand: " + action + " with "
 					+ structure);
@@ -1200,17 +1247,25 @@ public class UMLGUI extends JFrame implements ActionListener, ContainerListener 
 	 * @param title
 	 *            the title for the message box
 	 */
-	void showPolicyError(String title) {
-		JOptionPane
-				.showMessageDialog(
-						this,
-						"Sorry, your system doesn't allow us to perform this action.\nPlease try another version of the application to use all of the (amazing) features",
-						title, JOptionPane.ERROR_MESSAGE);
+	protected void showPolicyError(String title) {
+		showError(
+				title,
+				"Sorry, your system doesn't allow us to perform this action."
+						+ "\nPlease try another version of the application to use all of the (amazing) features");
 	}
 
-	void showActionError(String message) {
-		JOptionPane.showMessageDialog(this, "Action can not be completed\n"
-				+ message, "Action Error", JOptionPane.ERROR_MESSAGE);
+	protected void showActionError(String message) {
+		showError("Action Error", "Action can not be completed\n" + message);
+	}
+
+	protected void showError(String title, String message) {
+		JOptionPane.showMessageDialog(this, message, title,
+				JOptionPane.ERROR_MESSAGE);
+	}
+
+	protected void showInfo(String title, String message) {
+		JOptionPane.showMessageDialog(this, message, title,
+				JOptionPane.INFORMATION_MESSAGE);
 	}
 
 	/**
@@ -1259,6 +1314,20 @@ public class UMLGUI extends JFrame implements ActionListener, ContainerListener 
 	@Override
 	public void componentRemoved(ContainerEvent e) {
 		// do nothing intentionally
+	}
+
+	@Override
+	public void propertyChange(PropertyChangeEvent evt) {
+		if (evt.getSource() == diagram) {
+			// the source is our diagram
+			if (evt.getPropertyName().equals("size_factor")) {
+				// listen to size_factor only. We should use the other version
+				// of addPropertyChangeListener (which specifies a property
+				// name). But I want a general solution. So here we are
+				toolBar_zoomIn.setEnabled(diagram.checkCanZoomIn());
+				toolBar_zoomOut.setEnabled(diagram.checkCanZoomOut());
+			}
+		}
 	}
 
 	/**
@@ -1331,22 +1400,6 @@ public class UMLGUI extends JFrame implements ActionListener, ContainerListener 
 			Parser.debugging = UMLGUI.debugging;
 			LexicalAnalyzer.debugging = UMLGUI.debugging;
 		}
-	}
-}
-
-class UMLGUICommand {
-	public String title;
-	public String action;
-	public Icon icon;
-
-	public UMLGUICommand(String title, String action, String icon_name) {
-		this.title = title;
-		this.action = action;
-		icon = UMLGUI.getIcon(icon_name);
-	}
-
-	public UMLGUICommand(String title, String action) {
-		this(title, action, action.replace('.', '_'));
 	}
 }
 

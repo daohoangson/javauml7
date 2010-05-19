@@ -1,5 +1,7 @@
 package com.tavanduc.uml.gui;
 
+import java.awt.Graphics;
+
 import com.daohoangson.uml.gui.Diagram;
 import com.daohoangson.uml.structures.Structure;
 
@@ -16,8 +18,12 @@ public class RealizationRelationship extends GeneralizationRelationship {
 
 	public RealizationRelationship(Diagram diagram, Structure from, Structure to) {
 		super(diagram, from, to);
-
-		cfg_dash_length = cfg_distance / 2;
 	}
 
+	@Override
+	public void draw(Graphics g, float size_factor) {
+		cfg_dash_length = (int) (3 * size_factor);
+
+		super.draw(g, size_factor);
+	}
 }

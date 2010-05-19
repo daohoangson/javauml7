@@ -29,8 +29,23 @@ public class InfoForm extends ConvenientForm implements ActionListener {
 
 		Box infoBox = Box.createVerticalBox();
 
-		infoBox.add(new JLabel("Type: " + structure.getStructureName()));
+		infoBox.add(new JLabel("Structure Type: "
+				+ structure.getStructureName()));
 		infoBox.add(new JLabel("Name: " + structure.getName()));
+		if (structure.checkUseType()) {
+			infoBox.add(new JLabel("Type: " + structure.getType()));
+		}
+		if (structure.checkUseVisibility()
+				&& structure.getVisibility().length() > 0) {
+			infoBox.add(new JLabel("Visibility: " + structure.getVisibility()));
+		}
+		if (structure.checkUseScope() && structure.getScope().length() > 0) {
+			infoBox.add(new JLabel("Scope: " + structure.getScope()));
+		}
+		if (structure.checkUseAbstract()
+				&& structure.getAbstract().length() > 0) {
+			infoBox.add(new JLabel("Is Abstract Structure"));
+		}
 		if (structure.getContainer() != null || structure.getParentsCount() > 0) {
 			infoBox.add(new JLabel("Parents"));
 
