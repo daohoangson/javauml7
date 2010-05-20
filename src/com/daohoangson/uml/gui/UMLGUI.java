@@ -1666,6 +1666,7 @@ class UMLGUIDroper implements DropTargetListener {
 						structure.add(copied);
 
 						done = true;
+						break;
 					case DnDConstants.ACTION_MOVE:
 						// moving structure
 						if (transfered.getContainer() != null) {
@@ -1681,6 +1682,7 @@ class UMLGUIDroper implements DropTargetListener {
 						structure.add(transfered);
 
 						done = true;
+						break;
 					}
 				}
 			} else if (dtde
