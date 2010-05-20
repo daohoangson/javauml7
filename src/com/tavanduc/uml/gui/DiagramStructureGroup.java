@@ -75,10 +75,10 @@ public class DiagramStructureGroup extends JPanel implements MouseListener,
 	 * 
 	 * @param structure
 	 *            the primary one
-	 * @param head
-	 *            the heading component
 	 * @param block_size
 	 *            the block size
+	 * @param size_factor
+	 *            the size factor for the component (and its children)
 	 * 
 	 * @see #block_size
 	 */

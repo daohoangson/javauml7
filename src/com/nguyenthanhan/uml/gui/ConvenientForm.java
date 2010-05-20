@@ -9,9 +9,10 @@ import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 
 import javax.swing.JDialog;
+
 /**
- * @(#)ConvenienForm.java
- *  
+ * Parent for all other forms
+ * 
  * @author Nguyen Thanh An
  * @version 1.0
  */

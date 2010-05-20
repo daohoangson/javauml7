@@ -7,7 +7,8 @@ import com.tranvietson.uml.structures.Method;
 import com.tranvietson.uml.structures.StructureException;
 
 /**
- * @(#)MethodForm.java Create methods for class or interface
+ * Create methods for class or interface
+ * 
  * @author Nguyen Thanh An
  * @version 1.0
  */

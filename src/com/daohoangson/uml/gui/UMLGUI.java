@@ -112,20 +112,47 @@ public class UMLGUI extends JFrame implements ActionListener,
 	 * The diagram which holds all the structure and build primary display area
 	 */
 	public Diagram diagram;
+	/**
+	 * The outline
+	 */
 	public Outline outline;
+	/**
+	 * The split pane which will contains our diagram and outline
+	 */
 	private JSplitPane splitPane;
-	private int splitPaneLeftWidth = 200;
+	/**
+	 * The width for the left pane in our {@link #splitPane}
+	 */
+	private int cfg_split_width = 200;
+	/**
+	 * The main menu
+	 */
 	private JMenuBar menuBar;
+	/**
+	 * The tool bar
+	 */
 	private JToolBar toolBar;
+	/**
+	 * The zoom in button in {@link #toolBar}
+	 */
 	private JButton toolBar_zoomIn;
+	/**
+	 * The zoom out button in {@link #toolBar}
+	 */
 	private JButton toolBar_zoomOut;
+	/**
+	 * Specifies if this frame is read-only. Setting this to true will prevent
+	 * some actions
+	 * 
+	 * @see #isAllowedAction(String, boolean)
+	 */
 	private boolean flag_readonly = false;
 	/**
 	 * Hold the last opened window and used to make sure no more than one
 	 * additional window is opened at a given time.
 	 * 
 	 * @see #doInfo(Structure)
-	 * @see #doRelated(String, Structure, boolean)
+	 * @see #doRelated(Structure, boolean)
 	 */
 	private Window lastOpened = null;
 	/**
@@ -179,8 +206,6 @@ public class UMLGUI extends JFrame implements ActionListener,
 	 * <li>Zoom Out (zoom.out)</li>
 	 * <li>New structures: Class, Interface, Property, Method, Argument</li>
 	 * </ul>
-	 * Items can be disable by using {@link #setActionEnabled(String, boolean)}
-	 * with the correct action command (specified in parenthesis above).
 	 * 
 	 * Of course, the diagram is displayed at the center with outline on the
 	 * left
@@ -412,7 +437,7 @@ public class UMLGUI extends JFrame implements ActionListener,
 		// build the split pane
 		splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, outline
 				.getScrollable(), diagram.getScrollable());
-		splitPane.setDividerLocation(splitPaneLeftWidth);
+		splitPane.setDividerLocation(cfg_split_width);
 		splitPane.setDividerSize(5);
 		add(splitPane, BorderLayout.CENTER);
 		// finished adding main components
@@ -430,10 +455,23 @@ public class UMLGUI extends JFrame implements ActionListener,
 		}
 	}
 
+	/**
+	 * Constructor. Shortcut for full version interface
+	 */
 	public UMLGUI() {
 		this(false);
 	}
 
+	/**
+	 * Checks if a command is not prohibited.
+	 * 
+	 * @param action
+	 *            the action command needs checking
+	 * @param dialog
+	 *            set to true to display an error message box if the action is
+	 *            not allowed
+	 * @return true if the action is allowed
+	 */
 	protected boolean isAllowedAction(String action, boolean dialog) {
 		boolean allowed = true;
 
@@ -470,7 +508,7 @@ public class UMLGUI extends JFrame implements ActionListener,
 	 * <li>clipping: Do the clipping procedure by calling
 	 * {@link #doClipping(File)}</li>
 	 * <li>export: Do the export source procedure by calling
-	 * {@link #doExport(Structure)}</li>
+	 * {@link #doExport(File)}</li>
 	 * <li>exit: Simply dispose the JFrame</li>
 	 * <li>view.fullscreen: Go into fullscreen mode</li>
 	 * <li>about: Display author information</li>
@@ -480,8 +518,8 @@ public class UMLGUI extends JFrame implements ActionListener,
 	 * change the zooming level</li>
 	 * </ul>
 	 * </li>
-	 * <li>info.x: Redirect to {@link #doStructureCommand(String, String)} with
-	 * the real action command only (omit the "info." part) and the last
+	 * <li>info.x: Redirect to {@link #doStructureCommand(String, Structure)}
+	 * with the real action command only (omit the "info." part) and the last
 	 * selected structure</li>
 	 * </ul>
 	 * This method even catches all Security Exception if they are thrown out.
@@ -598,7 +636,7 @@ public class UMLGUI extends JFrame implements ActionListener,
 				mi = (JCheckBoxMenuItem) e.getSource();
 				if (mi.isSelected()) {
 					splitPane.setLeftComponent(outline);
-					splitPane.setDividerLocation(splitPaneLeftWidth);
+					splitPane.setDividerLocation(cfg_split_width);
 				} else {
 					splitPane.setLeftComponent(null);
 				}
@@ -627,8 +665,6 @@ public class UMLGUI extends JFrame implements ActionListener,
 	 * visible using {@link Diagram#ensureStructureIsVisible(Structure)} and
 	 * {@link Outline#ensureStructureIsVisible(Structure)}
 	 * 
-	 * @param title
-	 *            the title for the window
 	 * @param structure
 	 *            a null value will trigger the quick form. Otherwise the action
 	 *            will be execute automatically
@@ -752,7 +788,7 @@ public class UMLGUI extends JFrame implements ActionListener,
 	 * performance reason). Create new {@linkplain Parser parser} to parse the
 	 * directory recursively. Finally, trigger the diagram to update the display
 	 * 
-	 * @param path
+	 * @param paths
 	 *            an array of <code>File</code> to skip the chooser. Pass a null
 	 *            array to follow the normal flow
 	 * 
@@ -988,6 +1024,15 @@ public class UMLGUI extends JFrame implements ActionListener,
 		lastOpened.setVisible(true);
 	}
 
+	/**
+	 * Displays pop-up menu. This method can handle the <code>MouseEvent</code>
+	 * itself, just pass in an event and the structure (which can be null)
+	 * 
+	 * @param e
+	 *            the <code>MouseEvent</code>
+	 * @param structure
+	 *            the structure associated
+	 */
 	protected void doPopup(MouseEvent e, Structure structure) {
 		if (!e.isPopupTrigger()) {
 			return;
@@ -1019,6 +1064,15 @@ public class UMLGUI extends JFrame implements ActionListener,
 		}
 	}
 
+	/**
+	 * Gets commands can be done with a structure
+	 * 
+	 * @param structure
+	 *            the structure needs actions. Set to null for global actions
+	 * @param info
+	 *            set to true to display info-type actions
+	 * @return an array of available actions
+	 */
 	protected UMLGUICommand[] getStructureCommands(Structure structure,
 			boolean info) {
 		List<UMLGUICommand> list = new LinkedList<UMLGUICommand>();
@@ -1242,7 +1296,7 @@ public class UMLGUI extends JFrame implements ActionListener,
 	}
 
 	/**
-	 * Display a policy error
+	 * Displays a policy error
 	 * 
 	 * @param title
 	 *            the title for the message box
@@ -1254,15 +1308,37 @@ public class UMLGUI extends JFrame implements ActionListener,
 						+ "\nPlease try another version of the application to use all of the (amazing) features");
 	}
 
+	/**
+	 * Displays an action error
+	 * 
+	 * @param message
+	 *            the message
+	 */
 	protected void showActionError(String message) {
 		showError("Action Error", "Action can not be completed\n" + message);
 	}
 
+	/**
+	 * Displays an error message box
+	 * 
+	 * @param title
+	 *            the title
+	 * @param message
+	 *            the message
+	 */
 	protected void showError(String title, String message) {
 		JOptionPane.showMessageDialog(this, message, title,
 				JOptionPane.ERROR_MESSAGE);
 	}
 
+	/**
+	 * Display an information message box
+	 * 
+	 * @param title
+	 *            the title
+	 * @param message
+	 *            the message
+	 */
 	protected void showInfo(String title, String message) {
 		JOptionPane.showMessageDialog(this, message, title,
 				JOptionPane.INFORMATION_MESSAGE);
@@ -1391,6 +1467,12 @@ public class UMLGUI extends JFrame implements ActionListener,
 		}
 	}
 
+	/**
+	 * Changes the debugging flag
+	 * 
+	 * @param flag
+	 *            the new flag
+	 */
 	public static void setDebugging(boolean flag) {
 		UMLGUI.debugging = flag;
 		if (flag == true) {
@@ -1403,18 +1485,41 @@ public class UMLGUI extends JFrame implements ActionListener,
 	}
 }
 
+/**
+ * Primary mouse listener
+ * 
+ * @author Dao Hoang Son
+ * @version 1.0
+ * 
+ */
 class UMLGUIMouseMaster implements MouseListener {
+	/**
+	 * The source interface
+	 */
 	private UMLGUI gui;
-	private boolean double_for_info;
+	/**
+	 * Specifies if double click is to display information
+	 */
+	private boolean cfg_double_for_info;
 	/**
 	 * The corresponding structure. This can be null sometimes
 	 */
 	private Structure structure;
 
+	/**
+	 * Constructor
+	 * 
+	 * @param gui
+	 *            the source interface
+	 * @param component
+	 *            the component to listen to
+	 * @param double_for_info
+	 *            the configuration flag
+	 */
 	public UMLGUIMouseMaster(UMLGUI gui, Component component,
 			boolean double_for_info) {
 		this.gui = gui;
-		this.double_for_info = double_for_info;
+		cfg_double_for_info = double_for_info;
 
 		if (component instanceof StructureBased) {
 			structure = ((StructureBased) component).getStructure();
@@ -1427,7 +1532,7 @@ class UMLGUIMouseMaster implements MouseListener {
 
 	@Override
 	public void mouseClicked(MouseEvent e) {
-		if (e.getClickCount() == 2 && double_for_info) {
+		if (e.getClickCount() == 2 && cfg_double_for_info) {
 			gui.doInfo(structure);
 		}
 	}
@@ -1452,6 +1557,12 @@ class UMLGUIMouseMaster implements MouseListener {
 		doPopup(e);
 	}
 
+	/**
+	 * Handles pop-up actions
+	 * 
+	 * @param e
+	 *            the mouse event
+	 */
 	private void doPopup(MouseEvent e) {
 		Structure structure = this.structure;
 		if (structure == null) {
@@ -1466,6 +1577,13 @@ class UMLGUIMouseMaster implements MouseListener {
 	}
 }
 
+/**
+ * Primary drag element listener
+ * 
+ * @author Dao Hoang Son
+ * @version 10
+ * 
+ */
 class UMLGUIDrager implements DragGestureListener, DragSourceListener {
 	/**
 	 * The component to get dragging enabled
@@ -1488,10 +1606,24 @@ class UMLGUIDrager implements DragGestureListener, DragSourceListener {
 	 */
 	private Color cfg_drag_color = Color.blue;
 
+	/**
+	 * Constructor
+	 * 
+	 * @param component
+	 *            the component needs dragging enabled
+	 */
 	public UMLGUIDrager(Component component) {
 		this(component, null);
 	}
 
+	/**
+	 * Constructor
+	 * 
+	 * @param component
+	 *            the component needs dragging enabled
+	 * @param action
+	 *            the associated action command
+	 */
 	public UMLGUIDrager(Component component, String action) {
 		this.component = component;
 		this.action = action;
@@ -1575,6 +1707,13 @@ class UMLGUIDrager implements DragGestureListener, DragSourceListener {
 	}
 }
 
+/**
+ * Primary drop zone listener
+ * 
+ * @author Dao Hoang Son
+ * @version 1.0
+ * 
+ */
 class UMLGUIDroper implements DropTargetListener {
 	/**
 	 * The component to get dropping enabled
@@ -1597,6 +1736,14 @@ class UMLGUIDroper implements DropTargetListener {
 	 */
 	private Color cfg_hover_color = Color.red;
 
+	/**
+	 * Constructor
+	 * 
+	 * @param component
+	 *            the component for drop zone
+	 * @param gui
+	 *            the primary interface
+	 */
 	public UMLGUIDroper(Component component, UMLGUI gui) {
 		this.component = component;
 		this.gui = gui;
