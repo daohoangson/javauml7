@@ -7,7 +7,8 @@ import com.tranvietson.uml.structures.Argument;
 import com.tranvietson.uml.structures.StructureException;
 
 /**
- * @(#)ArgumentForm.java Create arguments for method
+ * Create arguments for method
+ * 
  * @author Nguyen Thanh An
  * @version 1.0
  */

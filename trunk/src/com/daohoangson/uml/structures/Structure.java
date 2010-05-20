@@ -563,7 +563,7 @@ public abstract class Structure implements StructureListener {
 	 * 
 	 * @param structureName
 	 *            the structure name need checking
-	 * @return
+	 * @return true if this structure does accept
 	 */
 	public boolean checkCanHaveChildren(String structureName) {
 		return Structure
@@ -585,7 +585,7 @@ public abstract class Structure implements StructureListener {
 	 * 
 	 * @param structureName
 	 *            the structure name need checking
-	 * @return
+	 * @return true if the structure does accept
 	 */
 	public boolean checkCanHaveParents(String structureName) {
 		return Structure.foundStringInArray(structureName,

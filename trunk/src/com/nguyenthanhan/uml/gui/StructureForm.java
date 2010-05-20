@@ -25,7 +25,7 @@ import com.tranvietson.uml.structures.StructureException;
 import com.tranvietson.uml.structures.StructureListener;
 
 /**
- * @(#)StructureForm.java
+ * Parent for all other structure form
  * 
  * @author Nguyen Thanh An
  * @version 1.0

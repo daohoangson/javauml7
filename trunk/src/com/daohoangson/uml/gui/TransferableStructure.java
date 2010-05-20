@@ -27,6 +27,12 @@ public class TransferableStructure implements Transferable {
 	static public DataFlavor df = new DataFlavor(Structure.class,
 			"UML Structure");
 
+	/**
+	 * Constructor
+	 * 
+	 * @param structure
+	 *            the structure needs transferring
+	 */
 	public TransferableStructure(Structure structure) {
 		this.structure = structure;
 	}

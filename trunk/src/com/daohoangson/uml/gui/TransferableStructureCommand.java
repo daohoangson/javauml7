@@ -27,6 +27,12 @@ public class TransferableStructureCommand implements Transferable {
 	static public DataFlavor df = new DataFlavor(StructureForm.class,
 			"UML Structure Form");
 
+	/**
+	 * Constructor
+	 * 
+	 * @param action
+	 *            the action command needs transferring
+	 */
 	public TransferableStructureCommand(String action) {
 		this.action = action;
 	}

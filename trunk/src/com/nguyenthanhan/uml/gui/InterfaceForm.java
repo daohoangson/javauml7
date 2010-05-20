@@ -8,7 +8,8 @@ import com.tranvietson.uml.structures.Interface;
 import com.tranvietson.uml.structures.StructureException;
 
 /**
- * @(#)InterfaceForm.java Create a simple interface
+ * Create a simple interface
+ * 
  * @author Nguyen Thanh An
  * @version 1.0
  */

@@ -17,7 +17,8 @@ import javax.swing.event.HyperlinkListener;
 import javax.swing.event.HyperlinkEvent.EventType;
 
 /**
- * @(#)AboutForm.java Introduction team members & information of source code
+ * Introduct team members & information of source code
+ * 
  * @author Nguyen Thanh An
  * @version 1.0
  */

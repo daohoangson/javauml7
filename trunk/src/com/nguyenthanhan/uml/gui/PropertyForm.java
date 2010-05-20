@@ -7,7 +7,8 @@ import com.tranvietson.uml.structures.Property;
 import com.tranvietson.uml.structures.StructureException;
 
 /**
- * @(#)PropertyForm.java Create properties for class
+ * Create properties for class
+ * 
  * @author Nguyen Thanh An
  * @version 1.0
  */

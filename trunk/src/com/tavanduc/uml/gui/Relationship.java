@@ -101,7 +101,7 @@ abstract public class Relationship {
 	 * 
 	 * @param g
 	 *            the target graphics (the same passed in
-	 *            {@link #draw(Graphics)}
+	 *            {@link #draw(Graphics, float)}
 	 * @param ps
 	 *            the {@link PointSet} object holding drawing data
 	 */

@@ -32,13 +32,27 @@ import com.tranvietson.uml.structures.StructureListener;
  */
 public class Outline extends JTree implements TreeExpansionListener {
 	private static final long serialVersionUID = -9149376828755778513L;
+	/**
+	 * The source diagram
+	 */
 	private Diagram diagram = null;
+	/**
+	 * The scroll-able component
+	 * 
+	 * @see #getScrollable()
+	 */
 	private JScrollPane scrollpane = null;
 	/**
 	 * Determines if we are in debug mode.
 	 */
 	static public boolean debugging = false;
 
+	/**
+	 * Constructors
+	 * 
+	 * @param diagram
+	 *            the source diagram
+	 */
 	public Outline(Diagram diagram) {
 		super(new TreeModelStructure(diagram));
 		setCellRenderer(new TreeCellRendererStructure());
@@ -65,6 +79,13 @@ public class Outline extends JTree implements TreeExpansionListener {
 		return scrollpane;
 	}
 
+	/**
+	 * Gets the structure based on location (relative to the layout)
+	 * 
+	 * @param location
+	 *            the location
+	 * @return the found structure. It may be null
+	 */
 	public Structure getStructureForLocation(Point location) {
 		Structure structure = null;
 		TreePath path = getPathForLocation(location.x, location.y);
@@ -78,6 +99,12 @@ public class Outline extends JTree implements TreeExpansionListener {
 		return structure;
 	}
 
+	/**
+	 * Tries its best to bring the requested structure into the viewport
+	 * 
+	 * @param structure
+	 *            the structure needs bringing to visible area
+	 */
 	public void ensureStructureIsVisible(Structure structure) {
 		Object root = getModel().getRoot();
 		Object node = TreeNodeStructure.create(structure);
@@ -110,6 +137,13 @@ public class Outline extends JTree implements TreeExpansionListener {
 	}
 }
 
+/**
+ * The renderer for the {@link Outline}
+ * 
+ * @author Dao Hoang Son
+ * @version 1.0
+ * 
+ */
 class TreeCellRendererStructure extends DefaultTreeCellRenderer {
 	private static final long serialVersionUID = -6058394290812564302L;
 
@@ -153,6 +187,13 @@ class TreeCellRendererStructure extends DefaultTreeCellRenderer {
 		return c;
 	}
 
+	/**
+	 * Shortcut to setIcon
+	 * 
+	 * @param icon_name
+	 *            the icon name. It will be looked up using
+	 *            {@link UMLGUI#getIcon(String)}
+	 */
 	private void setIcon(String icon_name) {
 		Icon icon = UMLGUI.getIcon("tree_" + icon_name);
 		if (icon != null) {
@@ -161,9 +202,22 @@ class TreeCellRendererStructure extends DefaultTreeCellRenderer {
 	}
 }
 
+/**
+ * The model for the {@link Outline}
+ * 
+ * @author Dao Hoang Son
+ * @version 1.0
+ * 
+ */
 class TreeModelStructure extends DefaultTreeModel implements StructureListener {
 	private static final long serialVersionUID = 762088370610407170L;
 
+	/**
+	 * Constructor
+	 * 
+	 * @param diagram
+	 *            the source diagram
+	 */
 	public TreeModelStructure(Diagram diagram) {
 		super(new TreeNodeStructure(diagram));
 		diagram.addStructureListener(this);
@@ -180,15 +234,45 @@ class TreeModelStructure extends DefaultTreeModel implements StructureListener {
 	}
 }
 
+/**
+ * A node in the Outline's model
+ * 
+ * @author Dao Hoang Son
+ * @version 1.0
+ * 
+ */
 class TreeNodeStructure implements TreeNode, StructureBased {
+	/**
+	 * The structure which this node represents. It may be null
+	 */
 	private Structure structure = null;
+	/**
+	 * The diagram which this node represents. It may be null
+	 */
 	private Diagram diagram;
+	/**
+	 * A self-managed hash table of structures and nodes
+	 * 
+	 * @see #create(Structure)
+	 */
 	static private Hashtable<Structure, TreeNodeStructure> nodes = new Hashtable<Structure, TreeNodeStructure>();
 
+	/**
+	 * Constructor for a structure node
+	 * 
+	 * @param structure
+	 *            the structure
+	 */
 	private TreeNodeStructure(Structure structure) {
 		this.structure = structure;
 	}
 
+	/**
+	 * Constructor for a diagram node. It will be the root
+	 * 
+	 * @param diagram
+	 *            the diagram
+	 */
 	public TreeNodeStructure(Diagram diagram) {
 		this.diagram = diagram;
 	}
@@ -208,6 +292,14 @@ class TreeNodeStructure implements TreeNode, StructureBased {
 		}
 	}
 
+	/**
+	 * Creates node for a structure. Looks for created nodes before creating a
+	 * new one
+	 * 
+	 * @param structure
+	 *            the structure in need
+	 * @return the node
+	 */
 	static public TreeNodeStructure create(Structure structure) {
 		if (!TreeNodeStructure.nodes.containsKey(structure)) {
 			TreeNodeStructure.nodes.put(structure, new TreeNodeStructure(

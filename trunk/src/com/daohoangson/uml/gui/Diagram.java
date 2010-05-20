@@ -147,7 +147,7 @@ public class Diagram extends JPanel implements StructureListener,
 	/**
 	 * The size factor property
 	 * 
-	 * @see #setSizeFactor(double)
+	 * @see #setSizeFactor(float)
 	 * @see #getSizeFactor()
 	 */
 	private float size_factor = 1.0f;
@@ -324,6 +324,11 @@ public class Diagram extends JPanel implements StructureListener,
 		return array;
 	}
 
+	/**
+	 * Gets the current size factor of the diagram
+	 * 
+	 * @return the size factor
+	 */
 	public float getSizeFactor() {
 		return size_factor;
 	}
@@ -859,6 +864,13 @@ public class Diagram extends JPanel implements StructureListener,
 		}
 	}
 
+	/**
+	 * Builds a structure based on the index in {@link #structures}
+	 * 
+	 * @param i
+	 *            the index
+	 * @return the built component (it's added already to the diagram)
+	 */
 	private Container build(int i) {
 		Container container = null;
 		Structure structure = structures.get(i);

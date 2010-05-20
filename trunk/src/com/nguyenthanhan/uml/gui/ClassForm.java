@@ -8,7 +8,8 @@ import com.tranvietson.uml.structures.Class;
 import com.tranvietson.uml.structures.StructureException;
 
 /**
- * @(#)ClassForm.java Create a simple class
+ * Create a simple class
+ * 
  * @author Nguyen Thanh An
  * @version 1.0
  */
