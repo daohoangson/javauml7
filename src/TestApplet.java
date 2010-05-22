@@ -6,6 +6,13 @@ import javax.swing.JButton;
 
 import com.daohoangson.uml.gui.UMLGUI;
 
+/**
+ * Test for running the same code inside an Applet
+ * 
+ * @author Dao Hoang Son
+ * @version 1.0
+ * 
+ */
 public class TestApplet extends JApplet {
 	private static final long serialVersionUID = -6135902941375606145L;
 

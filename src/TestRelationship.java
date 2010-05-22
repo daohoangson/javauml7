@@ -9,6 +9,13 @@ import com.tranvietson.uml.structures.Interface;
 import com.tranvietson.uml.structures.Property;
 import com.tranvietson.uml.structures.StructureException;
 
+/**
+ * Test for relationship displaying
+ * 
+ * @author Dao Hoang Son
+ * @version 1.0
+ * 
+ */
 public class TestRelationship {
 
 	/**

@@ -462,6 +462,27 @@ public class UMLGUI extends JFrame implements ActionListener,
 		this(false);
 	}
 
+	public JMenuItem findMenuItem(String actionCommand) {
+		Component[] components = menuBar.getComponents();
+		for (int i = 0; i < components.length; i++) {
+			if (components[i] instanceof JMenu) {
+				JMenu menu = (JMenu) components[i];
+				Component[] menu_components = menu.getMenuComponents();
+				for (int j = 0; j < menu_components.length; j++) {
+					if (menu_components[j] instanceof JMenuItem) {
+						JMenuItem mi = (JMenuItem) menu_components[j];
+						String miac = mi.getActionCommand();
+						if (miac.equals(actionCommand)) {
+							return mi;
+						}
+					}
+				}
+			}
+		}
+
+		return null;
+	}
+
 	/**
 	 * Checks if a command is not prohibited.
 	 * 
@@ -510,7 +531,7 @@ public class UMLGUI extends JFrame implements ActionListener,
 	 * <li>export: Do the export source procedure by calling
 	 * {@link #doExport(File)}</li>
 	 * <li>exit: Simply dispose the JFrame</li>
-	 * <li>view.fullscreen: Go into fullscreen mode</li>
+	 * <li>view.toolbar/view.outline: Toggle the Toolbar/Outline</li>
 	 * <li>about: Display author information</li>
 	 * <li>Tool bar actions
 	 * <ul>

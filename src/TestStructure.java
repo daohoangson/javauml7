@@ -11,7 +11,14 @@ import com.tranvietson.uml.structures.Interface;
 import com.tranvietson.uml.structures.Method;
 import com.tranvietson.uml.structures.StructureException;
 
-public class Test {
+/**
+ * Test for data structure and basic displaying
+ * 
+ * @author Dao Hoang Son
+ * @version 1.1
+ * 
+ */
+public class TestStructure {
 	public static void main(String[] args) throws StructureException {
 		final Diagram d = new Diagram();
 		JFrame f = new JFrame();
