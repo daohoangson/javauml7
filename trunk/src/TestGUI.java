@@ -1,17 +1,41 @@
+import java.awt.Frame;
+import java.awt.event.ActionEvent;
 import java.io.File;
+
+import javax.swing.JCheckBoxMenuItem;
+import javax.swing.JMenuItem;
 
 import com.daohoangson.uml.gui.Diagram;
 import com.daohoangson.uml.gui.UMLGUI;
 import com.daohoangson.uml.parser.Parser;
-import com.tranvietson.uml.structures.StructureException;
 
+/**
+ * Not really a test. This is the main application starting point. Accept
+ * several command line directives. Use --help OR -h OR /? to display the help
+ * screen
+ * 
+ * @author Dao Hoang Son
+ * @version 2.0
+ * 
+ */
 public class TestGUI {
 
 	/**
+	 * Creates the {@link UMLGUI} and parses command line directives. Supported
+	 * directives are
+	 * <ul>
+	 * <li>--debug</li>
+	 * <li>--load</li>
+	 * <li>--title</li>
+	 * <li>--maximize</li>
+	 * <li>--no</li>
+	 * <li>--help, -h, /?</li>
+	 * </ul>
+	 * 
 	 * @param args
-	 * @throws StructureException
+	 *            an array of command line arguments (passed in by the JVM)
 	 */
-	public static void main(String[] args) throws StructureException {
+	public static void main(String[] args) {
 		UMLGUI gui = new UMLGUI();
 
 		for (int i = 0; i < args.length; i++) {
@@ -54,6 +78,28 @@ public class TestGUI {
 
 				// skip the title
 				i++;
+			} else if (arg.equals("--maximize")) {
+				// go maximized
+				gui.setExtendedState(Frame.MAXIMIZED_BOTH);
+			} else if (arg.equals("--no")) {
+				String name = args[i + 1];
+				JMenuItem mi = null;
+
+				if (name.equals("toolbar")) {
+					mi = gui.findMenuItem("view.toolbar");
+				} else if (name.equals("outline")) {
+					mi = gui.findMenuItem("view.outline");
+				}
+
+				if (mi != null && mi instanceof JCheckBoxMenuItem) {
+					JCheckBoxMenuItem cbmi = (JCheckBoxMenuItem) mi;
+					cbmi.setSelected(false);
+					gui.actionPerformed(new ActionEvent(cbmi, (int) System
+							.currentTimeMillis(), cbmi.getActionCommand()));
+				}
+
+				// skip the next
+				i++;
 			} else if (arg.equals("--help") || arg.equals("-h")
 					|| arg.equals("/?")) {
 				System.out.println("Commandline modifiers:");
@@ -63,6 +109,10 @@ public class TestGUI {
 						.println("\t--load PATH\n\t\tPre-load source from PATH");
 				System.out
 						.println("\t--title TITLE\n\t\tSet a custom title for the main window");
+				System.out
+						.println("\t--maximize\n\t\tMaximize the frame initially");
+				System.out
+						.println("\t--no toolbar|outline\n\t\tDisable the specified functionality");
 				System.out
 						.println("\t--help, -h, /?\n\t\tDisplay this help screen");
 				System.exit(0);

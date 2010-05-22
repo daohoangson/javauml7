@@ -10,6 +10,13 @@ import com.tranvietson.uml.structures.Method;
 import com.tranvietson.uml.structures.Property;
 import com.tranvietson.uml.structures.StructureException;
 
+/**
+ * Test for {@link Outline}
+ * 
+ * @author Dao Hoang Son
+ * @version 1.0
+ * 
+ */
 public class TestTree {
 
 	/**

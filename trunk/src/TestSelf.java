@@ -9,6 +9,13 @@ import com.tranvietson.uml.structures.StructureEvent;
 import com.tranvietson.uml.structures.StructureException;
 import com.tranvietson.uml.structures.StructureListener;
 
+/**
+ * Test for structure displaying
+ * 
+ * @author Dao Hoang Son
+ * @version 1.0
+ * 
+ */
 public class TestSelf implements StructureListener {
 	Diagram d;
 

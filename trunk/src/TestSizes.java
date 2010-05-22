@@ -4,6 +4,13 @@ import com.daohoangson.uml.structures.Structure;
 import com.tranvietson.uml.structures.Class;
 import com.tranvietson.uml.structures.StructureException;
 
+/**
+ * Test for diagram sizes (with lots of structures)
+ * 
+ * @author Dao Hoang Son
+ * @version 1.0
+ * 
+ */
 public class TestSizes {
 
 	/**

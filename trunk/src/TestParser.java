@@ -8,6 +8,13 @@ import com.daohoangson.uml.parser.Parser;
 import com.daohoangson.uml.structures.Structure;
 import com.tranvietson.uml.structures.StructureException;
 
+/**
+ * A test for parser. Accept command line directives
+ * 
+ * @author Dao Hoang Son
+ * @version 1.3
+ * 
+ */
 public class TestParser {
 	Diagram d;
 	Parser parser;

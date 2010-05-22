@@ -9,6 +9,13 @@ import com.tranvietson.uml.structures.Method;
 import com.tranvietson.uml.structures.Property;
 import com.tranvietson.uml.structures.StructureException;
 
+/**
+ * Test for diagram's clip saving
+ * 
+ * @author Dao Hoang Son
+ * @version 1.0
+ * 
+ */
 public class TestSaveClip {
 	public static void main(String[] args) throws StructureException {
 		final Diagram d = new Diagram();
